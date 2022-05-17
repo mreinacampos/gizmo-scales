@@ -161,6 +161,29 @@ FINCL =
 
 
 #----------------------------------------------------------------------------------------------
+ifeq ($(SYSTYPE),"astro-mcmaster")
+CC       =  mpicc -std=c11
+CXX      =  mpic++ -std=c++11
+FC       =  mpif90 
+OPTIMIZE = -g -Wall # compiler warnings 
+OPTIMIZE += -O3 -mavx # speed
+ifeq (OPENMP,$(findstring OPENMP,$(CONFIGVARS)))
+OPTIMIZE += -parallel -openmp  # openmp required compiler flags
+endif
+GMP_INCL = #
+GMP_LIBS = #
+#MKL_INCL = -I$(TACC_MKL_INC)
+#MKL_LIBS = -L$(TACC_MKL_LIB) -mkl=sequential
+GSL_INCL = -I/usr/include
+GSL_LIBS = -L/usr/lib64
+FFTW_INCL= 
+FFTW_LIBS= 
+HDF5INCL = -I$/usr/include/hdf/ -DH5_USE_16_API
+HDF5LIB  = -L/usr/lib64/ -lhdf5 -lz
+MPICHLIB = -L/usr/lib64/mpich/lib/
+OPT     += -DUSE_MPI_IN_PLACE
+endif
+
 ifeq ($(SYSTYPE),"Stampede")
 CC       =  mpicc
 CXX      =  mpic++
