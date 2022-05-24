@@ -94,7 +94,10 @@ void determine_where_SNe_occur(void)
  for example for ensuring conservation if there are many overlapping events */
 static struct temporary_mech_fb_data_tohold
 {
-    int N_injected; double m_injected, p_injected[3], KE_injected, TE_injected, Z_injected[NUM_METAL_SPECIES];
+    int N_injected; double m_injected, p_injected[3], KE_injected, TE_injected;
+#ifdef METALS
+    int Z_injected[NUM_METAL_SPECIES];
+#endif
 }
 *LocalGasMechFBInfoTemp;
 
@@ -554,6 +557,7 @@ int addFB_evaluate(int target, int mode, int *exportflag, int *exportnodecount, 
 #endif
                 
                 RsneKPC = RsneKPC_0;
+#ifdef METALS
                 /* calculate cooling radius given density and metallicity in this annulus into which the ejecta propagate */
                 if(loop_iteration < 2)
                 {
@@ -569,6 +573,7 @@ int addFB_evaluate(int target, int mode, int *exportflag, int *exportnodecount, 
                     if(loop_iteration >= 0 && feedback_type_is_SNe == 0) {v_cooling *= 1.e10; m_cooling *= 1.e10;} // for non-SNe, ignore finite cooling radii and directly couple; wont matter unless choose to include boost term below, with fixes we've added
                     RsneKPC = pow( 0.238732 * m_cooling/rho_j , 1./3. );
                 }
+#endif
                 RsneKPC_3 = RsneKPC*RsneKPC*RsneKPC;
                 // if loop_iteration==-1, this is a pre-calc loop to get the relevant weights for coupling //
                 if(loop_iteration < 0)
@@ -737,10 +742,12 @@ int addFB_evaluate(int target, int mode, int *exportflag, int *exportnodecount, 
                 LocalGasMechFBInfoTemp[j].TE_injected += Mass_j*InternalEnergy_j - Mass_j_0*InternalEnergy_j_0; // delta-update of conserved quantity (total internal energy)
                 #pragma omp atomic
                 LocalGasMechFBInfoTemp[j].KE_injected += KE_final - KE_initial; // delta-update of conserved quantity (total kinetic energy)
+#ifdef METALS
                 for(k=0;k<NUM_METAL_SPECIES;k++) {
                     #pragma omp atomic
                     LocalGasMechFBInfoTemp[j].Z_injected[k] += Mass_j*Metallicity_j[k] - Mass_j_0*Metallicity_j_0[k]; // delta-update of conserved quantity (total metal mass)
                 }
+#endif
                 for(k=0;k<3;k++) {
                     #pragma omp atomic
                     LocalGasMechFBInfoTemp[j].p_injected[k] += (Mass_j*Vel_j[k] - Mass_j_0*Vel_j_0[k]) / All.cf_atime; // delta-update of conserved quantity (total momentum), converted to physical units
@@ -774,7 +781,9 @@ void verify_and_assign_local_mechfb_integrals(void)
             m0=SphP[j].MassTrue; SphP[j].MassTrue += dm; /* update conserved mass */
 #endif
             double mf=m0+dm; /* save for below */
+#ifdef METALS
             for(k=0;k<NUM_METAL_SPECIES;k++) {P[j].Metallicity[k] = (m0/mf)*P[j].Metallicity[k] + (1./mf)*LocalGasMechFBInfoTemp[j].Z_injected[k];} /* update metallicity */
+#endif
             SphP[j].Density *= mf/m0; /* update density [semi-drift] */
             double dTE=LocalGasMechFBInfoTemp[j].TE_injected;
             if(dTE > 0)
