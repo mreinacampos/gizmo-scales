@@ -589,6 +589,7 @@ void empty_read_buffer(enum iofields blocknr, int offset, int pc, int type)
         case IO_DELAY_TIME_HII:
         case IO_CHIMES_FLUX_G0:
         case IO_CHIMES_FLUX_ION:
+        case IO_CLUSTER_SINK_NUMSNE:
             break;
 
         case IO_LASTENTRY:

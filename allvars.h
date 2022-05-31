@@ -2373,6 +2373,12 @@ extern ALIGN(32) struct particle_data
 #if defined(GALSF_FB_MECHANICAL) || defined(GALSF_FB_THERMAL)
     MyFloat SNe_ThisTimeStep; /* flag that indicated number of SNe for the particle in the timestep */
 #endif
+
+#if defined(CLUSTER_SINK) && defined(CLUSTER_SINK_OUTPUT_NUMSNE)
+    MyFloat CumNumSNe; /* flag that indicated cumulative number of SNe for the particle */
+#endif
+
+
 #ifdef GALSF_FB_MECHANICAL
 #define AREA_WEIGHTED_SUM_ELEMENTS 11 /* number of weights needed for full momentum-and-energy conserving system */
     MyFloat Area_weighted_sum[AREA_WEIGHTED_SUM_ELEMENTS]; /* normalized weights for particles in kernel weighted by area, not mass */
@@ -3311,6 +3317,7 @@ enum iofields
   IO_DENS_AROUND_STAR,
   IO_DELAY_TIME_HII,
   IO_MOLECULARFRACTION,
+  IO_CLUSTER_SINK_NUMSNE,
   IO_LASTENTRY			/* This should be kept - it signals the end of the list */
 };
 
