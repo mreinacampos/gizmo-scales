@@ -65,6 +65,13 @@ void determine_where_SNe_occur(void)
         if(P[i].Type<5) {if(P[i].IMF_NumMassiveStars>0) {P[i].IMF_NumMassiveStars=DMAX(0,P[i].IMF_NumMassiveStars-P[i].SNe_ThisTimeStep);}} // lose an O-star for every SNe //
 #endif
         if(P[i].SNe_ThisTimeStep>0) {ntotal+=P[i].SNe_ThisTimeStep; nhosttotal++;}
+#if defined(CLUSTER_SINK) && defined(CLUSTER_SINK_OUTPUT_NUMSNE)
+        if(P[i].SNe_ThisTimeStep>0) {P[i].CumNumSNe += P[i].SNe_ThisTimeStep;}
+#ifdef CLUSTER_SINK_DEBUG
+        printf("MRC - determine_where_SNe_occur - ThisTask %d  - P[i].ID %d P[i].Mass %g - P[i].SNe_ThisTimeStep %g, P[i].CumNumSNe %g, ntotal %g, npossible %g, rmean %g\n",
+                 ThisTask, P[i].ID, P[i].Mass, P[i].SNe_ThisTimeStep, P[i].CumNumSNe, ntotal, npossible, rmean);
+#endif
+#endif
         dtmean += dt;
     } // for(i = FirstActiveParticle; i >= 0; i = NextActiveParticle[i]) //
 

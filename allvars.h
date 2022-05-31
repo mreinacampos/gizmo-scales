@@ -301,6 +301,9 @@ extern struct Chimes_depletion_data_structure *ChimesDepletionData;
 #endif // CHIMES
 
 
+#ifdef CLUSTER_SINK
+#include "./cluster_sink/cluster_sink_proto.h"
+#endif
 
 
 #if defined(SINGLE_STAR_AND_SSP_HYBRID_MODEL) /* options for hybrid/combined FIRE+STARFORGE simulations */

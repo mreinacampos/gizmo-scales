@@ -152,6 +152,22 @@ void particle2in_addFB_fromstars(struct addFB_evaluate_data_in_ *in, int i, int 
         if(P[i].SNe_ThisTimeStep<1) {double m_msun=P[i].Mass*UNIT_MASS_IN_SOLAR; in->SNe_v_ejecta = (616. * sqrt((1.+0.1125*m_msun)/(1.+0.0125*m_msun)) * pow(m_msun,0.131)) / UNIT_VEL_IN_KMS;} // scaling from size-mass relation+eddington factor, assuming line-driven winds //
     }
 #endif
+
+#ifdef CLUSTER_SINK
+#ifdef CLUSTER_SINK_SNII
+    // determine the age in Myr
+    double age = evaluate_stellar_age_Gyr(P[i].StellarAge)*1e3;
+    // mass ejected per SN II in code units
+    double ejecta_mass = (determine_corecollapse_sne_total_ejected_mass(age)/UNIT_MASS_IN_SOLAR);
+    // total mass ejected by core-collapse SNe in code units
+    in->Msne = P[i].SNe_ThisTimeStep * ejecta_mass; 
+    // energy ejected per core-collapse SNe in code units
+    double eps_z = 1, energy = eps_z*(1.e51/UNIT_ENERGY_IN_CGS);// MRC - TODO: metallicity dependence
+    // velocity of the ejecta in code units
+    in->SNe_v_ejecta = sqrt(2.*energy/ejecta_mass); // for SNe [total return]
+#endif
+#endif // CLUSTER_SINK
+
 #ifdef METALS
     int k; for(k=0;k<NUM_METAL_SPECIES;k++) {in->yields[k]=0.178*All.SolarAbundances[k]/All.SolarAbundances[0];} // assume a universal solar-type yield with ~2.63 Msun of metals
     if(NUM_LIVE_SPECIES_FOR_COOLTABLES>=10) {in->yields[1] = 0.4;} // (catch for Helium, which the above scaling would give bad values for)
@@ -183,6 +199,25 @@ double mechanical_fb_calculate_eventrates(int i, double dt)
     }
 #endif
 
+#if defined(CLUSTER_SINK) && defined(GALSF_FB_MECHANICAL) /* STELLAR-POPULATION + SINK version: mechanical feedback */
+    double RSNe, age;
+    // determine the age in Myr
+    age = evaluate_stellar_age_Gyr(P[i].StellarAge)*1e3;
+
+#ifdef CLUSTER_SINK_SNII
+    RSNe = determine_corecollapse_sne_rate(age); // determine rate from analytical fit - in SNe / Myr / MSun
+    double p = RSNe * (P[i].Mass*UNIT_MASS_IN_SOLAR) * (dt*UNIT_TIME_IN_MYR); // unit conversion factor
+    double n_sn_0=(float)floor(p); p-=n_sn_0; if(get_random_number(P[i].ID+6) < p) {n_sn_0++;} // determine if SNe occurs
+    P[i].SNe_ThisTimeStep = n_sn_0; // assign to particle
+#ifdef CLUSTER_SINK_DEBUG
+    printf("MRC - mechanical_fb_calculate_eventrates - our model - ThisTask %d - P[i].ID %d - RSNe %g, n_sn_0 %g, P[i].SNe_ThisTimeStep %g \n", 
+            ThisTask, P[i].ID, RSNe, n_sn_0, P[i].SNe_ThisTimeStep);
+#endif
+#endif // CLUSTER_SINK_SNII
+    return RSNe;
+#endif // CLUSTER_SINK
+
+
 #ifdef GALSF_FB_THERMAL /* STELLAR-POPULATION version: pure thermal feedback: assumes AGORA model (Kim et al., 2016 ApJ, 833, 202) where everything occurs at 5Myr exactly */
     if(P[i].SNe_ThisTimeStep != 0) {P[i].SNe_ThisTimeStep=-1; return 0;} // already had an event, so this particle is "done"
     if(evaluate_stellar_age_Gyr(P[i].StellarAge) < 0.005) {return 0;} // enforce age limit of 5 Myr
@@ -192,13 +227,22 @@ double mechanical_fb_calculate_eventrates(int i, double dt)
 
 #ifdef GALSF_FB_MECHANICAL /* STELLAR-POPULATION version: mechanical feedback: 'dummy' example model below assumes a constant SNe rate for t < 30 Myr, then nothing. experiment! */
     double star_age = evaluate_stellar_age_Gyr(P[i].StellarAge);
+#ifdef CLUSTER_SINK_DEBUG
+    printf("MRC - mechanical_fb_calculate_eventrates - dummy I - ThisTask %d - P[i].ID %d - star_age %g - P[i].StellarAge %g\n", 
+        ThisTask, P[i].ID, star_age, P[i].StellarAge);
+#endif
     if(star_age < 0.03)
     {
         double RSNe = 3.e-4; // assume a constant rate ~ 3e-4 SNe/Myr/solar mass for t = 0-30 Myr //
         double p = RSNe * (P[i].Mass*UNIT_MASS_IN_SOLAR) * (dt*UNIT_TIME_IN_MYR); // unit conversion factor
         double n_sn_0=(float)floor(p); p-=n_sn_0; if(get_random_number(P[i].ID+6) < p) {n_sn_0++;} // determine if SNe occurs
         P[i].SNe_ThisTimeStep = n_sn_0; // assign to particle
+#ifdef CLUSTER_SINK_DEBUG
+        printf("MRC - mechanical_fb_calculate_eventrates - dummy II - ThisTask %d - P[i].ID %d - star_age %g, RSNe %g, n_sn_0 %g, P[i].SNe_ThisTimeStep %g \n", 
+            ThisTask, P[i].ID, star_age, RSNe, n_sn_0, P[i].SNe_ThisTimeStep);
+#endif
         return RSNe;
+
     }
 #endif
 
