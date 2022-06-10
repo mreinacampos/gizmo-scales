@@ -2375,10 +2375,17 @@ extern ALIGN(32) struct particle_data
 
 #if defined(GALSF_FB_MECHANICAL) || defined(GALSF_FB_THERMAL)
     MyFloat SNe_ThisTimeStep; /* flag that indicated number of SNe for the particle in the timestep */
+
+#ifdef CLUSTER_SINK
+    MyFloat SNII_ThisTimeStep; /* flag that indicates number of SNII for the particle in the timestep */
+    MyFloat SNIa_ThisTimeStep; /* flag that indicates number of SNIa for the particle in the timestep */
+#endif
 #endif
 
-#if defined(CLUSTER_SINK) && defined(CLUSTER_SINK_OUTPUT_NUMSNE)
-    MyFloat CumNumSNe; /* flag that indicated cumulative number of SNe for the particle */
+#ifdef CLUSTER_SINK_OUTPUT_NUMSNE
+    MyFloat CumNumSNe; /* flag that indicates cumulative number of SNe for the particle */
+    MyFloat CumNumSNII; /* flag that indicates cumulative number of SNII for the particle */
+    MyFloat CumNumSNIa; /* flag that indicates cumulative number of SNIa for the particle */
 #endif
 
 
@@ -3321,6 +3328,8 @@ enum iofields
   IO_DELAY_TIME_HII,
   IO_MOLECULARFRACTION,
   IO_CLUSTER_SINK_NUMSNE,
+  IO_CLUSTER_SINK_NUMSNII,
+  IO_CLUSTER_SINK_NUMSNIa,
   IO_LASTENTRY			/* This should be kept - it signals the end of the list */
 };
 

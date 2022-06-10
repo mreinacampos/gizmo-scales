@@ -1598,11 +1598,33 @@ void fill_write_buffer(enum iofields blocknr, int *startindex, int pc, int type)
         break;
 
         case IO_CLUSTER_SINK_NUMSNE:        /* cumulative number of SNe */
-#if defined(CLUSTER_SINK) && defined(CLUSTER_SINK_OUTPUT_NUMSNE) 
+#ifdef CLUSTER_SINK_OUTPUT_NUMSNE
             for(n = 0; n < pc; pindex++)
                 if(P[pindex].Type == type)
                 {
                     *fp++ = (MyOutputFloat) P[pindex].CumNumSNe;
+                    n++;
+                }
+#endif
+            break;
+
+        case IO_CLUSTER_SINK_NUMSNII:        /* cumulative number of SNII */
+#ifdef CLUSTER_SINK_OUTPUT_NUMSNE
+            for(n = 0; n < pc; pindex++)
+                if(P[pindex].Type == type)
+                {
+                    *fp++ = (MyOutputFloat) P[pindex].CumNumSNII;
+                    n++;
+                }
+#endif
+            break;
+
+        case IO_CLUSTER_SINK_NUMSNIa:        /* cumulative number of SNIa */
+#ifdef CLUSTER_SINK_OUTPUT_NUMSNE
+            for(n = 0; n < pc; pindex++)
+                if(P[pindex].Type == type)
+                {
+                    *fp++ = (MyOutputFloat) P[pindex].CumNumSNIa;
                     n++;
                 }
 #endif
@@ -1747,6 +1769,8 @@ int get_bytes_per_blockelement(enum iofields blocknr, int mode)
         case IO_DELAY_TIME_HII:
         case IO_MOLECULARFRACTION:
         case IO_CLUSTER_SINK_NUMSNE:
+        case IO_CLUSTER_SINK_NUMSNII:
+        case IO_CLUSTER_SINK_NUMSNIa:
             if(mode)
                 bytes_per_blockelement = sizeof(MyInputFloat);
             else
@@ -2026,6 +2050,8 @@ int get_values_per_blockelement(enum iofields blocknr)
         case IO_DELAY_TIME_HII:
         case IO_MOLECULARFRACTION:
         case IO_CLUSTER_SINK_NUMSNE:
+        case IO_CLUSTER_SINK_NUMSNII:
+        case IO_CLUSTER_SINK_NUMSNIa:
             values = 1;
             break;
 
@@ -2269,6 +2295,8 @@ long get_particles_in_block(enum iofields blocknr, int *typelist)
 
         case IO_IMF:
         case IO_CLUSTER_SINK_NUMSNE:
+        case IO_CLUSTER_SINK_NUMSNII:
+        case IO_CLUSTER_SINK_NUMSNIa:
             for(i = 1; i < 6; i++) {if(i != 4 && i != 5) {typelist[i] = 0;}}
             return nstars + header.npart[5];
             break;
@@ -2852,7 +2880,9 @@ int blockpresent(enum iofields blocknr)
             break;
 
         case IO_CLUSTER_SINK_NUMSNE:
-#if defined(CLUSTER_SINK) && defined(CLUSTER_SINK_OUTPUT_NUMSNE)
+        case IO_CLUSTER_SINK_NUMSNII:
+        case IO_CLUSTER_SINK_NUMSNIa:
+#ifdef CLUSTER_SINK_OUTPUT_NUMSNE
             return 1;
 #endif
             break;
@@ -3234,7 +3264,12 @@ void get_Tab_IO_Label(enum iofields blocknr, char *label)
         case IO_CLUSTER_SINK_NUMSNE:
             strncpy(label, "nsne", 4);
             break;
-
+        case IO_CLUSTER_SINK_NUMSNII:
+            strncpy(label, "nsii", 4);
+            break;
+        case IO_CLUSTER_SINK_NUMSNIa:
+            strncpy(label, "nsia", 4);
+            break;
         case IO_LASTENTRY:
             endrun(217);
             break;
@@ -3607,6 +3642,12 @@ void get_dataset_name(enum iofields blocknr, char *buf)
             break;
         case IO_CLUSTER_SINK_NUMSNE:
             strcpy(buf, "ClusterSink_CumNumSNe");
+            break;
+        case IO_CLUSTER_SINK_NUMSNII:
+            strcpy(buf, "ClusterSink_CumNumSNII");
+            break;
+        case IO_CLUSTER_SINK_NUMSNIa:
+            strcpy(buf, "ClusterSink_CumNumSNI");
             break;
         case IO_LASTENTRY:
             endrun(218);
