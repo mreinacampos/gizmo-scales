@@ -154,24 +154,60 @@ void particle2in_addFB_fromstars(struct addFB_evaluate_data_in_ *in, int i, int 
 #endif
 
 #ifdef CLUSTER_SINK
-#ifdef CLUSTER_SINK_SNII
     // determine the age in Myr
     double age = evaluate_stellar_age_Gyr(P[i].StellarAge)*1e3;
-    // mass ejected per SN II in code units
-    double ejecta_mass = (determine_corecollapse_sne_total_ejected_mass(age)/UNIT_MASS_IN_SOLAR);
+    double zh = 1; // MRC - TODO: metallicity of the stellar population
+    double total_mass_snii = 0, total_energy_snii = 0;
+    double total_mass_snia = 0, total_energy_snia = 0;
+
+    double total_mass_winds = 0, velocity_winds = 0, total_energy_winds = 0;
+
+#ifdef CLUSTER_SINK_SNII
     // total mass ejected by core-collapse SNe in code units
-    in->Msne = P[i].SNe_ThisTimeStep * ejecta_mass; 
-    // energy ejected per core-collapse SNe in code units
-    double eps_z = 1, energy = eps_z*(1.e51/UNIT_ENERGY_IN_CGS);// MRC - TODO: metallicity dependence
-    // velocity of the ejecta in code units
-    in->SNe_v_ejecta = sqrt(2.*energy/ejecta_mass); // for SNe [total return]
+    total_mass_snii = P[i].SNII_ThisTimeStep * (determine_corecollapse_sne_total_ejected_mass(age)/UNIT_MASS_IN_SOLAR); 
+    // total energy ejected per core-collapse SNe in code units
+    double eps_z = 1;
+    total_energy_snii = P[i].SNII_ThisTimeStep * (eps_z*(1.e51/UNIT_ENERGY_IN_CGS));// MRC - TODO: metallicity dependence
+    // MRC - missing: yield ejection
 #endif
+
+#ifdef CLUSTER_SINK_SNIa
+    // total mass ejected by SNIa in code units - assume 1.4MSun per SNIa
+    total_mass_snia = P[i].SNIa_ThisTimeStep * (1.4/UNIT_MASS_IN_SOLAR); 
+    // total energy ejected by SNIa in code units - assume 1e51ergs per SNIa
+    total_energy_snia = P[i].SNIa_ThisTimeStep * (1.e51/UNIT_ENERGY_IN_CGS);
+    // MRC - missing: yield ejection
+#endif
+
+#ifdef CLUSTER_SINK_WINDS
+    // particle timestep in Myr
+    double dt = GET_PARTICLE_TIMESTEP_IN_PHYSICAL(i)*UNIT_TIME_IN_MYR;
+    // total mass ejected by winds in code units 
+    total_mass_winds = determine_winds_mass_loss_rate(age, zh)*P[i].Mass*dt; 
+    // wind injection velocity in code units 
+    velocity_winds = determine_wind_velocity_injection(age, zh)/UNIT_VEL_IN_KMS;
+
+    // total energy ejected by winds in code units -- assumed kinetic
+    total_energy_winds = 0.5 * total_mass_winds * velocity_winds * velocity_winds;
+    // MRC - missing: yield ejection
+#endif
+
+    // total mass being ejected
+    in->Msne = total_mass_snii + total_mass_snia + total_mass_winds;
+    // velocity of the combined ejecta in code units
+    in->SNe_v_ejecta = sqrt(2.*(total_energy_snii + total_energy_snia + total_energy_winds)/in->Msne); 
+    // MRC - TODO : mass ejected in different yields
 #endif // CLUSTER_SINK
 
-#ifdef METALS
+
+#ifdef METALS 
     int k; for(k=0;k<NUM_METAL_SPECIES;k++) {in->yields[k]=0.178*All.SolarAbundances[k]/All.SolarAbundances[0];} // assume a universal solar-type yield with ~2.63 Msun of metals
     if(NUM_LIVE_SPECIES_FOR_COOLTABLES>=10) {in->yields[1] = 0.4;} // (catch for Helium, which the above scaling would give bad values for)
 #endif
+    //printf("MRC - particle2in_addFB_fromstars - Msne %g, SNe_v_ejecta %g - in->yields [%g, %g, %g, %g, %g, %g, %g, %g, %g, %g]\n",
+    // in->Msne, in->SNe_v_ejecta,
+    // in->yields[0], in->yields[1], in->yields[2], in->yields[3], in->yields[4], in->yields[5], in->yields[6], in->yields[7], in->yields[8], in->yields[9], in->yields[10]);
+
 #endif
 }
 
@@ -200,23 +236,10 @@ double mechanical_fb_calculate_eventrates(int i, double dt)
 #endif
 
 #if defined(CLUSTER_SINK) && defined(GALSF_FB_MECHANICAL) /* STELLAR-POPULATION + SINK version: mechanical feedback */
-    double RSNe, age;
-    // determine the age in Myr
-    age = evaluate_stellar_age_Gyr(P[i].StellarAge)*1e3;
-
-#ifdef CLUSTER_SINK_SNII
-    RSNe = determine_corecollapse_sne_rate(age); // determine rate from analytical fit - in SNe / Myr / MSun
-    double p = RSNe * (P[i].Mass*UNIT_MASS_IN_SOLAR) * (dt*UNIT_TIME_IN_MYR); // unit conversion factor
-    double n_sn_0=(float)floor(p); p-=n_sn_0; if(get_random_number(P[i].ID+6) < p) {n_sn_0++;} // determine if SNe occurs
-    P[i].SNe_ThisTimeStep = n_sn_0; // assign to particle
-#ifdef CLUSTER_SINK_DEBUG
-    printf("MRC - mechanical_fb_calculate_eventrates - our model - ThisTask %d - P[i].ID %d - RSNe %g, n_sn_0 %g, P[i].SNe_ThisTimeStep %g \n", 
-            ThisTask, P[i].ID, RSNe, n_sn_0, P[i].SNe_ThisTimeStep);
-#endif
-#endif // CLUSTER_SINK_SNII
+    double RSNe = determine_sne_rate(i, dt);
+    // MRC - if winds, but not SNe - set NumSNe = 1 and Rsne?
     return RSNe;
-#endif // CLUSTER_SINK
-
+#endif
 
 #ifdef GALSF_FB_THERMAL /* STELLAR-POPULATION version: pure thermal feedback: assumes AGORA model (Kim et al., 2016 ApJ, 833, 202) where everything occurs at 5Myr exactly */
     if(P[i].SNe_ThisTimeStep != 0) {P[i].SNe_ThisTimeStep=-1; return 0;} // already had an event, so this particle is "done"
@@ -227,10 +250,6 @@ double mechanical_fb_calculate_eventrates(int i, double dt)
 
 #ifdef GALSF_FB_MECHANICAL /* STELLAR-POPULATION version: mechanical feedback: 'dummy' example model below assumes a constant SNe rate for t < 30 Myr, then nothing. experiment! */
     double star_age = evaluate_stellar_age_Gyr(P[i].StellarAge);
-#ifdef CLUSTER_SINK_DEBUG
-    printf("MRC - mechanical_fb_calculate_eventrates - dummy I - ThisTask %d - P[i].ID %d - star_age %g - P[i].StellarAge %g\n", 
-        ThisTask, P[i].ID, star_age, P[i].StellarAge);
-#endif
     if(star_age < 0.03)
     {
         double RSNe = 3.e-4; // assume a constant rate ~ 3e-4 SNe/Myr/solar mass for t = 0-30 Myr //
@@ -238,8 +257,8 @@ double mechanical_fb_calculate_eventrates(int i, double dt)
         double n_sn_0=(float)floor(p); p-=n_sn_0; if(get_random_number(P[i].ID+6) < p) {n_sn_0++;} // determine if SNe occurs
         P[i].SNe_ThisTimeStep = n_sn_0; // assign to particle
 #ifdef CLUSTER_SINK_DEBUG
-        printf("MRC - mechanical_fb_calculate_eventrates - dummy II - ThisTask %d - P[i].ID %d - star_age %g, RSNe %g, n_sn_0 %g, P[i].SNe_ThisTimeStep %g \n", 
-            ThisTask, P[i].ID, star_age, RSNe, n_sn_0, P[i].SNe_ThisTimeStep);
+        // debug: only one SNe
+        if (P[i].CumNumSNe > 0){ P[i].SNe_ThisTimeStep = 0; RSNe = 0; }
 #endif
         return RSNe;
 

@@ -65,10 +65,11 @@ void determine_where_SNe_occur(void)
         if(P[i].Type<5) {if(P[i].IMF_NumMassiveStars>0) {P[i].IMF_NumMassiveStars=DMAX(0,P[i].IMF_NumMassiveStars-P[i].SNe_ThisTimeStep);}} // lose an O-star for every SNe //
 #endif
         if(P[i].SNe_ThisTimeStep>0) {ntotal+=P[i].SNe_ThisTimeStep; nhosttotal++;}
-#if defined(CLUSTER_SINK) && defined(CLUSTER_SINK_OUTPUT_NUMSNE)
-        if(P[i].SNe_ThisTimeStep>0) {P[i].CumNumSNe += P[i].SNe_ThisTimeStep;}
+#ifdef CLUSTER_SINK_OUTPUT_NUMSNE
+        if(P[i].SNe_ThisTimeStep>0) {P[i].CumNumSNe += P[i].SNe_ThisTimeStep; P[i].CumNumSNII += P[i].SNII_ThisTimeStep; P[i].CumNumSNIa += P[i].SNIa_ThisTimeStep;}
 #ifdef CLUSTER_SINK_DEBUG
-        printf("MRC - determine_where_SNe_occur - ThisTask %d  - P[i].ID %d P[i].Mass %g - P[i].SNe_ThisTimeStep %g, P[i].CumNumSNe %g, ntotal %g, npossible %g, rmean %g\n",
+        if(P[i].SNe_ThisTimeStep>0)
+            printf("MRC - determine_where_SNe_occur - ThisTask %d  - P[i].ID %d P[i].Mass %g - P[i].SNe_ThisTimeStep %g, P[i].CumNumSNe %g, ntotal %g, npossible %g, rmean %g\n",
                  ThisTask, P[i].ID, P[i].Mass, P[i].SNe_ThisTimeStep, P[i].CumNumSNe, ntotal, npossible, rmean);
 #endif
 #endif
@@ -103,7 +104,7 @@ static struct temporary_mech_fb_data_tohold
 {
     int N_injected; double m_injected, p_injected[3], KE_injected, TE_injected;
 #ifdef METALS
-    int Z_injected[NUM_METAL_SPECIES];
+    double Z_injected[NUM_METAL_SPECIES];
 #endif
 }
 *LocalGasMechFBInfoTemp;
@@ -352,7 +353,7 @@ int addFB_evaluate(int target, int mode, int *exportflag, int *exportnodecount, 
                 Mass_j += dM_ejecta_in;
                 out.M_coupled += dM_ejecta_in;
 #if defined(METALS) /* inject metals */
-                for(k=0;k<NUM_METAL_SPECIES-NUM_AGE_TRACERS;k++) {Metallicity_j[k]=(1-massratio_ejecta)*Metallicity_j[k] + massratio_ejecta*local.yields[k];}
+                for(k=0;k<NUM_METAL_SPECIES-NUM_AGE_TRACERS;k++) {Metallicity_j[k]=(1-massratio_ejecta)*Metallicity_j[k] + massratio_ejecta*local.yields[k]; }
 #ifdef GALSF_FB_FIRE_AGE_TRACERS
                 if(loop_iteration == 3) {for(k=NUM_METAL_SPECIES-NUM_AGE_TRACERS;k<NUM_METAL_SPECIES;k++) {Metallicity_j[k] += pnorm*local.yields[k]/Mass_j;}} // add age tracers in taking yields to mean MASS, so we can make it large without actually exchanging large masses
 #ifndef GALSF_FB_FIRE_AGE_TRACERS_DISABLE_SURFACE_YIELDS
@@ -564,7 +565,7 @@ int addFB_evaluate(int target, int mode, int *exportflag, int *exportnodecount, 
 #endif
                 
                 RsneKPC = RsneKPC_0;
-#ifdef METALS
+
                 /* calculate cooling radius given density and metallicity in this annulus into which the ejecta propagate */
                 if(loop_iteration < 2)
                 {
@@ -580,8 +581,9 @@ int addFB_evaluate(int target, int mode, int *exportflag, int *exportnodecount, 
                     if(loop_iteration >= 0 && feedback_type_is_SNe == 0) {v_cooling *= 1.e10; m_cooling *= 1.e10;} // for non-SNe, ignore finite cooling radii and directly couple; wont matter unless choose to include boost term below, with fixes we've added
                     RsneKPC = pow( 0.238732 * m_cooling/rho_j , 1./3. );
                 }
-#endif
+
                 RsneKPC_3 = RsneKPC*RsneKPC*RsneKPC;
+
                 // if loop_iteration==-1, this is a pre-calc loop to get the relevant weights for coupling //
                 if(loop_iteration < 0)
                 {
@@ -667,9 +669,8 @@ int addFB_evaluate(int target, int mode, int *exportflag, int *exportnodecount, 
                 rho_j *= 1 + dM_ejecta_in/Mass_j; // inject mass at constant particle volume //
                 Mass_j += dM_ejecta_in;
                 out.M_coupled += dM_ejecta_in;
-                
 #ifdef METALS   /* inject metals */
-                for(k=0;k<NUM_METAL_SPECIES-NUM_AGE_TRACERS;k++) {Metallicity_j[k]=(1-massratio_ejecta)*Metallicity_j[k] + massratio_ejecta*local.yields[k];}
+                for(k=0;k<NUM_METAL_SPECIES-NUM_AGE_TRACERS;k++) {Metallicity_j[k]=(1-massratio_ejecta)*Metallicity_j[k] + massratio_ejecta*local.yields[k]; }
 #ifdef GALSF_FB_FIRE_AGE_TRACERS
                 if(loop_iteration == 3) {for(k=NUM_METAL_SPECIES-NUM_AGE_TRACERS;k<NUM_METAL_SPECIES;k++) {Metallicity_j[k] += pnorm*local.yields[k]/Mass_j;}} // add age tracers in taking yields to mean MASS, so we can make it large without actually exchanging large masses
 #ifndef GALSF_FB_FIRE_AGE_TRACERS_DISABLE_SURFACE_YIELDS
@@ -724,14 +725,19 @@ int addFB_evaluate(int target, int mode, int *exportflag, int *exportnodecount, 
                 }
                 double E_sne_initial = pnorm * Energy_injected_codeunits;
                 double d_Egy_internal = KE_initial + E_sne_initial - KE_final; /* now calculate the residual energy with option to add it as thermal */
+
+#ifndef CLUSTER_SINK_DEBUG // MRC - just to debug
 #if !defined(SINGLE_STAR_FB_WINDS) /* (for single-star modules we ignore this b/c assume always trying to resolve R_cool) */
                 if(feedback_type_is_SNe == 1) /* if coupling radius > R_cooling, account for thermal energy loss in the post-shock medium: from Thornton et al. thermal energy scales as R^(-6.5) for R>R_cool. only use for SNe b/c scalings [like momentum] only apply there. over-cooling if code wants to do it will easily occur next timestep. */
                 {
                     d_Egy_internal = (1.-f_sedov_kin+residual_thermal_frac)*E_sne_initial; // the thermal energy component is constant (proportional to the injected area) and determined -as part of the energy-conserving solution- here, you should not artificially decrease it or renormalize it cell-by-cell for this form of the solutions
                 } else {d_Egy_internal = DMAX(DMIN(d_Egy_internal , 2.*E_sne_initial),0);}
 #endif
+#endif
                 if(retain_thermal_flag==0) {d_Egy_internal=0;} // use flag to determined if we should retain this residual thermal energy for this stage
-                d_Egy_internal /= Mass_j; // convert to specific internal energy, finally //
+
+                //printf("MRC - mechanical_fb - j %d - m_cooling %g, mj_preshock %g, retain_thermal_flag %d - d_Egy_internal %g \n", j, m_cooling, mj_preshock, retain_thermal_flag, d_Egy_internal);
+                //d_Egy_internal /= Mass_j; // convert to specific internal energy, finally //
 #ifndef MECHANICAL_FB_MOMENTUM_ONLY
                 if(d_Egy_internal > 0) {InternalEnergy_j += d_Egy_internal; E_coupled += d_Egy_internal;}
 #endif
@@ -751,7 +757,7 @@ int addFB_evaluate(int target, int mode, int *exportflag, int *exportnodecount, 
                 LocalGasMechFBInfoTemp[j].KE_injected += KE_final - KE_initial; // delta-update of conserved quantity (total kinetic energy)
 #ifdef METALS
                 for(k=0;k<NUM_METAL_SPECIES;k++) {
-                    #pragma omp atomic
+                    #pragma omp atomic 
                     LocalGasMechFBInfoTemp[j].Z_injected[k] += Mass_j*Metallicity_j[k] - Mass_j_0*Metallicity_j_0[k]; // delta-update of conserved quantity (total metal mass)
                 }
 #endif
@@ -789,7 +795,7 @@ void verify_and_assign_local_mechfb_integrals(void)
 #endif
             double mf=m0+dm; /* save for below */
 #ifdef METALS
-            for(k=0;k<NUM_METAL_SPECIES;k++) {P[j].Metallicity[k] = (m0/mf)*P[j].Metallicity[k] + (1./mf)*LocalGasMechFBInfoTemp[j].Z_injected[k];} /* update metallicity */
+            for(k=0;k<NUM_METAL_SPECIES;k++) {P[j].Metallicity[k] = (m0/mf)*P[j].Metallicity[k] + (1./mf)*LocalGasMechFBInfoTemp[j].Z_injected[k]; }
 #endif
             SphP[j].Density *= mf/m0; /* update density [semi-drift] */
             double dTE=LocalGasMechFBInfoTemp[j].TE_injected;
@@ -798,8 +804,13 @@ void verify_and_assign_local_mechfb_integrals(void)
                 double TE_0=m0*SphP[j].InternalEnergy; dTE=DMAX(-TE_0,dTE); /* ensure against non-negative values */
                 double dU = (-dm/mf)*SphP[j].InternalEnergy + (1./mf)*dTE; /* using new mass get updated internal energy */
                 double dt = GET_PARTICLE_TIMESTEP_IN_PHYSICAL(j), implied_heating_cgs=(dU*UNIT_SPECEGY_IN_CGS*PROTONMASS_CGS)/(dt*UNIT_TIME_IN_CGS), typical_cooling_cgs=1.e-23*(SphP[j].Density*All.cf_a3inv*UNIT_DENSITY_IN_NHCGS);
+
+#ifndef CLUSTER_SINK_DEBUG // MRC - just to debug
                 if((implied_heating_cgs < 0.3*typical_cooling_cgs) && (dt > MIN_REAL_NUMBER) && ((dU < 4.*SphP[j].InternalEnergy) || ((dU < 1000.*SphP[j].InternalEnergy) && ((dU+SphP[j].InternalEnergy)*U_TO_TEMP_UNITS*2./3.*1.28 < 5.e5)))) {SphP[j].DtInternalEnergy += dU/dt;} else {SphP[j].InternalEnergy += dU; SphP[j].InternalEnergyPred += dU;}
-                //SphP[j].InternalEnergy += dU; SphP[j].InternalEnergyPred += dU; /* update internal energy; simpler (old) way to do it - less accurate phase diagrams at high density, however */
+#else
+                SphP[j].InternalEnergy += dU; SphP[j].InternalEnergyPred += dU; /* update internal energy; simpler (old) way to do it - less accurate phase diagrams at high density, however */
+#endif
+
             }
             double dKE=LocalGasMechFBInfoTemp[j].KE_injected, dp[3];
             if(dKE != 0 || LocalGasMechFBInfoTemp[j].p_injected[0] != 0 || LocalGasMechFBInfoTemp[j].p_injected[1] != 0 || LocalGasMechFBInfoTemp[j].p_injected[2] != 0 )
