@@ -159,7 +159,6 @@ void particle2in_addFB_fromstars(struct addFB_evaluate_data_in_ *in, int i, int 
     double zh = 1; // MRC - TODO: metallicity of the stellar population
     double total_mass_snii = 0, total_energy_snii = 0;
     double total_mass_snia = 0, total_energy_snia = 0;
-
     double total_mass_winds = 0, velocity_winds = 0, total_energy_winds = 0;
 
 #ifdef CLUSTER_SINK_SNII
@@ -204,10 +203,8 @@ void particle2in_addFB_fromstars(struct addFB_evaluate_data_in_ *in, int i, int 
     int k; for(k=0;k<NUM_METAL_SPECIES;k++) {in->yields[k]=0.178*All.SolarAbundances[k]/All.SolarAbundances[0];} // assume a universal solar-type yield with ~2.63 Msun of metals
     if(NUM_LIVE_SPECIES_FOR_COOLTABLES>=10) {in->yields[1] = 0.4;} // (catch for Helium, which the above scaling would give bad values for)
 #endif
-    //printf("MRC - particle2in_addFB_fromstars - Msne %g, SNe_v_ejecta %g - in->yields [%g, %g, %g, %g, %g, %g, %g, %g, %g, %g]\n",
-    // in->Msne, in->SNe_v_ejecta,
-    // in->yields[0], in->yields[1], in->yields[2], in->yields[3], in->yields[4], in->yields[5], in->yields[6], in->yields[7], in->yields[8], in->yields[9], in->yields[10]);
-
+    printf("MRC - particle2in_addFB_fromstars - i %d - ThisTask %d - Msne %g, SNe_v_ejecta %g - in->yields [%g] - total_mass [%g, %g, %g] - total_energy [ergs] [%g, %g, %g]\n",
+        i, ThisTask, in->Msne, in->SNe_v_ejecta, in->yields[0], total_mass_snii, total_mass_snia, total_mass_winds, total_energy_snii*UNIT_ENERGY_IN_CGS, total_energy_snia*UNIT_ENERGY_IN_CGS, total_energy_winds*UNIT_ENERGY_IN_CGS);
 #endif
 }
 
@@ -256,12 +253,7 @@ double mechanical_fb_calculate_eventrates(int i, double dt)
         double p = RSNe * (P[i].Mass*UNIT_MASS_IN_SOLAR) * (dt*UNIT_TIME_IN_MYR); // unit conversion factor
         double n_sn_0=(float)floor(p); p-=n_sn_0; if(get_random_number(P[i].ID+6) < p) {n_sn_0++;} // determine if SNe occurs
         P[i].SNe_ThisTimeStep = n_sn_0; // assign to particle
-#ifdef CLUSTER_SINK_DEBUG
-        // debug: only one SNe
-        if (P[i].CumNumSNe > 0){ P[i].SNe_ThisTimeStep = 0; RSNe = 0; }
-#endif
         return RSNe;
-
     }
 #endif
 

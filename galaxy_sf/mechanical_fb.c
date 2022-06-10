@@ -41,7 +41,10 @@ void determine_where_SNe_occur(void)
     for(i = FirstActiveParticle; i >= 0; i = NextActiveParticle[i])
     {
         P[i].SNe_ThisTimeStep=0;
-
+#ifdef CLUSTER_SINK
+        P[i].SNII_ThisTimeStep = 0;
+        P[i].SNIa_ThisTimeStep = 0;
+#endif
 
 #if defined(SINGLE_STAR_SINK_DYNAMICS)
         if(P[i].Type == 0) {continue;} // any non-gas type is eligible to be a 'star' here
@@ -69,8 +72,8 @@ void determine_where_SNe_occur(void)
         if(P[i].SNe_ThisTimeStep>0) {P[i].CumNumSNe += P[i].SNe_ThisTimeStep; P[i].CumNumSNII += P[i].SNII_ThisTimeStep; P[i].CumNumSNIa += P[i].SNIa_ThisTimeStep;}
 #ifdef CLUSTER_SINK_DEBUG
         if(P[i].SNe_ThisTimeStep>0)
-            printf("MRC - determine_where_SNe_occur - ThisTask %d  - P[i].ID %d P[i].Mass %g - P[i].SNe_ThisTimeStep %g, P[i].CumNumSNe %g, ntotal %g, npossible %g, rmean %g\n",
-                 ThisTask, P[i].ID, P[i].Mass, P[i].SNe_ThisTimeStep, P[i].CumNumSNe, ntotal, npossible, rmean);
+            printf("MRC - determine_where_SNe_occur - ThisTask %d  - P[i].ID %d P[i].Mass %g - SNe_ThisTimeStep [%g, %g, %g], CumNumSNe [%g, %g, %g]\n",
+                 ThisTask, P[i].ID, P[i].Mass, P[i].SNe_ThisTimeStep, P[i].SNII_ThisTimeStep, P[i].SNIa_ThisTimeStep, P[i].CumNumSNe, P[i].CumNumSNII, P[i].CumNumSNIa);
 #endif
 #endif
         dtmean += dt;
@@ -737,7 +740,7 @@ int addFB_evaluate(int target, int mode, int *exportflag, int *exportnodecount, 
                 if(retain_thermal_flag==0) {d_Egy_internal=0;} // use flag to determined if we should retain this residual thermal energy for this stage
 
                 //printf("MRC - mechanical_fb - j %d - m_cooling %g, mj_preshock %g, retain_thermal_flag %d - d_Egy_internal %g \n", j, m_cooling, mj_preshock, retain_thermal_flag, d_Egy_internal);
-                //d_Egy_internal /= Mass_j; // convert to specific internal energy, finally //
+                d_Egy_internal /= Mass_j; // convert to specific internal energy, finally //
 #ifndef MECHANICAL_FB_MOMENTUM_ONLY
                 if(d_Egy_internal > 0) {InternalEnergy_j += d_Egy_internal; E_coupled += d_Egy_internal;}
 #endif
