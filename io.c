@@ -3647,7 +3647,7 @@ void get_dataset_name(enum iofields blocknr, char *buf)
             strcpy(buf, "ClusterSink_CumNumSNII");
             break;
         case IO_CLUSTER_SINK_NUMSNIa:
-            strcpy(buf, "ClusterSink_CumNumSNI");
+            strcpy(buf, "ClusterSink_CumNumSNIa");
             break;
         case IO_LASTENTRY:
             endrun(218);
