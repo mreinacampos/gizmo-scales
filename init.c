@@ -269,6 +269,10 @@ void init(void)
 #endif
 #if defined(GALSF_FB_MECHANICAL) || defined(GALSF_FB_THERMAL)
             P[i].SNe_ThisTimeStep = 0;
+#ifdef CLUSTER_SINK
+            P[i].SNII_ThisTimeStep = 0;
+            P[i].SNIa_ThisTimeStep = 0;
+#endif
 #endif
 #ifdef GALSF_FB_MECHANICAL
             int k; for(k=0;k<AREA_WEIGHTED_SUM_ELEMENTS;k++) {P[i].Area_weighted_sum[k] = 0;}
