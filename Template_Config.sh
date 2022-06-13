@@ -284,6 +284,9 @@
 # ----- debug options
 ## ----------------------------------------------------------------------------------------------------
 #CLUSTER_SINK_DEBUG             # output additional printing statements throughout the code
+#CLUSTER_SINK_DEBUG_ONESNE      # only allows for the explosion of one SNe
+#CLUSTER_SINK_DEBUG_NOTHERMALLOSS      # avoid the thermal loss during the injection of FB
+
 ## ----------------------------------------------------------------------------------------------------
 # ----- output options
 ## ----------------------------------------------------------------------------------------------------

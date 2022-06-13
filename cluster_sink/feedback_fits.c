@@ -58,10 +58,16 @@ double determine_sne_rate(int i, double dt)
 
     // total number of SNe per timestep
     P[i].SNe_ThisTimeStep = P[i].SNII_ThisTimeStep + P[i].SNIa_ThisTimeStep; 
-#ifdef CLUSTER_SINK_DEBUG
+#ifdef CLUSTER_SINK_DEBUG_ONESNE
     // debug: only one SNe
     if (P[i].CumNumSNe > 0){ P[i].SNe_ThisTimeStep = 0; RSNe = 0; }
 #endif
+
+#ifdef CLUSTER_SINK_WINDS 
+    // do wind FB when there are no SNe
+    if (P[i].SNe_ThisTimeStep == 0){ RSNe = 1; P[i].SNe_ThisTimeStep += 0.2;}
+#endif
+
     return RSNe;
 }
 
