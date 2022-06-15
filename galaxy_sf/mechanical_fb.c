@@ -739,7 +739,6 @@ int addFB_evaluate(int target, int mode, int *exportflag, int *exportnodecount, 
 #endif
                 if(retain_thermal_flag==0) {d_Egy_internal=0;} // use flag to determined if we should retain this residual thermal energy for this stage
 
-                //printf("MRC - mechanical_fb - j %d - m_cooling %g, mj_preshock %g, retain_thermal_flag %d - d_Egy_internal %g \n", j, m_cooling, mj_preshock, retain_thermal_flag, d_Egy_internal);
                 d_Egy_internal /= Mass_j; // convert to specific internal energy, finally //
 #ifndef MECHANICAL_FB_MOMENTUM_ONLY
                 if(d_Egy_internal > 0) {InternalEnergy_j += d_Egy_internal; E_coupled += d_Egy_internal;}
