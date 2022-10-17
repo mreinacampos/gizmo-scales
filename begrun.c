@@ -2373,16 +2373,19 @@ void read_parameter_file(char *fname)
 #endif
 #endif
 
+#if (defined(GALSF_FB_MECHANICAL)||defined(GALSF_FB_THERMAL)) & !defined(METALS) 
+    if(ThisTask == 0)
+    {
+        printf("Code was compiled with GALSF_FB_MECHANICAL/GALSF_FB_THERMAL and without METALS, so there'll be errors in the injection of feedback; this is not allowed.\n");
+        endrun(1);
+    }
+#endif
 
 #ifdef GR_TABULATED_COSMOLOGY_W
 #ifndef GR_TABULATED_COSMOLOGY
     if(ThisTask == 0) {fprintf(stdout, "Code was compiled with GR_TABULATED_COSMOLOGY_W, but not with GR_TABULATED_COSMOLOGY; this is not allowed.\n"); endrun(1);}
 #endif
 #endif
-
-
-
-
 
 #ifdef PTHREADS_NUM_THREADS
 #ifdef _OPENMP

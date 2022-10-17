@@ -165,10 +165,10 @@ ifeq ($(SYSTYPE),"astro-mcmaster")
 CC       =  mpicc -std=c11
 CXX      =  mpic++ -std=c++11
 FC       =  mpif90 
-OPTIMIZE = -g -Wall # compiler warnings 
+OPTIMIZE = -g -Wall -Wno-unknown-pragmas # compiler warnings 
 OPTIMIZE += -O3 -mavx # speed
 ifeq (OPENMP,$(findstring OPENMP,$(CONFIGVARS)))
-OPTIMIZE += -parallel -openmp  # openmp required compiler flags
+OPTIMIZE += -parallel -openmp # openmp required compiler flags
 endif
 GMP_INCL = #
 GMP_LIBS = #
@@ -1385,6 +1385,11 @@ endif
 ifeq (CHIMES,$(findstring CHIMES,$(CONFIGVARS)))
 OBJS    += cooling/chimes/chimes.o cooling/chimes/chimes_cooling.o cooling/chimes/init_chimes.o cooling/chimes/rate_equations.o cooling/chimes/update_rates.o 
 INCL    += cooling/chimes/chimes_interpol.h cooling/chimes/chimes_proto.h cooling/chimes/chimes_vars.h 
+endif
+
+ifeq (CLUSTER_SINK,$(findstring CLUSTER_SINK,$(CONFIGVARS)))
+OBJS    += cluster_sink/feedback_fits.o
+INCL    += cluster_sink/cluster_sink_proto.h  cluster_sink/feedback_fits.h 
 endif
 
 # if HDF5 explicitly disabled, remove the linked libraries

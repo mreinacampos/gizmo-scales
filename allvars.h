@@ -301,6 +301,9 @@ extern struct Chimes_depletion_data_structure *ChimesDepletionData;
 #endif // CHIMES
 
 
+#ifdef CLUSTER_SINK
+#include "./cluster_sink/cluster_sink_proto.h"
+#endif
 
 
 #if defined(SINGLE_STAR_AND_SSP_HYBRID_MODEL) /* options for hybrid/combined FIRE+STARFORGE simulations */
@@ -1120,7 +1123,13 @@ typedef unsigned long long peanokey;
 #define NUM_LIVE_SPECIES_FOR_COOLTABLES 0
 #endif
 
-#define NUM_METAL_SPECIES (1+NUM_LIVE_SPECIES_FOR_COOLTABLES+NUM_RPROCESS_SPECIES+NUM_AGE_TRACERS+NUM_STARFORGE_FEEDBACK_TRACERS)
+#if defined(CLUSTER_SINK) && (defined(CLUSTER_SINK_SNII) || defined(CLUSTER_SINK_SNIa) || defined(CLUSTER_SINK_WINDS)) 
+#define NUM_CLUSTER_SINK_FEEDBACK_YIELDS 10
+#else
+#define NUM_CLUSTER_SINK_FEEDBACK_YIELDS 0
+#endif
+
+#define NUM_METAL_SPECIES (1+NUM_LIVE_SPECIES_FOR_COOLTABLES+NUM_RPROCESS_SPECIES+NUM_AGE_TRACERS+NUM_STARFORGE_FEEDBACK_TRACERS+NUM_CLUSTER_SINK_FEEDBACK_YIELDS)
 #endif // METALS //
 
 
@@ -2372,7 +2381,20 @@ extern ALIGN(32) struct particle_data
 
 #if defined(GALSF_FB_MECHANICAL) || defined(GALSF_FB_THERMAL)
     MyFloat SNe_ThisTimeStep; /* flag that indicated number of SNe for the particle in the timestep */
+
+#ifdef CLUSTER_SINK
+    MyFloat SNII_ThisTimeStep; /* flag that indicates number of SNII for the particle in the timestep */
+    MyFloat SNIa_ThisTimeStep; /* flag that indicates number of SNIa for the particle in the timestep */
 #endif
+#endif
+
+#ifdef CLUSTER_SINK_OUTPUT_NUMSNE
+    MyFloat CumNumSNe; /* flag that indicates cumulative number of SNe for the particle */
+    MyFloat CumNumSNII; /* flag that indicates cumulative number of SNII for the particle */
+    MyFloat CumNumSNIa; /* flag that indicates cumulative number of SNIa for the particle */
+#endif
+
+
 #ifdef GALSF_FB_MECHANICAL
 #define AREA_WEIGHTED_SUM_ELEMENTS 11 /* number of weights needed for full momentum-and-energy conserving system */
     MyFloat Area_weighted_sum[AREA_WEIGHTED_SUM_ELEMENTS]; /* normalized weights for particles in kernel weighted by area, not mass */
@@ -3311,6 +3333,9 @@ enum iofields
   IO_DENS_AROUND_STAR,
   IO_DELAY_TIME_HII,
   IO_MOLECULARFRACTION,
+  IO_CLUSTER_SINK_NUMSNE,
+  IO_CLUSTER_SINK_NUMSNII,
+  IO_CLUSTER_SINK_NUMSNIa,
   IO_LASTENTRY			/* This should be kept - it signals the end of the list */
 };
 

@@ -271,6 +271,31 @@
 ############################################################################################################################
 
 
+############################################################################################################################
+## ----------------------------------------------------------------------------------------------------
+# --------------- Cluster Sink Formation (Sink Particle + continuous clustered star formation & feedback) -- MRC
+## ----------------------------------------------------------------------------------------------------
+############################################################################################################################
+#CLUSTER_SINK                   # top-level switch to enable any other modules in this section
+#CLUSTER_SINK_SNII              # add core-collapse SNe feedback - based on IMF-integrated analytical fits from Hopkins+22
+#CLUSTER_SINK_SNIa              # add SNIa feedback - based on IMF-integrated analytical fits from Hopkins+22
+#CLUSTER_SINK_WINDS             # add continuous AGB&OB feedback - based on IMF-integrated analytical fits from Hopkins+22
+## ----------------------------------------------------------------------------------------------------
+# ----- debug options
+## ----------------------------------------------------------------------------------------------------
+#CLUSTER_SINK_DEBUG             # output additional printing statements throughout the code
+#CLUSTER_SINK_DEBUG_ONESNE      # only allows for the explosion of one SNe
+#CLUSTER_SINK_DEBUG_NOTHERMALLOSS      # avoid the thermal loss during the injection of FB
+
+## ----------------------------------------------------------------------------------------------------
+# ----- output options
+## ----------------------------------------------------------------------------------------------------
+#CLUSTER_SINK_OUTPUT_NUMSNE             # output the cumulative number of SNe per star particle in the snapshots
+
+
+
+
+
 
 ####################################################################################################
 # ---------------- Black Holes (Sink-Particles with Accretion and Feedback)
