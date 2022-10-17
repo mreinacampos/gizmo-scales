@@ -184,6 +184,51 @@ MPICHLIB = -L/usr/lib64/mpich/lib/
 OPT     += -DUSE_MPI_IN_PLACE
 endif
 
+ifeq ($(SYSTYPE),"graham")
+  # Linux cluster located at the University of Waterloo (Canada)
+  # https://docs.computecanada.ca/wiki/Graham
+  CC       =  mpicc 
+  CXX      = mpicxx 
+  FC       = mpif90
+  OPTIMIZE = -O3 -mavx -g
+  ifeq (OPENMP,$(findstring OPENMP,$(CONFIGVARS)))
+    OPTIMIZE += -parallel -openmp  # openmp required compiler flags
+  endif
+  GSL_INCL = -I$(EBROOTGSL)/include
+  GSL_LIBS = -L$(EBROOTGSL)/lib -lgsl
+  FFTW_INCL= -I$(EBROOTIMKL)/mkl/include
+  FFTW_LIBS= -L$(EBROOTIMKL)/mkl/lib
+  MPICHLIB =  -L$(EBROOTOPENMPI)/lib -lmpi_cxx
+  HDF5INCL = -I$(HDF5_DIR)/include -DH5_USE_16_API
+  HDF5LIB  = -L$(HDF5_DIR)/lib -lhdf5 -lgfortran -lz
+  OPT     += -DX86FIX
+  CXXFLAGS = $(CFLAGS)
+  LINKER=$(CXX)
+endif
+
+ifeq ($(SYSTYPE),"graham-debug")
+  # Linux cluster located at the University of Waterloo (Canada)
+  # Debugging mode
+  # https://docs.computecanada.ca/wiki/Graham
+  CC       =  mpicc -O0 -g -ggdb
+  CXX      = mpicxx 
+  FC       = mpif90
+  OPTIMIZE = -Wall -Wno-unused-but-set-variable -Wno-uninitialized -Wno-format-security -Wno-unused-result
+  ifeq (OPENMP,$(findstring OPENMP,$(CONFIGVARS)))
+    OPTIMIZE += -parallel -openmp  # openmp required compiler flags
+  endif
+  GSL_INCL = -I$(EBROOTGSL)/include
+  GSL_LIBS = -L$(EBROOTGSL)/lib -lgsl
+  FFTW_INCL= -I$(EBROOTIMKL)/mkl/include
+  FFTW_LIBS= -L$(EBROOTIMKL)/mkl/lib
+  MPICHLIB =  -L$(EBROOTOPENMPI)/lib -lmpi_cxx
+  HDF5INCL = -I$(HDF5_DIR)/include -DH5_USE_16_API
+  HDF5LIB  = -L$(HDF5_DIR)/lib -lhdf5 -lgfortran -lz
+  OPT     += -DX86FIX
+  CXXFLAGS = $(CFLAGS)
+  LINKER=$(CXX)
+endif
+
 ifeq ($(SYSTYPE),"Stampede")
 CC       =  mpicc
 CXX      =  mpic++
