@@ -51,11 +51,11 @@ double evaluate_light_to_mass_ratio(double stellar_age_in_gyr, int i)
     else // STELLAR-POPULATION VERSION: compute integrated mass-to-light ratio of an SSP
     {
 #ifdef CLUSTER_SINK
-        double lum = 0;
+        double lum_ssp = 0;
 #ifdef CLUSTER_SINK_RADIATION 
-        lum = calculate_relative_light_to_mass_ratio(stellar_age_in_gyr,i);
+        lum_ssp = calculate_relative_light_to_mass_ratio(stellar_age_in_gyr,i);
 #endif
-        return lum;
+        return lum_ssp;
 #endif
         double lum=1; if(stellar_age_in_gyr < 0.01) {lum=1000;} // default to a dumb imf-averaged 'young/high-mass' vs 'old/low-mass' distinction
         if(stellar_age_in_gyr<0.033) {lum*=calculate_relative_light_to_mass_ratio_from_imf(stellar_age_in_gyr,i);} // account for IMF variation model [if used]
@@ -173,7 +173,7 @@ void particle2in_addFB_fromstars(struct addFB_evaluate_data_in_ *in, int i, int 
     // determine the age in Myr
     double age = evaluate_stellar_age_Gyr(P[i].StellarAge)*1e3;
     // metallicity of the stellar population - zh = 10^[Fe/H] = (N_Fe/N_H)_star / (N_Fe/N_H)_solar
-    double zh = (P[i].Metallicity[NUM_METAL_SPECIES-1]/(1 - P[i].Metallicity[1] - P[i].Metallicity[0]))/(All.SolarAbundances[NUM_METAL_SPECIES-1]/(1 - All.SolarAbundances[0] - All.SolarAbundances[1]))
+    double zh = (P[i].Metallicity[NUM_METAL_SPECIES-1]/(1 - P[i].Metallicity[1] - P[i].Metallicity[0]))/(All.SolarAbundances[NUM_METAL_SPECIES-1]/(1 - All.SolarAbundances[0] - All.SolarAbundances[1]));
     double total_mass_snii = 0, total_energy_snii = 0;
     double total_mass_snia = 0, total_energy_snia = 0;
     double total_mass_winds = 0, velocity_winds = 0, total_energy_winds = 0;

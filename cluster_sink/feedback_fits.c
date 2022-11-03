@@ -392,7 +392,7 @@ double determine_winds_yields(int i, int k)
 double calculate_relative_light_to_mass_ratio(double age_in_gyr, int i){
 
     // metallicity of the stellar population - zh = 10^[Fe/H] = (N_Fe/N_H)_star / (N_Fe/N_H)_solar
-    double zh = (P[i].Metallicity[NUM_METAL_SPECIES-1]/(1 - P[i].Metallicity[1] - P[i].Metallicity[0]))/(All.SolarAbundances[NUM_METAL_SPECIES-1]/(1 - All.SolarAbundances[0] - All.SolarAbundances[1]))
+    double zh = (P[i].Metallicity[NUM_METAL_SPECIES-1]/(1 - P[i].Metallicity[1] - P[i].Metallicity[0]))/(All.SolarAbundances[NUM_METAL_SPECIES-1]/(1 - All.SolarAbundances[0] - All.SolarAbundances[1]));
     // metallicity-dependent coefficients aL,1, aL,2 and aL,3 - in LSun/MSun
     double RAD_coeff_alj[3] = {800, 1100*pow(zh, -0.1), 0.163}; 
 
@@ -405,7 +405,7 @@ double calculate_relative_light_to_mass_ratio(double age_in_gyr, int i){
         light_to_mass = RAD_coeff_alj[0]*pow(age_in_myr/RAD_tlj[0], slope);
     } else if (age_in_myr > RAD_tlj[1]){
         slope = -1.82*(1 - 0.1*(1 - 0.073*log(age_in_myr/RAD_tlj[1]))*log(age_in_myr/RAD_tlj[1]));
-        double coeff_fl = 1 + 1.2*exp(- pow(log(age_in_myr/RAD_tlj[2])/RAD_coeff_alj[2], 2))
+        double coeff_fl = 1 + 1.2*exp(- pow(log(age_in_myr/RAD_tlj[2])/RAD_coeff_alj[2], 2));
         light_to_mass = RAD_coeff_alj[1]*pow(age_in_myr/RAD_tlj[1], slope)*coeff_fl;
     }
 
@@ -425,7 +425,7 @@ double determine_ionizing_flux_fraction(double age_in_gyr, int i){
     // Hopkins+ 22 - paragraph after eq. 1
     if (age_in_myr < RAD_ION_tion[0]){ fraction = RAD_ION_coeff_fion;}
     else if ((age_in_myr >= RAD_ION_tion[0]) && (age_in_myr <= RAD_ION_tion[1])){
-        fraction = RAD_ION_coeff_fion * pow(age_in_myr/RAD_ION_tion[0], -2.9)
+        fraction = RAD_ION_coeff_fion * pow(age_in_myr/RAD_ION_tion[0], -2.9);
     } else if (age_in_myr > RAD_ION_tion[1]){ fraction = 0;}
 
     return fraction;
