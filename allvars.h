@@ -2394,6 +2394,10 @@ extern ALIGN(32) struct particle_data
     MyFloat CumNumSNIa; /* flag that indicates cumulative number of SNIa for the particle */
 #endif
 
+#ifdef CLUSTER_SINK_OUTPUT_BOLLUM
+    MyFloat Light_MassRatio; /* flag that indicates light-to-mass ratio of each star particle */
+#endif
+
 
 #ifdef GALSF_FB_MECHANICAL
 #define AREA_WEIGHTED_SUM_ELEMENTS 11 /* number of weights needed for full momentum-and-energy conserving system */
@@ -3336,6 +3340,7 @@ enum iofields
   IO_CLUSTER_SINK_NUMSNE,
   IO_CLUSTER_SINK_NUMSNII,
   IO_CLUSTER_SINK_NUMSNIa,
+  IO_CLUSTER_SINK_BOLLUM,
   IO_LASTENTRY			/* This should be kept - it signals the end of the list */
 };
 

@@ -27,4 +27,8 @@ double determine_winds_CNO_production(double age, double z_CNO);
 double determine_winds_HC_production(double age, double z_CNO);
 #endif
 
+#ifdef CLUSTER_SINK_RADIATION
+double calculate_relative_light_to_mass_ratio(double age_in_gyr, int i);
+#endif
+
 #endif

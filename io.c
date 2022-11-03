@@ -1630,6 +1630,17 @@ void fill_write_buffer(enum iofields blocknr, int *startindex, int pc, int type)
 #endif
             break;
 
+        case IO_CLUSTER_SINK_BOLLUM:        /* mass-to-light ratio */
+#ifdef CLUSTER_SINK_OUTPUT_BOLLUM
+            for(n = 0; n < pc; pindex++)
+                if(P[pindex].Type == type)
+                {
+                    *fp++ = (MyOutputFloat) P[pindex].Light_MassRatio;
+                    n++;
+                }
+#endif
+            break;
+
         case IO_LASTENTRY:
             endrun(213);
             break;
@@ -1771,6 +1782,7 @@ int get_bytes_per_blockelement(enum iofields blocknr, int mode)
         case IO_CLUSTER_SINK_NUMSNE:
         case IO_CLUSTER_SINK_NUMSNII:
         case IO_CLUSTER_SINK_NUMSNIa:
+        case IO_CLUSTER_SINK_BOLLUM:
             if(mode)
                 bytes_per_blockelement = sizeof(MyInputFloat);
             else
@@ -2052,6 +2064,7 @@ int get_values_per_blockelement(enum iofields blocknr)
         case IO_CLUSTER_SINK_NUMSNE:
         case IO_CLUSTER_SINK_NUMSNII:
         case IO_CLUSTER_SINK_NUMSNIa:
+        case IO_CLUSTER_SINK_BOLLUM:
             values = 1;
             break;
 
@@ -2297,6 +2310,7 @@ long get_particles_in_block(enum iofields blocknr, int *typelist)
         case IO_CLUSTER_SINK_NUMSNE:
         case IO_CLUSTER_SINK_NUMSNII:
         case IO_CLUSTER_SINK_NUMSNIa:
+        case IO_CLUSTER_SINK_BOLLUM:
             for(i = 1; i < 6; i++) {if(i != 4 && i != 5) {typelist[i] = 0;}}
             return nstars + header.npart[5];
             break;
@@ -2887,6 +2901,12 @@ int blockpresent(enum iofields blocknr)
 #endif
             break;
 
+        case IO_CLUSTER_SINK_BOLLUM:
+#ifdef CLUSTER_SINK_OUTPUT_BOLLUM
+            return 1;
+#endif
+            break;
+
         case IO_LASTENTRY: /* will not occur */
             break;
     }
@@ -3270,6 +3290,9 @@ void get_Tab_IO_Label(enum iofields blocknr, char *label)
         case IO_CLUSTER_SINK_NUMSNIa:
             strncpy(label, "nsia", 4);
             break;
+        case IO_CLUSTER_SINK_BOLLUM:
+            strncpy(label, "lssp", 4);
+            break;
         case IO_LASTENTRY:
             endrun(217);
             break;
@@ -3648,6 +3671,9 @@ void get_dataset_name(enum iofields blocknr, char *buf)
             break;
         case IO_CLUSTER_SINK_NUMSNIa:
             strcpy(buf, "ClusterSink_CumNumSNIa");
+            break;
+        case IO_CLUSTER_SINK_BOLLUM:
+            strcpy(buf, "ClusterSink_LightMassRatio");
             break;
         case IO_LASTENTRY:
             endrun(218);

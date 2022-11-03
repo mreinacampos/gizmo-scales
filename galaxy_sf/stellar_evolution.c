@@ -50,6 +50,13 @@ double evaluate_light_to_mass_ratio(double stellar_age_in_gyr, int i)
     }
     else // STELLAR-POPULATION VERSION: compute integrated mass-to-light ratio of an SSP
     {
+#ifdef CLUSTER_SINK
+        double lum = 0;
+#ifdef CLUSTER_SINK_RADIATION 
+        lum = calculate_relative_light_to_mass_ratio(stellar_age_in_gyr,i);
+#endif
+        return lum;
+#endif
         double lum=1; if(stellar_age_in_gyr < 0.01) {lum=1000;} // default to a dumb imf-averaged 'young/high-mass' vs 'old/low-mass' distinction
         if(stellar_age_in_gyr<0.033) {lum*=calculate_relative_light_to_mass_ratio_from_imf(stellar_age_in_gyr,i);} // account for IMF variation model [if used]
         return lum;
@@ -114,6 +121,14 @@ double particle_ionizing_luminosity_in_cgs(long i)
     }
     else /* STELLAR POPULATION VERSION: use updated SB99 tracks: including rotation, new mass-loss tracks, etc. */
     {
+#if defined(CLUSTER_SINK) && defined(CLUSTER_SINK_RADIATION)
+        double lm_ssp = 0, star_age = evaluate_stellar_age_Gyr(P[i].StellarAge);
+        // converts to cgs luminosity [lm_ssp is in Lsun/Msun, here]
+        double f_ion = determine_ionizing_flux_fraction(star_age, i);
+        lm_ssp = f_ion * evaluate_light_to_mass_ratio(star_age, i) * SOLAR_LUM_CGS * (P[i].Mass * UNIT_MASS_IN_SOLAR);
+        return lm_ssp;
+#endif
+
         if(P[i].Type != 5)
         {
             double lm_ssp=0, star_age=evaluate_stellar_age_Gyr(P[i].StellarAge), t0=0.0035, tmax=0.02;

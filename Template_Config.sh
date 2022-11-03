@@ -280,6 +280,7 @@
 #CLUSTER_SINK_SNII              # add core-collapse SNe feedback - based on IMF-integrated analytical fits from Hopkins+22
 #CLUSTER_SINK_SNIa              # add SNIa feedback - based on IMF-integrated analytical fits from Hopkins+22
 #CLUSTER_SINK_WINDS             # add continuous AGB&OB feedback - based on IMF-integrated analytical fits from Hopkins+22
+#CLUSTER_SINK_RADIATION         # add radiation feedback (to be used together with the RT flags) - based on IMF-integrated analytical fits from Hopkins+22
 ## ----------------------------------------------------------------------------------------------------
 # ----- debug options
 ## ----------------------------------------------------------------------------------------------------
@@ -291,6 +292,7 @@
 # ----- output options
 ## ----------------------------------------------------------------------------------------------------
 #CLUSTER_SINK_OUTPUT_NUMSNE             # output the cumulative number of SNe per star particle in the snapshots
+#CLUSTER_SINK_OUTPUT_BOLLUM             # output the bolometric luminosity of each star particle in the snapshots
 
 
 

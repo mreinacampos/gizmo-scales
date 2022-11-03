@@ -53,4 +53,14 @@ static double WINDS_twj[4] =  {1.7, 4.0, 20, 1000};
 static double WINDS_tvj[2] =  {3.0, 50.0}; 
 #endif
 
+// Radiative FB
+#ifdef CLUSTER_SINK_RADIATION
+// Timescales tL,1, tL,2, and tL,3 - in Myr
+static double RAD_tlj[3] = {1.2, 3.7, 1200};
+// Coefficient fion1 - dimensionless
+static double RAD_ION_coeff_fion = 0.5;
+// Timescales tion,1, and tion,2 - in Myr
+static double RAD_ION_tion[2] = {3.5, 150};
+#endif
+
 #endif // CLUSTER_SINK
