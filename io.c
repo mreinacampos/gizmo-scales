@@ -2307,11 +2307,15 @@ long get_particles_in_block(enum iofields blocknr, int *typelist)
             break;
 
         case IO_IMF:
+            for(i = 1; i < 6; i++) {if(i != 4 && i != 5) {typelist[i] = 0;}}
+            return nstars + header.npart[5];
+            break;
+
         case IO_CLUSTER_SINK_NUMSNE:
         case IO_CLUSTER_SINK_NUMSNII:
         case IO_CLUSTER_SINK_NUMSNIa:
         case IO_CLUSTER_SINK_BOLLUM:
-            for(i = 1; i < 6; i++) {if(i != 4 && i != 5) {typelist[i] = 0;}}
+            for(i = 0; i < 6; i++) {if((i != 4) && (i != 5)) {typelist[i] = 0;}}
             return nstars + header.npart[5];
             break;
 

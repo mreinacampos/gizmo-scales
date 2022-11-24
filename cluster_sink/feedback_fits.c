@@ -391,12 +391,17 @@ double determine_winds_yields(int i, int k)
  */
 double calculate_relative_light_to_mass_ratio(double age_in_gyr, int i){
 
+    double zh, age_in_myr = age_in_gyr*1e3, light_to_mass = 0, slope = 0;
     // metallicity of the stellar population - zh = 10^[Fe/H] = (N_Fe/N_H)_star / (N_Fe/N_H)_solar
-    double zh = (P[i].Metallicity[NUM_METAL_SPECIES-1]/(1 - P[i].Metallicity[1] - P[i].Metallicity[0]))/(All.SolarAbundances[NUM_METAL_SPECIES-1]/(1 - All.SolarAbundances[0] - All.SolarAbundances[1]));
+    if (NUM_METAL_SPECIES > 1){
+        zh = (P[i].Metallicity[NUM_METAL_SPECIES-1]/(1 - P[i].Metallicity[1] - P[i].Metallicity[0]))/(All.SolarAbundances[NUM_METAL_SPECIES-1]/(1 - All.SolarAbundances[0] - All.SolarAbundances[1]));
+    } else { // asume primordial composition
+        zh = (P[i].Metallicity[0]/All.SolarAbundances[0]);
+    }
+
     // metallicity-dependent coefficients aL,1, aL,2 and aL,3 - in LSun/MSun
     double RAD_coeff_alj[3] = {800, 1100*pow(zh, -0.1), 0.163}; 
 
-    double age_in_myr = age_in_gyr*1e3, light_to_mass = 0, slope = 0;
 
     // bolometric luminosities per unit stellar mass - eq. 1 in Hopkins+ 22
     if (age_in_myr <= RAD_tlj[0]){ light_to_mass = RAD_coeff_alj[0]; }

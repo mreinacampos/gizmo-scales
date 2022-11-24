@@ -67,7 +67,7 @@ int rt_get_source_luminosity(int i, int mode, double *lum)
     if(P[i].Mass <= 0) {return 0;} // reject invalid particles scheduled for deletion
     int active_check = 0; // default to inactive //
     
-#if defined(GALSF)
+#if defined(GALSF) // MRC -will need tweaking
 #if defined(SINGLE_STAR_SINK_DYNAMICS)
     active_check += rt_get_lum_band_singlestar(i,mode,lum); // get luminosities for individual star/sink particles assuming they are protostars or stars
 #else
@@ -265,8 +265,6 @@ double rt_kappa(int i, int k_freq)
     }
 #endif
 #endif
-    
-    
     return 0;
 }
 
