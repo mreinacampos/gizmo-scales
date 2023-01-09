@@ -327,7 +327,11 @@ double rt_absorb_frac_albedo(int i, int k_freq)
  */
 int rt_get_lum_band_stellarpopulation(int i, int mode, double *lum)
 {
+#ifdef CLUSTER_SINK // MRC - temporary solution, we'll end up doing our own function
+    if((P[i].Type != 4) && (P[i].Type != 5)) {return 0;} // allow 'star' and 'sink' particles act in this subroutine //
+#else
     if(!((P[i].Type == 4) || ((All.ComovingIntegrationOn==0)&&((P[i].Type==2)||(P[i].Type==3))))) {return 0;} // only star-type particles act in this subroutine //
+#endif
     int active_check = 0; // default to inactive //
 #if defined(GALSF) /* basically none of these modules make sense without the GALSF module active */
     double star_age = evaluate_stellar_age_Gyr(P[i].StellarAge), m_sol = P[i].Mass * UNIT_MASS_IN_SOLAR;

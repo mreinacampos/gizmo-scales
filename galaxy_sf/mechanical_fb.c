@@ -48,6 +48,9 @@ void determine_where_SNe_occur(void)
 
 #if defined(SINGLE_STAR_SINK_DYNAMICS)
         if(P[i].Type == 0) {continue;} // any non-gas type is eligible to be a 'star' here
+#elif defined(CLUSTER_SINK)
+        if((P[i].Type != 4) && (P[i].Type != 5)) {continue;} // allow 'stars' and 'sinks' do feedback here
+
 #else
         if(All.ComovingIntegrationOn) {if(P[i].Type != 4) {continue;}} // in cosmological simulations, 'stars' have particle type=4
         if(All.ComovingIntegrationOn==0) {if((P[i].Type<2)||(P[i].Type>4)) {continue;}} // in non-cosmological sims, types 2,3,4 are valid 'stars'
