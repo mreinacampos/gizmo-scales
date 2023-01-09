@@ -326,9 +326,26 @@ extern struct Chimes_depletion_data_structure *ChimesDepletionData;
 
 
 
+// MRC
+#ifdef CLUSTER_SINK
+#define GALSF                   // top-level switch for galactic star formation model
+//#define COOLING               // top-level switch to enable radiative cooling and heating
+#define METALS                  // top-level switch to enable tracking metallicities or different heavy elements (with multiple species optional) for gas and stars
+#define BLACK_HOLES             // top-level switch for black holes (i.e. sink particles)
+#define GALSF_FB_MECHANICAL     // explicit algorithm including thermal+kinetic/momentum terms 
+#ifdef CLUSTER_SINK_RADIATION
+#define RT_SOURCE_INJECTION     // inject the luminosity from sources
+#endif
+#ifdef CLUSTER_SINK_ACCRETION
+#define BH_SWALLOWGAS           // need to swallow gas [part of sink model]
+#if (CLUSTER_SINK_ACCRETION == 1)
+#define BH_GRAVCAPTURE_GAS
+#define BH_GRAVCAPTURE_FIXEDSINKRADIUS // modify grav capture to Bate-style, fixed (in time) sink radius based on SF neighbor distance, plus angular momentum criterion
+#endif
+#endif
 
 
-
+#endif
 
 #ifdef SINGLE_STAR_SINK_DYNAMICS
 #define GALSF // top-level switch needed to enable various frameworks
