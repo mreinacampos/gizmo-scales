@@ -2672,6 +2672,9 @@ int blockpresent(enum iofields blocknr)
             break;
 
         case IO_ACRB:
+#ifdef CLUSTER_SINK_OUTPUT_ACCRETION_LENGTH
+            return 1;
+#endif
         case IO_SINKRAD:
 #ifdef BH_GRAVCAPTURE_FIXEDSINKRADIUS
             return 1;
