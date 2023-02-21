@@ -130,6 +130,8 @@ int blackhole_feed_evaluate(int target, int mode, int *exportflag, int *exportno
 #endif
 #if defined(BH_GRAVCAPTURE_GAS) && defined(BH_ENFORCE_EDDINGTON_LIMIT) && !defined(BH_ALPHADISK_ACCRETION)
     double meddington = bh_eddington_mdot(local.BH_Mass), medd_max_accretable = All.BlackHoleEddingtonFactor * meddington * local.Dt, eddington_factor = local.mass_to_swallow_edd / medd_max_accretable;   /* if <1 no problem, if >1, need to not set some swallowIDs */
+    //printf("MRC - [blackhole_feed.c] - BH_ENFORCE_EDDINGTON_LIMIT - meddington %g, medd_max_accretable %g, eddington_factor %g, local.mass_to_swallow_edd %g\n", meddington, medd_max_accretable, eddington_factor, local.mass_to_swallow_edd);
+
 #endif
 #if defined(BH_SWALLOWGAS)
     double mass_markedswallow,bh_mass_withdisk; mass_markedswallow=0; bh_mass_withdisk=local.BH_Mass;
@@ -167,6 +169,8 @@ int blackhole_feed_evaluate(int target, int mode, int *exportflag, int *exportno
                         r=sqrt(r2); vrel=sqrt(vrel)/All.cf_atime;  /* relative velocity in physical units. do this once and use below */
                         vesc=bh_vesc(j, local.Mass, r, ags_h_i);
                         
+                        //printf("MRC - [blackhole_feed.c] - Ngb %d - r %g, vrel %g < vesc %g?\n", j, r, vrel, vesc);
+
                         /* note that SwallowID is both read and potentially re-written below: we need to make sure this is done in a thread-safe manner */
                         MyIDType SwallowID_j;
                         #pragma omp atomic read
@@ -257,6 +261,8 @@ int blackhole_feed_evaluate(int target, int mode, int *exportflag, int *exportno
                                         p /= All.BAL_f_accretion; // we need to accrete more, then remove the mass in winds
 #endif
                                         w = get_random_number(P[j].ID);
+                                        //printf("MRC - [blackhole_feed.c] - swallowing ngb %d stochastically - r %g - w %g < p %g ?\n", j, r, w, p);
+
                                         if(w < p)
                                         {
 #ifdef BH_OUTPUT_MOREINFO
@@ -293,6 +299,9 @@ int blackhole_feed_evaluate(int target, int mode, int *exportflag, int *exportno
                                 w = get_random_number(P[j].ID);
                                 if(w < p)
                                 {
+#if (CLUSTER_SINK_ACCRETION == 0)
+                                    if (SphP[j].Sfr == 0) continue; // only star-forming gas cells can be accreted
+#endif
 #ifdef BH_OUTPUT_MOREINFO
                                     printf(" ..BH-Food Marked: j %d w %g p %g TO_BE_SWALLOWED \n",j,w,p);
 #endif

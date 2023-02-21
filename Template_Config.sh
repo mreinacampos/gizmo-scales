@@ -277,7 +277,7 @@
 ## ----------------------------------------------------------------------------------------------------
 ############################################################################################################################
 #CLUSTER_SINK                   # top-level switch to enable any other modules in this section
-#CLUSTER_SINK_ACCRETION=0         # accretion model onto the sink particles. [0] our own accretion method (fixed sink radius and Li+18 accretion rate for now), [1] Bate's style with fixed accretion radius
+#CLUSTER_SINK_ACCRETION=0         # accretion model onto the sink particles. [0] our own accretion method (adative sink radius and Li+18 accretion rate for now), [1] Bate's style with fixed accretion radius
 #CLUSTER_SINK_SNII              # add core-collapse SNe feedback - based on IMF-integrated analytical fits from Hopkins+22
 #CLUSTER_SINK_SNIa              # add SNIa feedback - based on IMF-integrated analytical fits from Hopkins+22
 #CLUSTER_SINK_WINDS             # add continuous AGB&OB feedback - based on IMF-integrated analytical fits from Hopkins+22

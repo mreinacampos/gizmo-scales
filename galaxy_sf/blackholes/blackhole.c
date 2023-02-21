@@ -126,6 +126,7 @@ int bh_check_boundedness(int j, double vrel, double vesc, double dr_code, double
         double apocenter = dr_code / (1.-v2); // furthest distance the cell -could- get from the sink, on a purely radial orbit [ignoring internal energy effects, in e.g. a Keplerian potential, this is approximately twice the equivalent circular orbit, while for a highly-eccentric orbit, this is exactly the apocentric radius]
         double apocenter_max = 2.*All.ForceSoftening[5]; //  = few x epsilon (softening length); check that this is within 2x epsilon is statement that circular orbit with equivalent energy is entirely inside epsilon //
 #ifdef BH_GRAVCAPTURE_FIXEDSINKRADIUS // Bate 1995-style criterion, with a fixed sink/accretion radius that is distinct from both the force softening and the search radius
+        //printf("MRC - [blackhole.c/bh_check_boundedness] - j %d - dr_code %g < sink_radius %g ? -> bound\n", j, dr_code, sink_radius);
         if(dr_code>sink_radius) {return 0;} else {return 1;} // simply yes-no, if bound and within sink radius, gets accreted
 #endif
 #if !defined(SINGLE_STAR_SINK_DYNAMICS) && !defined(BH_GRAVCAPTURE_FIXEDSINKRADIUS) && defined(BH_SEED_GROWTH_TESTS)
@@ -136,6 +137,7 @@ int bh_check_boundedness(int j, double vrel, double vesc, double dr_code, double
 #endif
         if(apocenter < apocenter_max) {bound = 1;}
     }
+    //printf("MRC - [blackhole.c/bh_check_boundedness] - j %d, bound %d\n", j, bound);
     return bound;
 }
 
@@ -447,6 +449,9 @@ void set_blackhole_mdot(int i, int n, double dt)
 #endif
 #endif // BH_ALPHADISK_ACCRETION
 
+#if (CLUSTER_SINK_ACCRETION == 0) // Li's 17, 18 accretion rate model for clusters 
+    mdot = BlackholeTempInfo[i].Sfr_in_Kernel;
+#endif
 
 #ifdef BH_ENFORCE_EDDINGTON_LIMIT /* cap the maximum at the Eddington limit */
     if(mdot > All.BlackHoleEddingtonFactor * meddington) {mdot = All.BlackHoleEddingtonFactor * meddington;}
@@ -465,6 +470,8 @@ void set_blackhole_mdot(int i, int n, double dt)
     /* alright, now we can FINALLY set the BH accretion rate */
     if(isnan(mdot)) {mdot=0;}
     BPP(n).BH_Mdot = DMAX(mdot,0);
+
+    //printf("MRC - [blackhole.c/set_blackhole_mdot] - n %d, BH_Mdot %g\n", n, BPP(n).BH_Mdot);
 }
 
 

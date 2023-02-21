@@ -338,6 +338,10 @@ extern struct Chimes_depletion_data_structure *ChimesDepletionData;
 #endif
 #ifdef CLUSTER_SINK_ACCRETION
 #define BH_SWALLOWGAS           // need to swallow gas [part of sink model]
+#if (CLUSTER_SINK_ACCRETION == 0) // default: adative sink radius, Li+17 accretion rate, only SFing gas cells are accreted
+#define BH_GRAVACCRETION 9 // [9] does not exists, prevents overlap with previous code
+//#define BH_GRAVACCRETION_CLUSTERS (CLUSTER_SINK_ACCRETION) // defining another accretion model based on Li+17 accretion rate
+#endif
 #if (CLUSTER_SINK_ACCRETION == 1)
 #define BH_GRAVCAPTURE_GAS
 #define BH_GRAVCAPTURE_FIXEDSINKRADIUS // modify grav capture to Bate-style, fixed (in time) sink radius based on SF neighbor distance, plus angular momentum criterion
@@ -1551,7 +1555,9 @@ extern double TimeBinSfr[TIMEBINS];
 #ifdef BLACK_HOLES
 #define BH_COUNTPROGS
 /* carries a counter for each BH that gives the total number of seeds that merged into it */
+#ifndef CLUSTER_SINK_ACCRETION // prevents having a cap on the accretion rate
 #define BH_ENFORCE_EDDINGTON_LIMIT
+#endif
 /* put a hard limit on the maximum accretion rate (set BlackHoleEddingtonFactor>>1 to allow super-eddington) */
 extern double TimeBin_BH_mass[TIMEBINS];
 extern double TimeBin_BH_dynamicalmass[TIMEBINS];
