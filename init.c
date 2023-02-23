@@ -445,7 +445,7 @@ void init(void)
             if(RestartFlag == 0)
             {
                 BPP(i).BH_Mass = All.SeedBlackHoleMass;
-#ifdef SINGLE_STAR_SINK_DYNAMICS
+#if defined(SINGLE_STAR_SINK_DYNAMICS) || defined(CLUSTER_SINK_ACCRETION)
                 BPP(i).BH_Mass = P[i].Mass;
 #endif
 #ifdef GRAIN_FLUID

@@ -451,6 +451,7 @@ void set_blackhole_mdot(int i, int n, double dt)
 
 #if (CLUSTER_SINK_ACCRETION == 0) // Li's 17, 18 accretion rate model for clusters 
     mdot = BlackholeTempInfo[i].Sfr_in_Kernel;
+    printf(" ..[blackhole.c] - set_mdot() - mdot %g Sfr_in_Kernel %g \n", mdot,BlackholeTempInfo[i].Sfr_in_Kernel);
 #endif
 
 #ifdef BH_ENFORCE_EDDINGTON_LIMIT /* cap the maximum at the Eddington limit */
@@ -752,6 +753,7 @@ void blackhole_final_operations(void)
 #ifdef BH_INTERACT_ON_GAS_TIMESTEP
         if(P[n].Type == 5) {dt = P[n].dt_since_last_gas_search;}
 #endif
+#ifndef CLUSTER_SINK_ACCRETION
         double dm = BPP(n).BH_Mdot * dt;
 #ifdef BH_DEBUG_FIX_MDOT_MBH
         dm=0; double period_bh=All.BH_fb_period/UNIT_TIME_IN_GYR, period_bh_on=All.BH_fb_duty_cycle*period_bh;
@@ -762,6 +764,7 @@ void blackhole_final_operations(void)
 #ifndef BH_DEBUG_FIX_MDOT_MBH
         P[n].Mass -= radiation_loss; BPP(n).BH_Mass -= radiation_loss;
 #endif
+#endif // ifndef CLUSTER_SINK_ACCRETION
         /* subtract the BAL wind mass from P[n].Mass && (BPP(n).BH_Mass || BPP(n).BH_Mass_AlphaDisk) // DAA: note that the mass loss in winds for BH_WIND_KICK has already been taken into account */
 #ifdef BH_WIND_CONTINUOUS
         double dm_wind = (1.-All.BAL_f_accretion) / All.BAL_f_accretion * dm;

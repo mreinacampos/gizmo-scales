@@ -290,18 +290,20 @@ int blackhole_feed_evaluate(int target, int mode, int *exportflag, int *exportno
                             if(SwallowID_j < local.ID)
                             {
                                 double dm_toacc = bh_mass_withdisk - (local.Mass + mass_markedswallow); if(dm_toacc>0) {p=dm_toacc*wk/local.Density;} else {p=0;}
+                                // MRC printf(" ..[blackhole_feed.c] - j %d dm_toacc %g, local.Mass %g, bh_mass_withdisk %g, mass_markedswallow %g, wk %g, local.Density %g, p %g\n",j, dm_toacc, local.Mass, bh_mass_withdisk, mass_markedswallow, wk, local.Density, p);
+
 #ifdef BH_WIND_KICK /* DAA: for stochastic winds (BH_WIND_KICK) we remove a fraction of mass from gas particles prior to kicking --> need to increase the probability here to balance black hole growth */
                                 if(f_accreted>0) {p /= f_accreted; if((bh_mass_withdisk - local.Mass) < 0) {p = ( (1-f_accreted)/f_accreted ) * local.Mdot * local.Dt * wk / local.Density;}} /* DAA: compute outflow probability when "bh_mass_withdisk < mass" - we don't need to enforce mass conservation in this case, relevant only in low-res sims where the BH seed mass is much lower than the gas particle mass */
 #endif
 #ifdef BH_ACCRETE_NEARESTFIRST /* put all the weight on the single nearest gas particle, instead of spreading it in a kernel-weighted fashion */
                                 p=0; if(dm_toacc>0 && P[j].Mass>0 && r<1.0001*local.BH_dr_to_NearestGasNeighbor) {p=dm_toacc/P[j].Mass;}
 #endif
+#if (CLUSTER_SINK_ACCRETION == 0)
+                                if (SphP[j].Sfr == 0){p = 0;} // only star-forming gas cells can be accreted
+#endif
                                 w = get_random_number(P[j].ID);
                                 if(w < p)
                                 {
-#if (CLUSTER_SINK_ACCRETION == 0)
-                                    if (SphP[j].Sfr == 0) continue; // only star-forming gas cells can be accreted
-#endif
 #ifdef BH_OUTPUT_MOREINFO
                                     printf(" ..BH-Food Marked: j %d w %g p %g TO_BE_SWALLOWED \n",j,w,p);
 #endif

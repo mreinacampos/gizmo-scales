@@ -332,6 +332,7 @@ extern struct Chimes_depletion_data_structure *ChimesDepletionData;
 //#define COOLING               // top-level switch to enable radiative cooling and heating
 #define METALS                  // top-level switch to enable tracking metallicities or different heavy elements (with multiple species optional) for gas and stars
 #define BLACK_HOLES             // top-level switch for black holes (i.e. sink particles)
+#define BH_INTERACT_ON_GAS_TIMESTEP // BH-gas interactions (feedback and accretion) occur with frequency set by the gas timestep
 #define GALSF_FB_MECHANICAL     // explicit algorithm including thermal+kinetic/momentum terms 
 #ifdef CLUSTER_SINK_RADIATION
 #define RT_SOURCE_INJECTION     // inject the luminosity from sources
