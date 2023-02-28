@@ -5,6 +5,8 @@
  */
 
 #ifdef CLUSTER_SINK
+void continuous_star_formation_in_sinks(void);
+double determine_mass_gas_reservoir(int i);
 double determine_sne_rate(int i, double dt);
 
 #ifdef CLUSTER_SINK_SNII

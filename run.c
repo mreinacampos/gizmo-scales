@@ -290,6 +290,10 @@ void calculate_non_standard_physics(void)
     MPI_Barrier(MPI_COMM_WORLD); CPU_Step[CPU_RTNONFLUXOPS] += measure_time();
 #endif // RADTRANSFER block
 
+#ifdef CLUSTER_SINK /**** continuous formation of stellar populations within sinks  *****/
+    continuous_star_formation_in_sinks(); 
+#endif
+
 #ifdef COOLING	/**** radiative cooling and chemistry  *****/
     cooling_parent_routine(); // top-level cooling and chemistry subroutine //
     MPI_Barrier(MPI_COMM_WORLD); CPU_Step[CPU_COOLINGSFR] += measure_time(); // finish time calc for SFR+cooling

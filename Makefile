@@ -1388,7 +1388,7 @@ INCL    += cooling/chimes/chimes_interpol.h cooling/chimes/chimes_proto.h coolin
 endif
 
 ifeq (CLUSTER_SINK,$(findstring CLUSTER_SINK,$(CONFIGVARS)))
-OBJS    += cluster_sink/feedback_fits.o
+OBJS    += cluster_sink/feedback_fits.o cluster_sink/formation_stellarpops.o
 INCL    += cluster_sink/cluster_sink_proto.h  cluster_sink/feedback_fits.h 
 endif
 

@@ -295,7 +295,7 @@
 #CLUSTER_SINK_OUTPUT_NUMSNE             # output the cumulative number of SNe per star particle in the snapshots
 #CLUSTER_SINK_OUTPUT_BOLLUM             # output the bolometric luminosity of each star particle in the snapshots
 #CLUSTER_SINK_OUTPUT_ACCRETION_LENGTH   # output the accretion length of each sink in the snapshots
-
+#CLUSTER_SINK_OUTPUT_MSPPROPS           # output the initial and current mass, age and metallicity of the multiple stellar populations in the snapshots
 
 
 

@@ -1615,6 +1615,12 @@ void read_parameter_file(char *fname)
       id[nt++] = REAL;
 #endif
 
+#ifdef CLUSTER_SINK
+      strcpy(tag[nt], "ClusterSink_MinGasMass");
+      addr[nt] = &All.ClusterSink_MinGasMass;
+      id[nt++] = REAL;
+#endif
+
 #ifdef EOS_TABULATED
         strcpy(tag[nt], "EosTable");
         addr[nt] = All.EosTable;

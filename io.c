@@ -1641,6 +1641,54 @@ void fill_write_buffer(enum iofields blocknr, int *startindex, int pc, int type)
 #endif
             break;
 
+        case IO_CLUSTER_SINK_MSPPROPS_MASS:        /* properties of the multiple stellar populations */
+#ifdef CLUSTER_SINK_OUTPUT_MSPPROPS
+            for(n = 0; n < pc; pindex++)
+                if(P[pindex].Type == type)
+                {
+                    for(k=0;k<CLUSTER_SINK_NUMMSP;k++) {fp[k] = (MyOutputFloat) P[pindex].MSP_Mass[k];}
+                    fp += CLUSTER_SINK_NUMMSP;
+                    n++;
+                }
+#endif
+            break;
+
+        case IO_CLUSTER_SINK_MSPPROPS_INITIALMASS:        /* properties of the multiple stellar populations */
+#ifdef CLUSTER_SINK_OUTPUT_MSPPROPS
+            for(n = 0; n < pc; pindex++)
+                if(P[pindex].Type == type)
+                {
+                    for(k=0;k<CLUSTER_SINK_NUMMSP;k++) {fp[k] = (MyOutputFloat) P[pindex].MSP_InitialMass[k];}
+                    fp += CLUSTER_SINK_NUMMSP;
+                    n++;
+                }
+#endif
+            break;
+
+        case IO_CLUSTER_SINK_MSPPROPS_AGE:        /* properties of the multiple stellar populations */
+#ifdef CLUSTER_SINK_OUTPUT_MSPPROPS
+            for(n = 0; n < pc; pindex++)
+                if(P[pindex].Type == type)
+                {
+                    for(k=0;k<CLUSTER_SINK_NUMMSP;k++) {fp[k] = (MyOutputFloat) P[pindex].MSP_Age[k];}
+                    fp += CLUSTER_SINK_NUMMSP;
+                    n++;
+                }
+#endif
+            break;
+
+        case IO_CLUSTER_SINK_MSPPROPS_METALLICITY:        /* properties of the multiple stellar populations */
+#ifdef CLUSTER_SINK_OUTPUT_MSPPROPS
+            for(n = 0; n < pc; pindex++)
+                if(P[pindex].Type == type)
+                {
+                    for(k=0;k<CLUSTER_SINK_NUMMSP;k++) {fp[k] = (MyOutputFloat) P[pindex].MSP_Metallicity[k];}
+                    fp += CLUSTER_SINK_NUMMSP;
+                    n++;
+                }
+#endif
+            break;
+
         case IO_LASTENTRY:
             endrun(213);
             break;
@@ -1907,6 +1955,18 @@ int get_bytes_per_blockelement(enum iofields blocknr, int mode)
                 bytes_per_blockelement = 20 * sizeof(MyOutputFloat);
             break;
 
+        case IO_CLUSTER_SINK_MSPPROPS_MASS:
+        case IO_CLUSTER_SINK_MSPPROPS_INITIALMASS:
+        case IO_CLUSTER_SINK_MSPPROPS_AGE:
+        case IO_CLUSTER_SINK_MSPPROPS_METALLICITY:
+#ifdef CLUSTER_SINK
+            if(mode)
+                bytes_per_blockelement = (CLUSTER_SINK_NUMMSP) * sizeof(MyInputFloat);
+            else
+                bytes_per_blockelement = (CLUSTER_SINK_NUMMSP) * sizeof(MyOutputFloat);
+#endif
+            break;
+
         case IO_LASTENTRY:
             endrun(214);
             break;
@@ -2146,6 +2206,15 @@ int get_values_per_blockelement(enum iofields blocknr)
             values = 20;
             break;
 
+        case IO_CLUSTER_SINK_MSPPROPS_MASS:
+        case IO_CLUSTER_SINK_MSPPROPS_INITIALMASS:
+        case IO_CLUSTER_SINK_MSPPROPS_AGE:
+        case IO_CLUSTER_SINK_MSPPROPS_METALLICITY:
+#ifdef CLUSTER_SINK
+            values = CLUSTER_SINK_NUMMSP;
+#endif
+            break;
+
         case IO_LASTENTRY:
             endrun(215);
             break;
@@ -2315,6 +2384,10 @@ long get_particles_in_block(enum iofields blocknr, int *typelist)
         case IO_CLUSTER_SINK_NUMSNII:
         case IO_CLUSTER_SINK_NUMSNIa:
         case IO_CLUSTER_SINK_BOLLUM:
+        case IO_CLUSTER_SINK_MSPPROPS_MASS:
+        case IO_CLUSTER_SINK_MSPPROPS_INITIALMASS:
+        case IO_CLUSTER_SINK_MSPPROPS_AGE:
+        case IO_CLUSTER_SINK_MSPPROPS_METALLICITY:
             for(i = 0; i < 6; i++) {if((i != 4) && (i != 5)) {typelist[i] = 0;}}
             return nstars + header.npart[5];
             break;
@@ -2914,6 +2987,15 @@ int blockpresent(enum iofields blocknr)
 #endif
             break;
 
+        case IO_CLUSTER_SINK_MSPPROPS_MASS:
+        case IO_CLUSTER_SINK_MSPPROPS_INITIALMASS:
+        case IO_CLUSTER_SINK_MSPPROPS_AGE:
+        case IO_CLUSTER_SINK_MSPPROPS_METALLICITY:
+#ifdef CLUSTER_SINK_OUTPUT_MSPPROPS
+            return 1;
+#endif
+            break;
+
         case IO_LASTENTRY: /* will not occur */
             break;
     }
@@ -3300,6 +3382,18 @@ void get_Tab_IO_Label(enum iofields blocknr, char *label)
         case IO_CLUSTER_SINK_BOLLUM:
             strncpy(label, "lssp", 4);
             break;
+        case IO_CLUSTER_SINK_MSPPROPS_MASS:
+            strncpy(label, "mspm", 4);
+            break;
+        case IO_CLUSTER_SINK_MSPPROPS_INITIALMASS:
+            strncpy(label, "mspi", 4);
+            break;
+        case IO_CLUSTER_SINK_MSPPROPS_AGE:
+            strncpy(label, "mspa", 4);
+            break;
+        case IO_CLUSTER_SINK_MSPPROPS_METALLICITY:
+            strncpy(label, "mspz", 4);
+            break;
         case IO_LASTENTRY:
             endrun(217);
             break;
@@ -3681,6 +3775,18 @@ void get_dataset_name(enum iofields blocknr, char *buf)
             break;
         case IO_CLUSTER_SINK_BOLLUM:
             strcpy(buf, "ClusterSink_LightMassRatio");
+            break;
+        case IO_CLUSTER_SINK_MSPPROPS_MASS:
+            strcpy(buf, "ClusterSink_MSPs_Mass");
+            break;
+        case IO_CLUSTER_SINK_MSPPROPS_INITIALMASS:
+            strcpy(buf, "ClusterSink_MSPs_InitialMass");
+            break;
+        case IO_CLUSTER_SINK_MSPPROPS_AGE:
+            strcpy(buf, "ClusterSink_MSPs_Age");
+            break;
+        case IO_CLUSTER_SINK_MSPPROPS_METALLICITY:
+            strcpy(buf, "ClusterSink_MSPs_Metallicity");
             break;
         case IO_LASTENTRY:
             endrun(218);

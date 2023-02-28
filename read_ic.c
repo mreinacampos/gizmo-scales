@@ -593,6 +593,10 @@ void empty_read_buffer(enum iofields blocknr, int offset, int pc, int type)
         case IO_CLUSTER_SINK_NUMSNII:
         case IO_CLUSTER_SINK_NUMSNIa:
         case IO_CLUSTER_SINK_BOLLUM:
+        case IO_CLUSTER_SINK_MSPPROPS_MASS:
+        case IO_CLUSTER_SINK_MSPPROPS_INITIALMASS:
+        case IO_CLUSTER_SINK_MSPPROPS_AGE:
+        case IO_CLUSTER_SINK_MSPPROPS_METALLICITY:
             break;
 
         case IO_LASTENTRY:
