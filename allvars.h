@@ -336,12 +336,16 @@ extern struct Chimes_depletion_data_structure *ChimesDepletionData;
 #define GALSF_FB_MECHANICAL     // explicit algorithm including thermal+kinetic/momentum terms 
 #ifdef CLUSTER_SINK_RADIATION
 #define RT_SOURCE_INJECTION     // inject the luminosity from sources
+#define RT_SOURCES (32)         /* need to allow sinks to emit */
 #endif
+
+#define CLUSTER_SINK_NUMMSP 20 // number of multiple stellar populations to allow within sinks
+#define CLUSTER_SINK_OUTPUT_MSPPROPS // output properties of the multiple stellar populations by default
+
 #ifdef CLUSTER_SINK_ACCRETION
 #define BH_SWALLOWGAS           // need to swallow gas [part of sink model]
 #if (CLUSTER_SINK_ACCRETION == 0) // default: adative sink radius, Li+17 accretion rate, only SFing gas cells are accreted
-#define BH_GRAVACCRETION 9 // [9] does not exists, prevents overlap with previous code
-//#define BH_GRAVACCRETION_CLUSTERS (CLUSTER_SINK_ACCRETION) // defining another accretion model based on Li+17 accretion rate
+#define BH_GRAVACCRETION 9      // [9] does not exists, prevents overlap with previous code
 #endif
 #if (CLUSTER_SINK_ACCRETION == 1)
 #define BH_GRAVCAPTURE_GAS
@@ -1153,7 +1157,6 @@ typedef unsigned long long peanokey;
 
 #define NUM_METAL_SPECIES (1+NUM_LIVE_SPECIES_FOR_COOLTABLES+NUM_RPROCESS_SPECIES+NUM_AGE_TRACERS+NUM_STARFORGE_FEEDBACK_TRACERS+NUM_CLUSTER_SINK_FEEDBACK_YIELDS)
 #endif // METALS //
-
 
 
 #if defined(CRFLUID_M1)
@@ -2271,6 +2274,10 @@ extern struct global_data_all_processes
   double BH_fb_period;
 #endif
 
+#ifdef CLUSTER_SINK
+  double ClusterSink_MinGasMass; /* minimum gas mass to form a stellar population out of */
+#endif
+
 }
 All;
 
@@ -2420,6 +2427,13 @@ extern ALIGN(32) struct particle_data
 
 #ifdef CLUSTER_SINK_OUTPUT_BOLLUM
     MyFloat Light_MassRatio; /* flag that indicates light-to-mass ratio of each star particle */
+#endif
+
+# ifdef CLUSTER_SINK /* properties of the concurrent stellar populations forming within the sink */
+    MyFloat MSP_InitialMass[CLUSTER_SINK_NUMMSP]; // initial mass
+    MyFloat MSP_Mass[CLUSTER_SINK_NUMMSP]; // current mass
+    MyFloat MSP_Age[CLUSTER_SINK_NUMMSP]; // age
+    MyFloat MSP_Metallicity[CLUSTER_SINK_NUMMSP]; // metallicity - total metals only (for now)
 #endif
 
 
@@ -3365,6 +3379,10 @@ enum iofields
   IO_CLUSTER_SINK_NUMSNII,
   IO_CLUSTER_SINK_NUMSNIa,
   IO_CLUSTER_SINK_BOLLUM,
+  IO_CLUSTER_SINK_MSPPROPS_MASS,
+  IO_CLUSTER_SINK_MSPPROPS_INITIALMASS,
+  IO_CLUSTER_SINK_MSPPROPS_AGE,
+  IO_CLUSTER_SINK_MSPPROPS_METALLICITY,
   IO_LASTENTRY			/* This should be kept - it signals the end of the list */
 };
 
