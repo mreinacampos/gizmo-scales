@@ -270,8 +270,7 @@ void init(void)
 #if defined(GALSF_FB_MECHANICAL) || defined(GALSF_FB_THERMAL)
             P[i].SNe_ThisTimeStep = 0;
 #ifdef CLUSTER_SINK
-            P[i].SNII_ThisTimeStep = 0;
-            P[i].SNIa_ThisTimeStep = 0;
+            for(int j = 0; j<CLUSTER_SINK_NUMMSP; j++){ P[i].SNII_ThisTimeStep[j] = 0; P[i].SNIa_ThisTimeStep[j] = 0; }
 #endif
 #endif
 #ifdef GALSF_FB_MECHANICAL

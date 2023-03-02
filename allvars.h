@@ -344,8 +344,9 @@ extern struct Chimes_depletion_data_structure *ChimesDepletionData;
 
 #ifdef CLUSTER_SINK_ACCRETION
 #define BH_SWALLOWGAS           // need to swallow gas [part of sink model]
-#if (CLUSTER_SINK_ACCRETION == 0) // default: adative sink radius, Li+17 accretion rate, only SFing gas cells are accreted
-#define BH_GRAVACCRETION 9      // [9] does not exists, prevents overlap with previous code
+#if (CLUSTER_SINK_ACCRETION == 0) // default: adative sink radius, normal Bondi-Hoyle accretion rate
+//#define BH_GRAVACCRETION 9      // [9] does not exists, prevents overlap with previous code
+#define BH_BONDI 0                // use 'normal' Bondi-Hoyle accretion rate
 #endif
 #if (CLUSTER_SINK_ACCRETION == 1)
 #define BH_GRAVCAPTURE_GAS
@@ -2414,19 +2415,9 @@ extern ALIGN(32) struct particle_data
     MyFloat SNe_ThisTimeStep; /* flag that indicated number of SNe for the particle in the timestep */
 
 #ifdef CLUSTER_SINK
-    MyFloat SNII_ThisTimeStep; /* flag that indicates number of SNII for the particle in the timestep */
-    MyFloat SNIa_ThisTimeStep; /* flag that indicates number of SNIa for the particle in the timestep */
+    MyFloat SNII_ThisTimeStep[CLUSTER_SINK_NUMMSP]; /* flag that indicates number of SNII for the particle in the timestep */
+    MyFloat SNIa_ThisTimeStep[CLUSTER_SINK_NUMMSP]; /* flag that indicates number of SNIa for the particle in the timestep */
 #endif
-#endif
-
-#ifdef CLUSTER_SINK_OUTPUT_NUMSNE
-    MyFloat CumNumSNe; /* flag that indicates cumulative number of SNe for the particle */
-    MyFloat CumNumSNII; /* flag that indicates cumulative number of SNII for the particle */
-    MyFloat CumNumSNIa; /* flag that indicates cumulative number of SNIa for the particle */
-#endif
-
-#ifdef CLUSTER_SINK_OUTPUT_BOLLUM
-    MyFloat Light_MassRatio; /* flag that indicates light-to-mass ratio of each star particle */
 #endif
 
 # ifdef CLUSTER_SINK /* properties of the concurrent stellar populations forming within the sink */
@@ -2434,7 +2425,16 @@ extern ALIGN(32) struct particle_data
     MyFloat MSP_Mass[CLUSTER_SINK_NUMMSP]; // current mass
     MyFloat MSP_Age[CLUSTER_SINK_NUMMSP]; // age
     MyFloat MSP_Metallicity[CLUSTER_SINK_NUMMSP]; // metallicity - total metals only (for now)
+#ifdef CLUSTER_SINK_OUTPUT_NUMSNE
+    MyFloat CumNumSNe[CLUSTER_SINK_NUMMSP]; /* flag that indicates cumulative number of SNe for the particle */
+    MyFloat CumNumSNII[CLUSTER_SINK_NUMMSP]; /* flag that indicates cumulative number of SNII for the particle */
+    MyFloat CumNumSNIa[CLUSTER_SINK_NUMMSP]; /* flag that indicates cumulative number of SNIa for the particle */
 #endif
+
+#ifdef CLUSTER_SINK_OUTPUT_BOLLUM
+    MyFloat Light_MassRatio[CLUSTER_SINK_NUMMSP]; /* flag that indicates light-to-mass ratio of each star particle */
+#endif
+#endif // CLUSTER_SINK
 
 
 #ifdef GALSF_FB_MECHANICAL

@@ -1602,7 +1602,8 @@ void fill_write_buffer(enum iofields blocknr, int *startindex, int pc, int type)
             for(n = 0; n < pc; pindex++)
                 if(P[pindex].Type == type)
                 {
-                    *fp++ = (MyOutputFloat) P[pindex].CumNumSNe;
+                    for(k=0;k<CLUSTER_SINK_NUMMSP;k++) {fp[k] = (MyOutputFloat) P[pindex].CumNumSNe[k];}
+                    fp += CLUSTER_SINK_NUMMSP;
                     n++;
                 }
 #endif
@@ -1613,7 +1614,8 @@ void fill_write_buffer(enum iofields blocknr, int *startindex, int pc, int type)
             for(n = 0; n < pc; pindex++)
                 if(P[pindex].Type == type)
                 {
-                    *fp++ = (MyOutputFloat) P[pindex].CumNumSNII;
+                    for(k=0;k<CLUSTER_SINK_NUMMSP;k++) {fp[k] = (MyOutputFloat) P[pindex].CumNumSNII[k];}
+                    fp += CLUSTER_SINK_NUMMSP;
                     n++;
                 }
 #endif
@@ -1624,7 +1626,8 @@ void fill_write_buffer(enum iofields blocknr, int *startindex, int pc, int type)
             for(n = 0; n < pc; pindex++)
                 if(P[pindex].Type == type)
                 {
-                    *fp++ = (MyOutputFloat) P[pindex].CumNumSNIa;
+                    for(k=0;k<CLUSTER_SINK_NUMMSP;k++) {fp[k] = (MyOutputFloat) P[pindex].CumNumSNIa[k];}
+                    fp += CLUSTER_SINK_NUMMSP;
                     n++;
                 }
 #endif
@@ -1635,7 +1638,8 @@ void fill_write_buffer(enum iofields blocknr, int *startindex, int pc, int type)
             for(n = 0; n < pc; pindex++)
                 if(P[pindex].Type == type)
                 {
-                    *fp++ = (MyOutputFloat) P[pindex].Light_MassRatio;
+                    for(k=0;k<CLUSTER_SINK_NUMMSP;k++) {fp[k] = (MyOutputFloat) P[pindex].Light_MassRatio[k];}
+                    fp += CLUSTER_SINK_NUMMSP;
                     n++;
                 }
 #endif
@@ -1827,10 +1831,6 @@ int get_bytes_per_blockelement(enum iofields blocknr, int mode)
         case IO_DENS_AROUND_STAR:
         case IO_DELAY_TIME_HII:
         case IO_MOLECULARFRACTION:
-        case IO_CLUSTER_SINK_NUMSNE:
-        case IO_CLUSTER_SINK_NUMSNII:
-        case IO_CLUSTER_SINK_NUMSNIa:
-        case IO_CLUSTER_SINK_BOLLUM:
             if(mode)
                 bytes_per_blockelement = sizeof(MyInputFloat);
             else
@@ -1955,6 +1955,10 @@ int get_bytes_per_blockelement(enum iofields blocknr, int mode)
                 bytes_per_blockelement = 20 * sizeof(MyOutputFloat);
             break;
 
+        case IO_CLUSTER_SINK_NUMSNE:
+        case IO_CLUSTER_SINK_NUMSNII:
+        case IO_CLUSTER_SINK_NUMSNIa:
+        case IO_CLUSTER_SINK_BOLLUM:
         case IO_CLUSTER_SINK_MSPPROPS_MASS:
         case IO_CLUSTER_SINK_MSPPROPS_INITIALMASS:
         case IO_CLUSTER_SINK_MSPPROPS_AGE:
@@ -2121,10 +2125,6 @@ int get_values_per_blockelement(enum iofields blocknr)
         case IO_DENS_AROUND_STAR:
         case IO_DELAY_TIME_HII:
         case IO_MOLECULARFRACTION:
-        case IO_CLUSTER_SINK_NUMSNE:
-        case IO_CLUSTER_SINK_NUMSNII:
-        case IO_CLUSTER_SINK_NUMSNIa:
-        case IO_CLUSTER_SINK_BOLLUM:
             values = 1;
             break;
 
@@ -2206,6 +2206,10 @@ int get_values_per_blockelement(enum iofields blocknr)
             values = 20;
             break;
 
+        case IO_CLUSTER_SINK_NUMSNE:
+        case IO_CLUSTER_SINK_NUMSNII:
+        case IO_CLUSTER_SINK_NUMSNIa:
+        case IO_CLUSTER_SINK_BOLLUM:
         case IO_CLUSTER_SINK_MSPPROPS_MASS:
         case IO_CLUSTER_SINK_MSPPROPS_INITIALMASS:
         case IO_CLUSTER_SINK_MSPPROPS_AGE:
