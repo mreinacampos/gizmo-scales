@@ -35,12 +35,9 @@ void continuous_star_formation_in_sinks(void)
     {
         if(P[i].Type != 5) {continue;} // only sinks can form multiple stellar populations
 
+        // assume all accreted gas mass will form stars (SFE = 100%) 
         // calculate the amount of gas available within the sink
-        mass_gas = determine_mass_gas_reservoir(i); 
-
-        // TEMPORARY -- assume a fixed SFEff
-        double sfe_ff = 0.1;
-        sp_mass = mass_gas*sfe_ff; // mass forming into the stellar population
+        sp_mass = determine_mass_gas_reservoir(i); 
 
         // if there's not enough mass, keep accreting
         if (sp_mass < All.ClusterSink_MinGasMass) continue;
@@ -62,7 +59,7 @@ void continuous_star_formation_in_sinks(void)
     // MRC - assert that mass budget is correct
     // assert that we can keep on going even if end of array is reached
 
-    } // for(i = FirstActiveParticle; i >= 0; i = NextActiveParticle[i]) //
+    } // loop over active particles
 }
 
 
@@ -81,6 +78,7 @@ double determine_mass_gas_reservoir(int i)
     for (k=0; k<CLUSTER_SINK_NUMMSP; k++){ mass_msp += P[i].MSP_InitialMass[k]; }
     // calculate the gas mass
     mass_gas = P[i].Mass - mass_msp;
+    assert(mass_gas >= 0.);
     return mass_gas;
 }
 

@@ -18,6 +18,95 @@
 // load the header with all the coefficients
 #include "./feedback_fits.h"
 
+/** \brief Set the amount of mass and velocity to be injected from the multiple stellar populations
+ *
+ * \struct in     structure holding the input properties for the neighbour loop
+ * \param i       index of the particle
+ * \return        void
+ */
+void set_fb_input_quantities_from_msps(struct addFB_evaluate_data_in_ *in, int i)
+{
+
+    int k, j;
+    // set all bookkeeping quantities to zero
+    double total_mass_snii = 0, total_energy_snii = 0;
+    double total_mass_snia = 0, total_energy_snia = 0;
+    double total_mass_winds = 0, total_energy_winds = 0;
+    double yields_snii[NUM_METAL_SPECIES], yields_snia[NUM_METAL_SPECIES], yields_winds[NUM_METAL_SPECIES]; 
+    for(k=0;k<NUM_METAL_SPECIES;k++) { yields_snii[k] = 0.;  yields_snia[k] = 0.; yields_winds[k] = 0.;}
+
+    //loop over every stellar population within the sink
+    for (j = 0; j<CLUSTER_SINK_NUMMSP; j++){
+
+        // determine the age in Myr
+        double age = evaluate_stellar_age_Gyr(P[i].MSP_Age[j])*1e3, zh;
+
+        // MRC - TODO - use weighed metallicity for each MSP
+        // metallicity of the stellar population - zh = 10^[Fe/H] = (N_Fe/N_H)_star / (N_Fe/N_H)_solar
+        if (NUM_METAL_SPECIES > 1){
+            zh = (P[i].Metallicity[NUM_METAL_SPECIES-1]/(1 - P[i].Metallicity[1] - P[i].Metallicity[0]))/(All.SolarAbundances[NUM_METAL_SPECIES-1]/(1 - All.SolarAbundances[0] - All.SolarAbundances[1]));
+        } else {
+            zh = (P[i].Metallicity[0]/All.SolarAbundances[0]);
+        }
+#ifdef CLUSTER_SINK_SNII
+        // total mass ejected by core-collapse SNe in code units
+        total_mass_snii += P[i].SNII_ThisTimeStep[j] * (determine_corecollapse_sne_total_ejected_mass(age)/UNIT_MASS_IN_SOLAR); 
+        // total energy ejected per core-collapse SNe in code units
+        double eps_z = DMAX(pow(zh + 1e-4, -0.12), 1);
+        total_energy_snii += P[i].SNII_ThisTimeStep[j] * (eps_z*(1.e51/UNIT_ENERGY_IN_CGS));
+#ifdef METALS
+        // MRC - scale dimensionless mass fractions by the mass of each MSP
+        // yields ejected: in dimensionless ejecta mass fractions
+        double total_z = 0.;
+        for(k=1;k<NUM_METAL_SPECIES;k++) { yields_snii[k] += determine_snii_yields(k, age); total_z += determine_snii_yields(k, age); }
+        yields_snii[0] = 1.02*total_z; // from App. A in Hopkins+18
+        //yields_snii[0] = DMAX(1.02*total_z, P[i].Metallicity[0]*P[i].Mass/total_mass_snii); // from App. A in Hopkins+18
+#endif
+#endif
+
+#ifdef CLUSTER_SINK_SNIa
+        // total mass ejected by SNIa in code units - assume 1.4MSun per SNIa
+        total_mass_snia += P[i].SNIa_ThisTimeStep[j] * (1.4/UNIT_MASS_IN_SOLAR); 
+        // total energy ejected by SNIa in code units - assume 1e51ergs per SNIa
+        total_energy_snia += P[i].SNIa_ThisTimeStep[j] * (1.e51/UNIT_ENERGY_IN_CGS);
+#ifdef METALS
+        // yields ejected: in dimensionless ejecta mass fractions
+        for(k=0;k<NUM_METAL_SPECIES;k++) { yields_snia[k] += determine_snia_yields(k); }
+#endif
+#endif
+
+#ifdef CLUSTER_SINK_WINDS
+        // particle timestep in Myr
+        double dt = GET_PARTICLE_TIMESTEP_IN_PHYSICAL(i) * UNIT_TIME_IN_MYR;
+        double mass_winds = 0, velocity_winds = 0;
+        // total mass ejected by winds in code units 
+        mass_winds = determine_winds_mass_loss_rate(age, zh) * P[i].MSP_Mass[j] * dt; 
+        total_mass_winds += mass_winds;
+        // wind injection velocity in code units 
+        velocity_winds = determine_winds_velocity_injection(age, zh)/UNIT_VEL_IN_KMS;
+
+        // total energy ejected by winds in code units -- assumed kinetic
+        total_energy_winds += 0.5 * mass_winds * velocity_winds * velocity_winds;
+#ifdef METALS
+        // yields ejected: in dimensionless ejecta mass fractions
+        for(k=0;k<NUM_METAL_SPECIES;k++) { yields_winds[k] += determine_winds_yields(i, k); }
+#endif
+#endif
+    }
+
+    // total mass being ejected
+    in->Msne = total_mass_snii + total_mass_snia + total_mass_winds;
+    // velocity of the combined ejecta in code units
+    in->SNe_v_ejecta = sqrt(2.*(total_energy_snii + total_energy_snia + total_energy_winds)/in->Msne); 
+#ifdef METALS
+    for(k=0;k<NUM_METAL_SPECIES;k++) {
+        // MRC - check scaling is still correct - now each MSP has a different mass
+        in->yields[k] = (yields_snii[k] * total_mass_snii + yields_snia[k] * total_mass_snia + yields_winds[k] * total_mass_winds)/in->Msne;
+        assert(in->yields[k] >= 0.);
+    }
+#endif
+}
+
 
 /** \brief Return the rate of SNe for a given star particle 
  *
@@ -25,48 +114,53 @@
  * \param dt       timestep of the particle in physical units
  * \return        total rate of SNe (SNII and Ia) in SNe / Myr / MSun
  */
-double determine_sne_rate(int i, double dt) 
+double determine_sne_rates(int i, double dt) 
 {
+    int j;
     double RSNe = 0., RSNII = 0., RSNIa = 0., age, p, n_sn_0 = 0;
-    // determine the age in Myr
-    age = evaluate_stellar_age_Gyr(P[i].StellarAge)*1e3;
+
+    // loop over all multiple stellar populations
+    for(j = 0; j<CLUSTER_SINK_NUMMSP; j++){
+        // determine the age in Myr
+        age = evaluate_stellar_age_Gyr(P[i].MSP_Age[j])*1e3;
 
 #ifdef CLUSTER_SINK_SNII
-    RSNII = determine_corecollapse_sne_rate(age); // determine rate from analytical fit - in SNe / Myr / MSun
+        RSNII = determine_corecollapse_sne_rate(age); // determine rate from analytical fit - in SNe / Myr / MSun
 #endif
 #ifdef CLUSTER_SINK_SNIa
-    RSNIa = determine_snia_rate(age); // determine rate from analytical fit - in SNe / Myr / MSun
+        RSNIa = determine_snia_rate(age); // determine rate from analytical fit - in SNe / Myr / MSun
 #endif
 
-    // total rate of SNe
-    RSNe = RSNII + RSNIa;
+        // total rate of SNe
+        RSNe += RSNII + RSNIa;
 
-    // determine number of SNII
-    p = RSNII * (P[i].Mass*UNIT_MASS_IN_SOLAR) * (dt*UNIT_TIME_IN_MYR); // unit conversion factor
-    n_sn_0=(float)floor(p);
-    p-=n_sn_0;
-    if(get_random_number(P[i].ID+6) < p) {n_sn_0++;} // determine if SNe occurs
-    P[i].SNII_ThisTimeStep = n_sn_0; // assign to particle
+        // determine number of SNII
+        p = RSNII * (P[i].MSP_Mass[j]*UNIT_MASS_IN_SOLAR) * (dt*UNIT_TIME_IN_MYR); // unit conversion factor
+        n_sn_0=(float)floor(p);
+        p-=n_sn_0;
+        if(get_random_number(P[i].ID+6) < p) {n_sn_0++;} // determine if SNe occurs
+        P[i].SNII_ThisTimeStep[j] = n_sn_0; // assign to particle
 
-    // determine number of SNIa
-    p = RSNIa * (P[i].Mass*UNIT_MASS_IN_SOLAR) * (dt*UNIT_TIME_IN_MYR); // unit conversion factor
-    n_sn_0=(float)floor(p);
-    p-=n_sn_0;
-    if(get_random_number(P[i].ID+6) < p) {n_sn_0++;} // determine if SNe occurs
-    P[i].SNIa_ThisTimeStep = n_sn_0; // assign to particle
+        // determine number of SNIa
+        p = RSNIa * (P[i].MSP_Mass[j]*UNIT_MASS_IN_SOLAR) * (dt*UNIT_TIME_IN_MYR); // unit conversion factor
+        n_sn_0=(float)floor(p);
+        p-=n_sn_0;
+        if(get_random_number(P[i].ID+6) < p) {n_sn_0++;} // determine if SNe occurs
+        P[i].SNIa_ThisTimeStep[j] = n_sn_0; // assign to particle
 
 
-    // total number of SNe per timestep
-    P[i].SNe_ThisTimeStep = P[i].SNII_ThisTimeStep + P[i].SNIa_ThisTimeStep; 
+        // total number of SNe per timestep
+        P[i].SNe_ThisTimeStep += P[i].SNII_ThisTimeStep[j] + P[i].SNIa_ThisTimeStep[j]; 
 #ifdef CLUSTER_SINK_DEBUG_ONESNE
-    // debug: only one SNe
-    if (P[i].CumNumSNe > 0){ P[i].SNe_ThisTimeStep = 0; RSNe = 0; }
+        // debug: only one SNe
+        if (P[i].CumNumSNe[j] > 0){ P[i].SNe_ThisTimeStep[j] = 0; RSNe = 0; }
 #endif
 
 #ifdef CLUSTER_SINK_WINDS 
-    // do wind FB when there are no SNe
-    if (P[i].SNe_ThisTimeStep == 0){ RSNe = 1; P[i].SNe_ThisTimeStep += 0.2;}
-#endif
+        // do wind FB when there are no SNe
+        if (P[i].SNe_ThisTimeStep[j] == 0){ RSNe += 1; P[i].SNe_ThisTimeStep += 0.2;}
+#endif 
+    }
 
     return RSNe;
 }

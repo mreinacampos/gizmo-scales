@@ -42,15 +42,13 @@ void determine_where_SNe_occur(void)
     {
         P[i].SNe_ThisTimeStep=0;
 #ifdef CLUSTER_SINK
-        P[i].SNII_ThisTimeStep = 0;
-        P[i].SNIa_ThisTimeStep = 0;
+        for(int j = 0; j<CLUSTER_SINK_NUMMSP; j++) { P[i].SNII_ThisTimeStep[j] = 0; P[i].SNIa_ThisTimeStep[j] = 0; }
 #endif
 
 #if defined(SINGLE_STAR_SINK_DYNAMICS)
         if(P[i].Type == 0) {continue;} // any non-gas type is eligible to be a 'star' here
 #elif defined(CLUSTER_SINK)
         if((P[i].Type != 4) && (P[i].Type != 5)) {continue;} // allow 'stars' and 'sinks' do feedback here
-
 #else
         if(All.ComovingIntegrationOn) {if(P[i].Type != 4) {continue;}} // in cosmological simulations, 'stars' have particle type=4
         if(All.ComovingIntegrationOn==0) {if((P[i].Type<2)||(P[i].Type>4)) {continue;}} // in non-cosmological sims, types 2,3,4 are valid 'stars'
@@ -72,12 +70,20 @@ void determine_where_SNe_occur(void)
 #endif
         if(P[i].SNe_ThisTimeStep>0) {ntotal+=P[i].SNe_ThisTimeStep; nhosttotal++;}
 #ifdef CLUSTER_SINK_OUTPUT_NUMSNE
-        if(P[i].SNe_ThisTimeStep>0 && ((P[i].SNII_ThisTimeStep>0)||(P[i].SNIa_ThisTimeStep>0))) {P[i].CumNumSNe += P[i].SNe_ThisTimeStep; P[i].CumNumSNII += P[i].SNII_ThisTimeStep; P[i].CumNumSNIa += P[i].SNIa_ThisTimeStep;}
+        if(P[i].SNe_ThisTimeStep>0){ // if there's any SNe exploding
+            for (int j = 0; j<CLUSTER_SINK_NUMMSP; j++){
+                if ((P[i].SNII_ThisTimeStep[j]>0)||(P[i].SNIa_ThisTimeStep[j]>0)) { 
+                    P[i].CumNumSNe[j] += (P[i].SNII_ThisTimeStep[j] + P[i].SNIa_ThisTimeStep[j]);
+                    P[i].CumNumSNII[j] += P[i].SNII_ThisTimeStep[j]; 
+                    P[i].CumNumSNIa[j] += P[i].SNIa_ThisTimeStep[j];
 #ifdef CLUSTER_SINK_DEBUG
-        if(P[i].SNe_ThisTimeStep>0)
-            printf("MRC - determine_where_SNe_occur - ThisTask %d  - P[i].ID %d P[i].Mass %g - SNe_ThisTimeStep [%g, %g, %g], CumNumSNe [%g, %g, %g]\n",
-                 ThisTask, P[i].ID, P[i].Mass, P[i].SNe_ThisTimeStep, P[i].SNII_ThisTimeStep, P[i].SNIa_ThisTimeStep, P[i].CumNumSNe, P[i].CumNumSNII, P[i].CumNumSNIa);
+                printf("MRC - determine_where_SNe_occur - ThisTask %d  - P[i].ID %d, P[i].Mass %g - MSP %d - MSP[j].Mass- SNe_ThisTimeStep [%g, %g, %g], CumNumSNe [%g, %g, %g]\n",
+                            ThisTask, P[i].ID, P[i].Mass, j, P[i].SNII_ThisTimeStep[j]+P[i].SNIa_ThisTimeStep[j],
+                            P[i].SNII_ThisTimeStep[j], P[i].SNIa_ThisTimeStep[j], P[i].CumNumSNe[j], P[i].CumNumSNII[j], P[i].CumNumSNIa[j]);
 #endif
+                }
+            }
+        }
 #endif
         dtmean += dt;
     } // for(i = FirstActiveParticle; i >= 0; i = NextActiveParticle[i]) //

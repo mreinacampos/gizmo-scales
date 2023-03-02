@@ -172,9 +172,21 @@ void particle2in_addFB_fromstars(struct addFB_evaluate_data_in_ *in, int i, int 
 #endif
 
 #ifdef CLUSTER_SINK
-    int k;
+    set_fb_input_quantities_from_msps(in, i);
+#endif
+
+/* MRC - #ifdef CLUSTER_SINK
+    int k, j;
+
+    //loop over every stellar population within the sink
+    set_fb_input_quantities_from_msps(struct addFB_evaluate_data_in_ *in, int i)
+    for (j = 0; j++;j<CLUSTER_SINK_NUMMSP){
+
+    }
+
     // determine the age in Myr
     double age = evaluate_stellar_age_Gyr(P[i].StellarAge)*1e3, zh;
+    // MRC - TODO - use weighed metallicity for each MSP
     // metallicity of the stellar population - zh = 10^[Fe/H] = (N_Fe/N_H)_star / (N_Fe/N_H)_solar
     if (NUM_METAL_SPECIES > 1){
         zh = (P[i].Metallicity[NUM_METAL_SPECIES-1]/(1 - P[i].Metallicity[1] - P[i].Metallicity[0]))/(All.SolarAbundances[NUM_METAL_SPECIES-1]/(1 - All.SolarAbundances[0] - All.SolarAbundances[1]));
@@ -240,15 +252,15 @@ void particle2in_addFB_fromstars(struct addFB_evaluate_data_in_ *in, int i, int 
     }
 
 #endif
+*/
+//#else // !CLUSTER_SINK
 
-#else // !CLUSTER_SINK
-
-#ifdef METALS 
+#if defined(METALS) && !defined(CLUSTER_SINK)
     int k; for(k=0;k<NUM_METAL_SPECIES;k++) {in->yields[k]=0.178*All.SolarAbundances[k]/All.SolarAbundances[0];} // assume a universal solar-type yield with ~2.63 Msun of metals
     if(NUM_LIVE_SPECIES_FOR_COOLTABLES>=10) {in->yields[1] = 0.4;} // (catch for Helium, which the above scaling would give bad values for)
 #endif
 
-#endif // CLUSTER_SINK
+//#endif // CLUSTER_SINK
 
     //printf("MRC - particle2in_addFB_fromstars - i %d - ThisTask %d - Msne %g, SNe_v_ejecta %g - total_mass [%g, %g, %g] - total_energy [ergs] [%g, %g, %g]\n",
     //    i, ThisTask, in->Msne, in->SNe_v_ejecta, total_mass_snii, total_mass_snia, total_mass_winds, total_energy_snii*UNIT_ENERGY_IN_CGS, total_energy_snia*UNIT_ENERGY_IN_CGS, total_energy_winds*UNIT_ENERGY_IN_CGS);
@@ -286,7 +298,7 @@ double mechanical_fb_calculate_eventrates(int i, double dt)
 #endif
 
 #if defined(CLUSTER_SINK) && defined(GALSF_FB_MECHANICAL) /* STELLAR-POPULATION + SINK version: mechanical feedback */
-    double RSNe = determine_sne_rate(i, dt);
+    double RSNe = determine_sne_rates(i, dt); //total SNe rate from all the MSPs within the sink
     return RSNe;
 #endif
 

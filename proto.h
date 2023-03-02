@@ -543,6 +543,10 @@ void get_jet_yields(double *yields, int i);
 #endif
 #endif
 
+#ifdef CLUSTER_SINK
+void set_fb_input_quantities_from_msps(struct addFB_evaluate_data_in_ *in, int i);
+#endif
+
 #ifdef SINGLE_STAR_FB_JETS
 double single_star_jet_velocity(int n);
 #endif
