@@ -347,6 +347,7 @@ void set_blackhole_mdot(int i, int n, double dt)
         AccretionFactor = 1.0; if(rho > All.PhysDensThresh) {AccretionFactor = pow(rho/All.PhysDensThresh, All.BlackHoleAccretionFactor);}
 #endif
         mdot = 4. * M_PI * AccretionFactor * All.G * All.G * BPP(n).BH_Mass * BPP(n).BH_Mass * rho / fac;
+        printf("..[blackhole.c] - set_mdot() - mdot %g, BPP(n).BH_Mass %g, rho %g, fac %g, bhvel2 %g, soundspeed2 %g\n", mdot, BPP(n).BH_Mass, rho, fac, bhvel2, soundspeed2);
     }
 #endif // ifdef BH_BONDI
 
@@ -449,10 +450,10 @@ void set_blackhole_mdot(int i, int n, double dt)
 #endif
 #endif // BH_ALPHADISK_ACCRETION
 
-#if (CLUSTER_SINK_ACCRETION == 0) // Li's 17, 18 accretion rate model for clusters 
-    mdot = BlackholeTempInfo[i].Sfr_in_Kernel;
-    printf(" ..[blackhole.c] - set_mdot() - mdot %g Sfr_in_Kernel %g \n", mdot,BlackholeTempInfo[i].Sfr_in_Kernel);
-#endif
+// MRC #if (CLUSTER_SINK_ACCRETION == 0) // Li's 17, 18 accretion rate model for clusters 
+//    mdot = BlackholeTempInfo[i].Sfr_in_Kernel;
+//    printf(" ..[blackhole.c] - set_mdot() - mdot %g Sfr_in_Kernel %g \n", mdot,BlackholeTempInfo[i].Sfr_in_Kernel);
+// #endif
 
 #ifdef BH_ENFORCE_EDDINGTON_LIMIT /* cap the maximum at the Eddington limit */
     if(mdot > All.BlackHoleEddingtonFactor * meddington) {mdot = All.BlackHoleEddingtonFactor * meddington;}
