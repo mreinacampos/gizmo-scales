@@ -4,6 +4,9 @@
 #include <string.h>
 #include <math.h>
 #include <gsl/gsl_math.h>
+#include <gsl/gsl_rng.h>
+#include <gsl/gsl_randist.h>
+#include <gsl/gsl_eigen.h>
 #include "../allvars.h"
 #include "../proto.h"
 #include "../kernel.h"
@@ -26,9 +29,7 @@ int is_particle_single_star_eligible(long i)
     {
 #if defined(SINGLE_STAR_AND_SSP_HYBRID_MODEL) // here's the interesting regime, where we have some criterion for deciding which cells are eligible for 'single-star' status
         if(P[i].Type == 5) {return 1;} // all type-5 elements are assumed sinks
-        if(P[i].Type == 0) {
-            if(P[i].Mass*UNIT_MASS_IN_SOLAR > (SINGLE_STAR_AND_SSP_HYBRID_MODEL)) {return 1;} else {return 0;} // use a simple mass threshold to decide which model we will use, specified by using this as a compile-time parameter
-        }
+        if(P[i].Type == 0) {if(P[i].Mass*UNIT_MASS_IN_SOLAR > (SINGLE_STAR_AND_SSP_HYBRID_MODEL)) {return 0;} else {return 1;}} // use a simple mass threshold to decide which model we will use, specified by using this as a compile-time parameter
 #else
         return 1; // no hybrid model, so all particles satisfying these criteria are automatically single-star eligible
 #endif
@@ -61,7 +62,9 @@ double evaluate_light_to_mass_ratio(double stellar_age_in_gyr, int i)
         return lum_ssp;
 #endif 
         double lum=1; if(stellar_age_in_gyr < 0.01) {lum=1000;} // default to a dumb imf-averaged 'young/high-mass' vs 'old/low-mass' distinction
-        if(stellar_age_in_gyr<0.033) {lum*=calculate_relative_light_to_mass_ratio_from_imf(stellar_age_in_gyr,i);} // account for IMF variation model [if used]
+#ifdef GALSF_SFR_IMF_SAMPLING_DISTRIBUTE_SF
+        lum *= calculate_relative_light_to_mass_ratio_from_imf(stellar_age_in_gyr,i,-1); // account for IMF variation model [if used; currently must be custom set as desired for modules]
+#endif
         return lum;
     }
     return 0; // catch
@@ -93,23 +96,28 @@ double calculate_individual_stellar_luminosity(double mdot, double mass, long i)
 
 
 /* return the light-to-mass ratio, for the IMF of a given particle, relative to the Chabrier/Kroupa IMF.
-    ONLY relevant for STELLAR POPULATION integrated inputs. */
-double calculate_relative_light_to_mass_ratio_from_imf(double stellar_age_in_gyr, int i)
+    ONLY relevant for STELLAR POPULATION integrated inputs. "mode" denotes if we're interested in very massive stars (or other special behaviors): for now -1=bolometric, +1=very massive */
+double calculate_relative_light_to_mass_ratio_from_imf(double stellar_age_in_gyr, int i, int mode)
 {
 #ifdef GALSF_SFR_IMF_VARIATION // fitting function from David Guszejnov's IMF calculations (ok for Mturnover in range 0.01-100) for how mass-to-light ratio varies with IMF shape/effective turnover mass
     double log_mimf = log10(P[i].IMF_Mturnover);
     return (0.051+0.042*(log_mimf+2)+0.031*(log_mimf+2)*(log_mimf+2)) / 0.31;
 #endif
 #ifdef GALSF_SFR_IMF_SAMPLING // account for IMF sampling model if not evolving individual stars
-    double mu = 0.01 * P[i].Mass * UNIT_MASS_IN_SOLAR; // 1 O-star per 100 Msun
-    if(stellar_age_in_gyr > 0.003) {mu *= 0.326 * (0.003 / stellar_age_in_gyr);} // expectation value is declining with time, so 'effective multiplier' is larger
-    return P[i].IMF_NumMassiveStars / mu;
+    double mu = 0.0115 * P[i].Mass * UNIT_MASS_IN_SOLAR; // 1 O-star per 100 Msun [more exactly calculated here as number of stars per solar mass with mass > 8 Msun, from our adopted Kroupa IMF from 0.01-100 Msun]
+    double t=stellar_age_in_gyr*1000.,t1=3.7,t2=7.,t3=44.,a0=0.13,mu_min=1.e-3*mu;
+    if(t>t3) {mu*=0;} else {if(t>t2) {mu*=(1.-a0)*(1.-(t-t2)/(t3-t2));} else {if(t>t1) {mu*=1.-a0*(t-t1)/(t2-t1);}}} // expectation value is declining with time, so 'effective multiplier' is larger
+    if(mode > 0) {
+        return P[i].IMF_NumMassiveStars / DMAX(mu,mu_min); // scales just with the number of massive stars
+    } else {
+        if(t>=t3) {return 1;} else {return 0.01 + P[i].IMF_NumMassiveStars / DMAX(mu,mu_min);} // scales with a minimum and a long-timescale baseline
+    }
 #endif
     return 1; // Chabrier or Kroupa IMF //
 }
 
 
-#if defined(FLAG_NOT_IN_PUBLIC_CODE) || (defined(RT_CHEM_PHOTOION) && defined(GALSF))
+#if defined(GALSF_FB_FIRE_RT_HIIHEATING) || (defined(RT_CHEM_PHOTOION) && defined(GALSF))
 /* routine to compute the -ionizing- luminosity coming from either individual stars or an SSP */
 double particle_ionizing_luminosity_in_cgs(long i)
 {
@@ -134,9 +142,9 @@ double particle_ionizing_luminosity_in_cgs(long i)
 
         if(P[i].Type != 5)
         {
-            double lm_ssp=0, star_age=evaluate_stellar_age_Gyr(P[i].StellarAge), t0=0.0035, tmax=0.02;
+            double lm_ssp=0, star_age=evaluate_stellar_age_Gyr(i), t0=0.0035, tmax=0.02;
             if(star_age < t0) {lm_ssp=500.;} else {double log_age=log10(star_age/t0); lm_ssp=470.*pow(10.,-2.24*log_age-4.2*log_age*log_age) + 60.*pow(10.,-3.6*log_age);}
-            lm_ssp *= calculate_relative_light_to_mass_ratio_from_imf(star_age, i);
+            if(star_age < 0.033) {lm_ssp *= 1.e-4 + calculate_relative_light_to_mass_ratio_from_imf(star_age,i,1);}
             if(star_age >= tmax) {return 0;} // skip since old stars don't contribute
             return lm_ssp * SOLAR_LUM_CGS * (P[i].Mass*UNIT_MASS_IN_SOLAR); // converts to cgs luminosity [lm_ssp is in Lsun/Msun, here]
         } // (P[i].Type != 5)
@@ -279,7 +287,7 @@ double mechanical_fb_calculate_eventrates(int i, double dt)
 #endif
 #ifdef SINGLE_STAR_FB_SNE
         double t_lifetime_Gyr = 10.*(m_sol/l_sol) + 0.003; /* crude estimate of main-sequence lifetime, capped at 3 Myr*/
-        if(evaluate_stellar_age_Gyr(P[i].StellarAge) >= t_lifetime_Gyr) {P[i].SNe_ThisTimeStep=1;}
+        if(evaluate_stellar_age_Gyr(i) >= t_lifetime_Gyr) {P[i].SNe_ThisTimeStep=1;}
 #endif
         return 1;
     }
@@ -292,13 +300,13 @@ double mechanical_fb_calculate_eventrates(int i, double dt)
 
 #ifdef GALSF_FB_THERMAL /* STELLAR-POPULATION version: pure thermal feedback: assumes AGORA model (Kim et al., 2016 ApJ, 833, 202) where everything occurs at 5Myr exactly */
     if(P[i].SNe_ThisTimeStep != 0) {P[i].SNe_ThisTimeStep=-1; return 0;} // already had an event, so this particle is "done"
-    if(evaluate_stellar_age_Gyr(P[i].StellarAge) < 0.005) {return 0;} // enforce age limit of 5 Myr
+    if(evaluate_stellar_age_Gyr(i) < 0.005) {return 0;} // enforce age limit of 5 Myr
     P[i].SNe_ThisTimeStep = P[i].Mass*UNIT_MASS_IN_SOLAR / 91.; // 1 event per 91 solar masses
     return 1;
 #endif
 
 #ifdef GALSF_FB_MECHANICAL /* STELLAR-POPULATION version: mechanical feedback: 'dummy' example model below assumes a constant SNe rate for t < 30 Myr, then nothing. experiment! */
-    double star_age = evaluate_stellar_age_Gyr(P[i].StellarAge);
+    double star_age = evaluate_stellar_age_Gyr(i);
     if(star_age < 0.03)
     {
         double RSNe = 3.e-4; // assume a constant rate ~ 3e-4 SNe/Myr/solar mass for t = 0-30 Myr //
@@ -328,6 +336,37 @@ double Z_for_stellar_evol(int i)
     return 1; // metals not evolved, return unity
 #endif
 }
+
+
+#if defined(GALSF_SFR_IMF_SAMPLING_DISTRIBUTE_SF)
+void update_stellarnumber_and_timedistribofstarformation(void)
+{
+    int i; for(i = FirstActiveParticle; i >= 0; i = NextActiveParticle[i])
+    {
+        if(P[i].Type == 4)
+        {
+            double dt_since_form_code = evaluate_time_since_t_initial_in_Gyr(P[i].StellarAge) / UNIT_TIME_IN_GYR; // time since spawn in code [physical] units
+            if((dt_since_form_code < P[i].TimeDistribOfStarFormation) && (P[i].TimeDistribOfStarFormation > 0)) // candidate for 'spawning'
+            {
+                double dt_remaining = P[i].TimeDistribOfStarFormation - dt_since_form_code; // time remaining to spawn
+                double dt_timestep = GET_PARTICLE_TIMESTEP_IN_PHYSICAL(i); // timestep being taken [code units]
+                double d_tau = DMAX(DMIN( dt_timestep , dt_remaining) , 0) / P[i].TimeDistribOfStarFormation; // effective step size in dimensionless units
+                double n_expected_total = 0.0115 * P[i].Mass * UNIT_MASS_IN_SOLAR; // 1 O-star per 100 Msun [more exactly calculated here as number of stars per solar mass with mass > 8 Msun, from our adopted Kroupa IMF from 0.01-100 Msun]
+                double dn_expected_in_dt = n_expected_total * d_tau; // expected number to spawn in this particular interval
+                gsl_rng *random_generator_for_massivestars; // allocate rng
+                random_generator_for_massivestars = gsl_rng_alloc(gsl_rng_ranlxd1); // setup generator
+                gsl_rng_set(random_generator_for_massivestars, P[i].ID + 49531 + All.NumCurrentTiStep); // seed random number
+                unsigned int n_to_add = gsl_ran_poisson(random_generator_for_massivestars, dn_expected_in_dt); // actually draw the number
+                if(n_to_add > 0) // hey, new stars!
+                {
+                    P[i].IMF_WeightedMeanStellarFormationTime = (P[i].IMF_NumMassiveStars * P[i].StellarAge + n_to_add * All.Time) / (P[i].IMF_NumMassiveStars + n_to_add); // update the effective stellar age (so e.g. if we lose stars, this can keep updating)
+                    P[i].IMF_NumMassiveStars += n_to_add; // add this to the number of massive stars that we are tracking explicitly
+                }
+            }
+        }
+    }
+}
+#endif
 
 
 #ifdef METALS

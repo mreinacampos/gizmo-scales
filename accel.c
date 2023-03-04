@@ -19,7 +19,7 @@
  *
  * If gas particles are presented, the `interior' of the local domain is determined. This region is guaranteed
  * to contain only particles local to the processor. This information will be used to reduce communication in
- * the hydro part.  The density for active SPH particles is computed next. If the number of neighbours should
+ * the hydro part.  The density for active gas/fluid cells is computed next. If the number of neighbours should
  * be outside the allowed bounds, it will be readjusted by the function ensure_neighbours(), and for those
  * particle, the densities are recomputed accordingly. Finally, the hydrodynamical forces are added.
  */
@@ -64,13 +64,7 @@ void compute_hydro_densities_and_forces(void)
         ags_density();
 #endif
         force_update_hmax();	/* update kernel lengths in tree */
-        /*! This function updates the hmax-values in tree nodes that hold SPH
-         *  particles. These values are needed to find all neighbors in the
-         *  hydro-force computation.  Since the Hsml-values are potentially changed
-         *  in the SPH-denity computation, force_update_hmax() should be carried
-         *  out before the hydrodynamical SPH forces are computed, i.e. after
-         *  density().
-         */
+        /*! This function updates the hmax-values in tree nodes that hold gas. These values are needed to find all neighbors in the hydro-force computation.  Since the Hsml-values are potentially changed in the gas-denity computation, force_update_hmax() should be carried out before the hydrodynamical forces are computed, i.e. after density(). */
 
         PRINT_STATUS(" ..density & tree-update computation done...");
 
@@ -91,6 +85,9 @@ void compute_hydro_densities_and_forces(void)
 #endif
 
         hydro_gradient_calc(); /* calculates the gradients of hydrodynamical quantities  */
+#if defined(COOLING) && defined(GALSF_FB_FIRE_RT_UVHEATING)
+        selfshield_local_incident_uv_flux(); /* needs to be called after gravity tree (where raw flux is calculated) and the local gradient calculation (GradRho) to properly self-shield the particles that had this calculated */
+#endif
         PRINT_STATUS(" ..gradient computation done.");
 
 #ifdef TURB_DIFF_DYNAMIC
@@ -113,7 +110,7 @@ void compute_hydro_densities_and_forces(void)
 
 void compute_additional_forces_for_all_particles(void)
 {
-#ifdef DM_FUZZY
+#if defined(DM_FUZZY) || defined(FLAG_NOT_IN_PUBLIC_CODE_WITHGRADIENTS)
     DMGrad_gradient_calc();
 #endif
 #if defined(DM_FUZZY) || defined(FLAG_NOT_IN_PUBLIC_CODE) || defined(DM_SIDM)
@@ -142,7 +139,15 @@ void compute_stellar_feedback(void)
     MPI_Barrier(MPI_COMM_WORLD); CPU_Step[CPU_SNIIHEATING] += measure_time(); /* collect timings and reset clock for next timing */
 #endif
     
+#if defined(GALSF_FB_FIRE_RT_HIIHEATING)
+    HII_heating_singledomain(); /* local photo-ionization heating */
+    MPI_Barrier(MPI_COMM_WORLD); CPU_Step[CPU_HIIHEATING] += measure_time(); /* collect timings and reset clock for next timing */
+#endif
     
+#ifdef GALSF_FB_FIRE_RT_LOCALRP
+    radiation_pressure_winds_consolidated(); /* local radiation pressure */
+    MPI_Barrier(MPI_COMM_WORLD); CPU_Step[CPU_LOCALWIND] += measure_time(); /* collect timings and reset clock for next timing */
+#endif
     
     CPU_Step[CPU_MISC] += measure_time();
 }

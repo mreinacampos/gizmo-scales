@@ -82,7 +82,7 @@ void gravity_tree(void)
     /* allocate buffers to arrange communication */
     PRINT_STATUS(" ..Begin tree force. (presently allocated=%g MB)", AllocatedBytes / (1024.0 * 1024.0));
     size_t MyBufferSize = All.BufferSize;
-    All.BunchSize = (int) ((MyBufferSize * 1024 * 1024) / (sizeof(struct data_index) + sizeof(struct data_nodelist) +
+    All.BunchSize = (long) ((MyBufferSize * 1024 * 1024) / (sizeof(struct data_index) + sizeof(struct data_nodelist) +
                                              sizeof(struct gravdata_in) + sizeof(struct gravdata_out) +
                                              sizemax(sizeof(struct gravdata_in),sizeof(struct gravdata_out))));
     DataIndexTable = (struct data_index *) mymalloc("DataIndexTable", All.BunchSize * sizeof(struct data_index));
@@ -138,6 +138,8 @@ void gravity_tree(void)
     for(Ewald_iter = 0; Ewald_iter <= ewald_max; Ewald_iter++)
     {
         NextParticle = FirstActiveParticle;	/* begin with this index */
+        memset(ProcessedFlag, 0, All.MaxPart * sizeof(unsigned char));
+        BufferCollisionFlag = 0; /* set to zero before operations begin */
         do /* primary point-element loop */
         {
             iter++;
@@ -173,14 +175,32 @@ void gravity_tree(void)
 
             if(BufferFullFlag) /* we've filled the buffer or reached the end of the list, prepare for communications */
             {
-                int last_nextparticle = NextParticle; NextParticle = save_NextParticle;
+                int last_nextparticle = NextParticle;
+                int processed_particles = 0;
+                int first_unprocessedparticle = -1;
+                NextParticle = save_NextParticle; /* figure out where we are */
                 while(NextParticle >= 0)
                 {
                     if(NextParticle == last_nextparticle) {break;}
+#ifndef _OPENMP
                     if(ProcessedFlag[NextParticle] != 1) {break;}
-                    ProcessedFlag[NextParticle] = 2; NextParticle = NextActiveParticle[NextParticle];
+#else
+                    if(ProcessedFlag[NextParticle] == 0 && first_unprocessedparticle < 0) {first_unprocessedparticle = NextParticle;}
+                    if(ProcessedFlag[NextParticle] == 1)
+#endif
+                    {
+                        processed_particles++;
+                        ProcessedFlag[NextParticle] = 2;
+                    }
+                    NextParticle = NextActiveParticle[NextParticle];
                 }
-                if(NextParticle == save_NextParticle) {endrun(114408);} /* in this case, the buffer is too small to process even a single particle */
+#ifdef _OPENMP
+                if(first_unprocessedparticle >= 0) {NextParticle = first_unprocessedparticle;} /* reset the neighbor list properly for the next group since we can get 'jumps' with openmp active */
+                if(processed_particles == 0 && NextParticle == save_NextParticle && NextParticle > -1) {
+                    BufferCollisionFlag++; if(BufferCollisionFlag < 2) {continue;}} /* we overflowed without processing a single particle, but this could be because of a collision, try once with the serialized approach, but if it fails then, we're truly stuck */
+                else if(processed_particles && BufferCollisionFlag) {BufferCollisionFlag = 0;} /* we had a problem in a previous iteration but things worked, reset to normal operations */
+#endif
+                if(processed_particles <= 0 && NextParticle == save_NextParticle) {endrun(114408);} /* in this case, the buffer is too small to process even a single particle */
 
                 int new_export = 0; /* actually calculate exports [so we can tell other tasks] */
                 for(j = 0, k = 0; j < Nexport; j++)
@@ -217,10 +237,11 @@ void gravity_tree(void)
                 place = DataIndexTable[j].Index;
 
                 /* assign values (input-function to pass in memory) */
-                GravDataIn[j].Type = P[place].Type;
-                GravDataIn[j].OldAcc = P[place].OldAcc;
                 for(k = 0; k < 3; k++) {GravDataIn[j].Pos[k] = P[place].Pos[k];}
-#if defined(ADAPTIVE_GRAVSOFT_FORALL) || defined(ADAPTIVE_GRAVSOFT_FORGAS) || defined(RT_USE_GRAVTREE) || defined(SINGLE_STAR_TIMESTEPPING)
+                GravDataIn[j].Type = P[place].Type;
+                GravDataIn[j].Soft = ForceSoftening_KernelRadius(place);
+                GravDataIn[j].OldAcc = P[place].OldAcc;
+#ifdef GRAVDATA_IN_INCLUDES_MASS_FIELD
                 GravDataIn[j].Mass = P[place].Mass;
 #endif
 #if defined(BH_DYNFRICTION_FROMTREE)
@@ -239,18 +260,15 @@ void gravity_tree(void)
                 }
                 else {P[place].is_in_a_binary=0; /* setting values to zero just to be sure */}
 #endif
-#if defined(SINGLE_STAR_TIMESTEPPING)
-                GravDataIn[j].Soft = All.ForceSoftening[P[place].Type];
-#endif
-#if defined(RT_USE_GRAVTREE) || defined(ADAPTIVE_GRAVSOFT_FORGAS) || defined(FLAG_NOT_IN_PUBLIC_CODE)
-                if( (P[place].Type == 0) && (PPP[place].Hsml > All.ForceSoftening[P[place].Type]) ) {GravDataIn[j].Soft = PPP[place].Hsml;} else {GravDataIn[j].Soft = All.ForceSoftening[P[place].Type];}
-#endif
 #ifdef ADAPTIVE_GRAVSOFT_FORGAS
                 if((P[place].Type == 0) && (PPP[place].Hsml > All.ForceSoftening[P[place].Type])) {GravDataIn[j].AGS_zeta = PPPZ[place].AGS_zeta;} else {GravDataIn[j].AGS_zeta = 0;}
 #endif
 #ifdef ADAPTIVE_GRAVSOFT_FORALL
                 GravDataIn[j].Soft = PPP[place].AGS_Hsml;
                 GravDataIn[j].AGS_zeta = PPPZ[place].AGS_zeta;
+#endif
+#ifdef ADAPTIVE_GRAVSOFT_FROM_TIDAL_CRITERION
+                for(k=0;k<3;k++) {int k2; for(k2=0;k2<3;k2++) {GravDataIn[j].tidal_tensorps_prevstep[k][k2]=P[place].tidal_tensorps_prevstep[k][k2];}}
 #endif
                 memcpy(GravDataIn[j].NodeList,DataNodeList[DataIndexTable[j].IndexGet].NodeList, NODELISTLENGTH * sizeof(int));
             }
@@ -391,6 +409,20 @@ void gravity_tree(void)
 #ifdef RT_OTVET
                 if(P[place].Type==0) {int k_freq; for(k_freq=0;k_freq<N_RT_FREQ_BINS;k_freq++) for(k=0;k<6;k++) SphP[place].ET[k_freq][k] += GravDataOut[j].ET[k_freq][k];}
 #endif
+#ifdef GALSF_FB_FIRE_RT_UVHEATING
+                if(P[place].Type==0) {SphP[place].Rad_Flux_UV += GravDataOut[j].Rad_Flux_UV;}
+                if(P[place].Type==0) {SphP[place].Rad_Flux_EUV += GravDataOut[j].Rad_Flux_EUV;}
+#ifdef CHIMES
+                if(P[place].Type == 0)
+                {
+                    int kc; for (kc = 0; kc < CHIMES_LOCAL_UV_NBINS; kc++)
+                    {
+                        SphP[place].Chimes_G0[kc] += GravDataOut[j].Chimes_G0[kc];
+                        SphP[place].Chimes_fluxPhotIon[kc] += GravDataOut[j].Chimes_fluxPhotIon[kc];
+                    }
+                }
+#endif
+#endif
 #ifdef BH_COMPTON_HEATING
                 if(P[place].Type==0) SphP[place].Rad_Flux_AGN += GravDataOut[j].Rad_Flux_AGN;
 #endif
@@ -400,10 +432,16 @@ void gravity_tree(void)
 #if defined(RT_USE_GRAVTREE_SAVE_RAD_FLUX)
                 if(P[place].Type==0) {int kf,k2; for(kf=0;kf<N_RT_FREQ_BINS;kf++) {for(k2=0;k2<3;k2++) {SphP[place].Rad_Flux[kf][k2] += GravDataOut[j].Rad_Flux[kf][k2];}}}
 #endif
+#ifdef COSMIC_RAY_SUBGRID_LEBRON
+                if(P[place].Type==0) {SphP[place].SubGrid_CosmicRayEnergyDensity += GravDataOut[j].SubGrid_CosmicRayEnergyDensity;}
+#endif
 #ifdef COMPUTE_TIDAL_TENSOR_IN_GRAVTREE
                 {int i1tt,i2tt; for(i1tt=0;i1tt<3;i1tt++) {for(i2tt=0;i2tt<3;i2tt++) {P[place].tidal_tensorps[i1tt][i2tt] += GravDataOut[j].tidal_tensorps[i1tt][i2tt];}}}
 #ifdef COMPUTE_JERK_IN_GRAVTREE
                 {int i1tt; for(i1tt=0; i1tt<3; i1tt++) P[place].GravJerk[i1tt] += GravDataOut[j].GravJerk[i1tt];}
+#endif
+#ifdef ADAPTIVE_GRAVSOFT_FROM_TIDAL_CRITERION
+                P[place].tidal_zeta += GravDataOut[j].tidal_zeta;
 #endif
 #endif
             }
@@ -487,30 +525,17 @@ void gravity_tree(void)
         if((P[i].Type == 5) && (P[i].is_in_a_binary == 1)) {subtract_companion_gravity(i);}
 #endif
 
-#ifdef COMPUTE_TIDAL_TENSOR_IN_GRAVTREE /* final operations to compute the diagonalized tidal tensor and related quantities */
-#if (defined(TIDAL_TIMESTEP_CRITERION) || defined(GALSF_SFR_TIDAL_HILL_CRITERION)) // diagonalize the tidal tensor so we can use its invariants, which don't change with rotation
-        double tt[9]; for(j=0; j<3; j++) {for (k=0; k<3; k++) tt[3*j+k] = P[i].tidal_tensorps[j][k];}
-#ifdef PMGRID
-        for(j=0; j<3; j++) {for (k=0; k<3; k++) tt[3*j+k] += P[i].tidal_tensorpsPM[j][k];}
+#ifdef COMPUTE_TIDAL_TENSOR_IN_GRAVTREE /* final operations to compute the tidal tensor and related quantities */
+#if 0 //!defined(GDE_DISTORTIONTENSOR) /* for GDE implementation, want to exclude particle self-tide contribution; also not needed for tidal softening or tidal timestep. keep, however, for completeness later */
+        double h_i=ForceSoftening_KernelRadius(i), fac_self=-P[i].Mass*kernel_gravity(0.,1.,1.,1)/(h_i*h_i*h_i); /* add the self-contribution (tree loop currently excludes the self-self force, since not needed normally for gravity */
+        for(j=0;j<3;j++) {P[i].tidal_tensorps[j][j] += fac_self;} /* note the self-contribution is strictly diagonal for a spherically-symmetric softening */
 #endif
-        gsl_matrix_view m = gsl_matrix_view_array (tt, 3, 3);
-        gsl_vector *eval = gsl_vector_alloc (3);
-        gsl_eigen_symm_workspace * w = gsl_eigen_symm_alloc (3);
-        gsl_eigen_symm(&m.matrix, eval,  w);
-        for(k=0; k<3; k++) P[i].tidal_tensorps[k][k] = gsl_vector_get(eval,k); // set diagonal elements to eigenvalues
-        P[i].tidal_tensorps[0][1] = P[i].tidal_tensorps[1][0] = P[i].tidal_tensorps[1][2] = P[i].tidal_tensorps[2][1] = P[i].tidal_tensorps[0][2] = P[i].tidal_tensorps[2][0] = 0; //zero out off-diagonal elements
-        gsl_eigen_symm_free(w); gsl_vector_free(eval);
-#endif
-#ifdef GDE_DISTORTIONTENSOR /* for GDE implementation, want to include particle self-tide contribution -- for timestep or hill criteria, on the other hand, this is not necessary */
-        if(All.ComovingIntegrationOn) {P[i].tidal_tensorps[0][0] -= All.TidalCorrection/All.G; P[i].tidal_tensorps[1][1] -= All.TidalCorrection/All.G; P[i].tidal_tensorps[2][2] -= All.TidalCorrection/All.G;} // subtract Hubble flow terms //
-        /* Diagonal terms of tidal tensor need correction, because tree is running over all particles -> also over target particle -> extra term -> correct it */
-        P[i].tidal_tensorps[0][0] += P[i].Mass / (All.ForceSoftening[P[i].Type] * All.ForceSoftening[P[i].Type] * All.ForceSoftening[P[i].Type]) * 10.666666666667;
-        P[i].tidal_tensorps[1][1] += P[i].Mass / (All.ForceSoftening[P[i].Type] * All.ForceSoftening[P[i].Type] * All.ForceSoftening[P[i].Type]) * 10.666666666667;
-        P[i].tidal_tensorps[2][2] += P[i].Mass / (All.ForceSoftening[P[i].Type] * All.ForceSoftening[P[i].Type] * All.ForceSoftening[P[i].Type]) * 10.666666666667;
-#endif
-        for(j=0;j<3;j++) {int i2tt; for(i2tt=0;i2tt<3;i2tt++) {P[i].tidal_tensorps[j][i2tt] *= All.G;}} // units //
+        for(j=0;j<3;j++) {int i2tt; for(i2tt=0;i2tt<3;i2tt++) {P[i].tidal_tensorps[j][i2tt] *= All.G;}} /* give this the proper units */
 #ifdef COMPUTE_JERK_IN_GRAVTREE
-        for(j=0;j<3;j++) P[i].GravJerk[j] *= All.G;
+        for(j=0;j<3;j++) {P[i].GravJerk[j] *= All.G;} /* units */
+#endif
+#if defined(PMGRID) && !defined(ADAPTIVE_GRAVSOFT_FROM_TIDAL_CRITERION)
+        for(j=0;j<3;j++) {for(k=0;k<3;k++) {P[i].tidal_tensorps[j][k] += P[i].tidal_tensorpsPM[j][k];}} /* add the long-range (pm-grid) contribution; but make sure to do this after the unit multiplication by G above, since the PM term already has G built into it */
 #endif
 #endif /* COMPUTE_TIDAL_TENSOR_IN_GRAVTREE */
 
@@ -522,6 +547,9 @@ void gravity_tree(void)
 #endif
 #if defined(RT_USE_GRAVTREE_SAVE_RAD_ENERGY) /* normalize to energy density with C, and multiply by volume to use standard 'finite volume-like' quantity as elsewhere in-code */
         if(P[i].Type==0) {int kf; for(kf=0;kf<N_RT_FREQ_BINS;kf++) {SphP[i].Rad_E_gamma[kf] *= P[i].Mass/(SphP[i].Density*All.cf_a3inv * C_LIGHT_CODE_REDUCED);}}
+#endif
+#ifdef COSMIC_RAY_SUBGRID_LEBRON
+        if(P[i].Type==0) {SphP[i].SubGrid_CosmicRayEnergyDensity *= cr_get_source_shieldfac(i);}
 #endif
 #if defined(RT_USE_GRAVTREE_SAVE_RAD_FLUX) /* multiply by volume to use standard 'finite volume-like' quantity as elsewhere in-code */
         if(P[i].Type==0) {int kf,k2; for(kf=0;kf<N_RT_FREQ_BINS;kf++) {for(k2=0;k2<3;k2++) {SphP[i].Rad_Flux[kf][k2] *= P[i].Mass/(SphP[i].Density*All.cf_a3inv);}}} // convert to standard finite-volume-like units //
@@ -543,15 +571,19 @@ void gravity_tree(void)
                 for(k=0;k<3;k++) {vdot_h[k] = erad_i * (vel_i[k] + vdotflux*flux_i[k]/flux_mag2);} // calculate volume integral of scattering coefficient t_inv * (gas_vel . [e_rad*I + P_rad_tensor]), which gives an additional time-derivative term. this is the P term //
                 for(k=0;k<3;k++) {radacc[k] += acc_norm * (flux_i[k] - vdot_h[k]);} // note these 'vdoth' terms shouldn't be included in FLD, since its really assuming the entire right-hand-side of the flux equation reaches equilibrium with the pressure tensor, which gives the expression in rt_utilities
             }
+#if defined(RT_RAD_PRESSURE_OUTPUT)
+            for(k=0;k<3;k++) {SphP[i].Rad_Accel[k] = radacc[k];} // here units are the same as hydroaccel, so no extra comoving units 
+#else
             for(k=0;k<3;k++) {P[i].GravAccel[k] += radacc[k] / All.cf_a2inv;} // convert into our code units for GravAccel, which are comoving gm/r^2 units //
+#endif
         }
 #endif
 #endif
 
 #ifdef RT_USE_TREECOL_FOR_NH  /* compute the effective column density that gives equivalent attenuation of a uniform background: -log(avg(exp(-tau)))/kappa */
-        double attenuation=0; int kbin; // first do a sum of the columns and express columns in units of that sum, so that we're plugging O(1) values into exp and avoid overflow when we have unfortunate units. Then we just multiply by the sum at the end.
+        double attenuation=0; int kbin;
         double kappa_photoelectric = 500. * DMAX(1e-4, (P[i].Metallicity[0]/All.SolarAbundances[0])*return_dust_to_metals_ratio_vs_solar(i)); // dust opacity in cgs
-        for(kbin=0; kbin<RT_USE_TREECOL_FOR_NH; kbin++) {attenuation += exp(-P[i].ColumnDensityBins[kbin] * UNIT_SURFDEN_IN_CGS * kappa_photoelectric);}
+        for(kbin=0; kbin<RT_USE_TREECOL_FOR_NH; kbin++) {attenuation += exp(DMAX(-P[i].ColumnDensityBins[kbin] * UNIT_SURFDEN_IN_CGS * kappa_photoelectric,-100));} // we put a floor here to avoid underflow errors where exp(-large) = 0 - will just return a very high surface density that will be in the highly optically thick regime where both the ISRF and cooling radiation escape will be negligible
         P[i].SigmaEff = -log(attenuation/RT_USE_TREECOL_FOR_NH) / (kappa_photoelectric * UNIT_SURFDEN_IN_CGS);       
 #endif
 
@@ -625,20 +657,23 @@ void *gravity_primary_loop(void *p)
     int i, j, ret, thread_id = *(int *) p, *exportflag, *exportnodecount, *exportindex;
     exportflag = Exportflag + thread_id * NTask; exportnodecount = Exportnodecount + thread_id * NTask; exportindex = Exportindex + thread_id * NTask;
     for(j = 0; j < NTask; j++) {exportflag[j] = -1;} /* Note: exportflag is local to each thread */
-
+#ifdef _OPENMP
+    if(BufferCollisionFlag && thread_id) {return NULL;} /* force to serial for this subloop if threads simultaneously cross the Nexport bunchsize threshold */
+#endif
     while(1)
     {
         int exitFlag = 0;
         LOCK_NEXPORT;
 #ifdef _OPENMP
-#pragma omp critical(_nexport_)
+#pragma omp critical(_nextlistgravprim_)
 #endif
         {
         if(BufferFullFlag != 0 || NextParticle < 0) {exitFlag=1;}
-            else {i=NextParticle; ProcessedFlag[i]=0; NextParticle=NextActiveParticle[NextParticle];}
+            else {i=NextParticle; NextParticle=NextActiveParticle[NextParticle];}
         }
         UNLOCK_NEXPORT;
         if(exitFlag) {break;}
+        if(ProcessedFlag[i]) {continue;}
 
 #ifdef HERMITE_INTEGRATION /* if we are in the Hermite extra loops and a particle is not flagged for this, simply mark it done and move on */
         if(HermiteOnlyFlag && !eligible_for_hermite(i)) {ProcessedFlag[i]=1; continue;}
@@ -673,7 +708,7 @@ void *gravity_secondary_loop(void *p)
     {
         LOCK_NEXPORT;
 #ifdef _OPENMP
-#pragma omp critical(_nexport_)
+#pragma omp critical(_nextlistgravsec_)
 #endif
         {
             j = NextJ;
@@ -710,34 +745,32 @@ void sum_top_level_node_costfactors(void)
 }
 
 
-/*! This function sets the (comoving) softening length of all particle types in the table All.SofteningTable[...].
+/*! This function sets the (comoving) softening length of all particle types in the table All.ForceSoftening[...].
  We check that the physical softening length is bounded by the Softening-MaxPhys values */
 void set_softenings(void)
 {
+    int i; double soft[6];
+    soft[0] = All.SofteningGas;
+    soft[1] = All.SofteningHalo;
+    soft[2] = All.SofteningDisk;
+    soft[3] = All.SofteningBulge;
+    soft[4] = All.SofteningStars;
+    soft[5] = All.SofteningBndry;
     if(All.ComovingIntegrationOn)
     {
-        if(All.SofteningGas * All.Time > All.SofteningGasMaxPhys) {All.SofteningTable[0] = All.SofteningGasMaxPhys / All.Time;} else {All.SofteningTable[0] = All.SofteningGas;}
-        if(All.SofteningHalo * All.Time > All.SofteningHaloMaxPhys) {All.SofteningTable[1] = All.SofteningHaloMaxPhys / All.Time;} else {All.SofteningTable[1] = All.SofteningHalo;}
-        if(All.SofteningDisk * All.Time > All.SofteningDiskMaxPhys) {All.SofteningTable[2] = All.SofteningDiskMaxPhys / All.Time;} else {All.SofteningTable[2] = All.SofteningDisk;}
-        if(All.SofteningBulge * All.Time > All.SofteningBulgeMaxPhys) {All.SofteningTable[3] = All.SofteningBulgeMaxPhys / All.Time;} else {All.SofteningTable[3] = All.SofteningBulge;}
-        if(All.SofteningStars * All.Time > All.SofteningStarsMaxPhys) {All.SofteningTable[4] = All.SofteningStarsMaxPhys / All.Time;} else {All.SofteningTable[4] = All.SofteningStars;}
-        if(All.SofteningBndry * All.Time > All.SofteningBndryMaxPhys) {All.SofteningTable[5] = All.SofteningBndryMaxPhys / All.Time;} else {All.SofteningTable[5] = All.SofteningBndry;}
+        double soft_temp[6], cf_atime = 1./All.Time;
+        soft_temp[0] = All.SofteningGasMaxPhys * cf_atime;
+        soft_temp[1] = All.SofteningHaloMaxPhys * cf_atime;
+        soft_temp[2] = All.SofteningDiskMaxPhys * cf_atime;
+        soft_temp[3] = All.SofteningBulgeMaxPhys * cf_atime;
+        soft_temp[4] = All.SofteningStarsMaxPhys * cf_atime;
+        soft_temp[5] = All.SofteningBndryMaxPhys * cf_atime;
+        for(i=0; i<6; i++) {if(soft_temp[i]<soft[i]) {soft[i]=soft_temp[i];}}
     }
-    else
-    {
-        All.SofteningTable[0] = All.SofteningGas;
-        All.SofteningTable[1] = All.SofteningHalo;
-        All.SofteningTable[2] = All.SofteningDisk;
-        All.SofteningTable[3] = All.SofteningBulge;
-        All.SofteningTable[4] = All.SofteningStars;
-        All.SofteningTable[5] = All.SofteningBndry;
-    }
-    int i; for(i = 0; i < 6; i++) {All.ForceSoftening[i] = 2.8 * All.SofteningTable[i];} 
-    /* set the minimum gas kernel length to be used this timestep */
-    All.MinHsml = All.MinGasHsmlFractional * All.ForceSoftening[0];
+    for(i=0; i<6; i++) {All.ForceSoftening[i] = soft[i] / KERNEL_FAC_FROM_FORCESOFT_TO_PLUMMER;}
+    All.MinHsml = All.MinGasHsmlFractional * All.ForceSoftening[0]; /* set the minimum gas kernel length to be used this timestep */
 #ifndef SELFGRAVITY_OFF
-    if(All.MinHsml <= 5.0*EPSILON_FOR_TREERND_SUBNODE_SPLITTING * All.ForceSoftening[0])
-        {All.MinHsml = 5.0*EPSILON_FOR_TREERND_SUBNODE_SPLITTING * All.ForceSoftening[0];}
+    if(All.MinHsml <= 5.0*EPSILON_FOR_TREERND_SUBNODE_SPLITTING * All.ForceSoftening[0]) {All.MinHsml = 5.0*EPSILON_FOR_TREERND_SUBNODE_SPLITTING * All.ForceSoftening[0];}
 #endif
 }
 
@@ -801,9 +834,9 @@ void subtract_companion_gravity(int i)
     /* Remove contribution to gravitational field and tidal tensor from the stars in the binary to the center of mass */
     double u, dr, fac, fac2, h, h_inv, h3_inv, u2, tidal_tensorps[3][3]; int i1, i2;
     dr = sqrt(P[i].comp_dx[0]*P[i].comp_dx[0] + P[i].comp_dx[1]*P[i].comp_dx[1] + P[i].comp_dx[2]*P[i].comp_dx[2]);
-    h = All.ForceSoftening[5];  h_inv = 1.0 / h; h3_inv = h_inv*h_inv*h_inv; u = dr*h_inv; u2=u*u;
+    h = SinkParticle_GravityKernelRadius;  h_inv = 1.0 / h; h3_inv = h_inv*h_inv*h_inv; u = dr*h_inv; u2=u*u;
     fac = P[i].comp_Mass / (dr*dr*dr); fac2 = 3.0 * P[i].comp_Mass / (dr*dr*dr*dr*dr); /* no softening nonsense */
-    if(dr < h) /* second derivatives needed -> calculate them from softened potential. NOTE this is here -assuming- a cubic spline, will be inconsistent for different kernels used! */
+    if(dr < h) /* second derivatives needed -> calculate them from softened potential */
     {
 	    fac = P[i].comp_Mass * kernel_gravity(u, h_inv, h3_inv, 1);
         fac2 = P[i].comp_Mass * kernel_gravity(u, h_inv, h3_inv, 2);

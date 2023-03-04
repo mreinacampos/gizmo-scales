@@ -36,7 +36,11 @@ int ags_gravity_kernel_shared_BITFLAG(short int particle_type_primary)
 #ifdef ADAPTIVE_GRAVSOFT_FORALL
     if(!((1 << particle_type_primary) & (ADAPTIVE_GRAVSOFT_FORALL))) {return 0;} /* particle is NOT one of the designated 'adaptive' types */
 #endif
-    
+
+#ifdef ADAPTIVE_GRAVSOFT_FROM_TIDAL_CRITERION
+    if(!((1 << particle_type_primary) & (ADAPTIVE_GRAVSOFT_FROM_TIDAL_CRITERION))) {return ADAPTIVE_GRAVSOFT_FROM_TIDAL_CRITERION;} /* particle is NOT one of the designated 'adaptive' types */
+#endif
+
     if(particle_type_primary == 0) {return 1;} /* gas particles see gas particles */
 
 #if (ADAPTIVE_GRAVSOFT_FORALL & 32) && defined(BLACK_HOLES)
@@ -294,7 +298,7 @@ void ags_density(void)
                     PPP[i].NumNgb = PPP[i].DhsmlNgbFactor = P[i].Particle_DivVel = 0;
                 }
                 
-                // inverse of SPH volume element (to satisfy constraint implicit in Lagrange multipliers)
+                // inverse of defined volume element (to satisfy constraint implicit in Lagrange multipliers)
                 if(PPP[i].DhsmlNgbFactor > -0.9)	/* note: this would be -1 if only a single particle at zero lag is found */
                     PPP[i].DhsmlNgbFactor = 1 / (1 + PPP[i].DhsmlNgbFactor);
                 else

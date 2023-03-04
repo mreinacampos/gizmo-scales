@@ -67,7 +67,7 @@ void subfind_contamination(void)
   /* allocate buffers to arrange communication */
 
   All.BunchSize =
-    (int) ((All.BufferSize * 1024 * 1024) / (sizeof(struct data_index) + sizeof(struct data_nodelist) +
+    (long) ((All.BufferSize * 1024 * 1024) / (sizeof(struct data_index) + sizeof(struct data_nodelist) +
 					     sizeof(struct contamdata_in) + sizeof(struct contamdata_out) +
 					     sizemax(sizeof(struct contamdata_in),
 						     sizeof(struct contamdata_out))));
@@ -212,7 +212,7 @@ void subfind_contamination(void)
 }
 
 
-/*! This function represents the core of the SPH density computation. The
+/*! This function represents the core of the density computation. The
  *  target particle may either be local, or reside in the communication
  *  buffer.
  */
