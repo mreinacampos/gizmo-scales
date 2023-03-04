@@ -435,7 +435,7 @@ void empty_read_buffer(enum iofields blocknr, int offset, int pc, int type)
 
         case IO_AGS_ZETA:
 #if defined (AGS_HSML_CALCULATION_IS_ACTIVE) && defined(AGS_OUTPUTZETA)
-            for(n = 0; n < pc; n++) {PPPZ[offset + n].AGS_Zeta = *fp++;}
+            for(n = 0; n < pc; n++) {PPPZ[offset + n].AGS_zeta = *fp++;}
 #endif
             break;
 
@@ -480,7 +480,13 @@ void empty_read_buffer(enum iofields blocknr, int offset, int pc, int type)
              for(n = 0; n < pc; n++) {P[offset + n].IMF_NumMassiveStars = *fp++;}
 #endif
             break;
-            
+
+        case IO_DTOSTAR:
+#ifdef GALSF_SFR_IMF_SAMPLING_DISTRIBUTE_SF
+            for(n = 0; n < pc; n++) {P[offset + n].TimeDistribOfStarFormation = *fp++;}
+#endif
+            break;
+
         case IO_UNSPMASS:
 #if defined(BH_WIND_SPAWN) && defined(BH_DEBUG_SPAWN_JET_TEST)
              for(n = 0; n < pc; n++) {P[offset + n].unspawned_wind_mass = *fp++;}
@@ -510,6 +516,12 @@ void empty_read_buffer(enum iofields blocknr, int offset, int pc, int type)
             for(n = 0; n < pc; n++) {P[offset + n].SinkRadius = *fp++;}
 #endif
             break;
+
+        case IO_SINK_FORM_MASS:
+#ifdef BLACK_HOLES
+            for(n = 0; n < pc; n++) {P[offset + n].Sink_Formation_Mass = *fp++;}
+#endif
+            break;	    
             
         case IO_MOLECULARFRACTION:
 #if defined(COOL_MOLECFRAC_NONEQM) & !defined(IO_MOLECFRAC_NOT_IN_ICFILE)
@@ -532,8 +544,11 @@ void empty_read_buffer(enum iofields blocknr, int offset, int pc, int type)
         case IO_SFR:
         case IO_POT:
         case IO_ACCEL:
+        case IO_HYDROACCEL:
         case IO_DTENTR:
         case IO_RAD_ACCEL:
+        case IO_RAD_TEMP:
+        case IO_DUST_TEMP:
         case IO_GDE_DISTORTIONTENSOR:
         case IO_CRATE:
         case IO_HRATE:
@@ -552,6 +567,8 @@ void empty_read_buffer(enum iofields blocknr, int offset, int pc, int type)
         case IO_AMDC:
         case IO_PHI:
         case IO_GRADPHI:
+        case IO_GRADRHO:
+        case IO_GRADVEL:
         case IO_TIDALTENSORPS:
         case IO_FLOW_DETERMINANT:
         case IO_STREAM_DENSITY:
@@ -695,13 +712,13 @@ void read_file(char *fname, int readTask, int lastTask)
 #ifdef INPUT_IN_DOUBLEPRECISION
     if(header.flag_doubleprecision == 0)
     {
-        if(ThisTask == 0) {printf("\nProblem: Code compiled with INPUT_IN_DOUBLEPRECISION, but input files are in single precision!\n");}
+        if(ThisTask == 0) {printf("\nProblem: Code compiled with INPUT_IN_DOUBLEPRECISION, but input files are in single precision!\n"); fflush(stdout);}
         endrun(11);
     }
 #else
     if(header.flag_doubleprecision)
     {
-        if(ThisTask == 0) {printf("\nProblem: Code not compiled with INPUT_IN_DOUBLEPRECISION, but input files are in double precision!\n");}
+        if(ThisTask == 0) {printf("\nProblem: Code not compiled with INPUT_IN_DOUBLEPRECISION, but input files are in double precision!\n"); fflush(stdout);}
         endrun(10);
     }
 #endif
@@ -728,9 +745,9 @@ void read_file(char *fname, int readTask, int lastTask)
         for(i = 0; i < 6; i++) {All.MassTable[i] = header.mass[i];}
 
         All.MaxPart = (int) (All.PartAllocFactor * (All.TotNumPart / NTask));
-        All.MaxPartSph = (int) (All.PartAllocFactor * (All.TotN_gas / NTask));	/* sets the maximum number of particles that may reside on a processor */
+        All.MaxPartGas = (int) (All.PartAllocFactor * (All.TotN_gas / NTask));	/* sets the maximum number of particles that may reside on a processor */
 #ifdef ALLOW_IMBALANCED_GASPARTICLELOAD
-        All.MaxPartSph = All.MaxPart; // PFH: increasing All.MaxPartSph according to this line can allow better load-balancing in some cases. however it leads to more memory problems
+        All.MaxPartGas = All.MaxPart; // PFH: increasing All.MaxPartGas according to this line can allow better load-balancing in some cases. however it leads to more memory problems
         // (PFH: needed to revert the change -- i.e. INCLUDE the line above: commenting it out, while it improved memory useage, causes some instability in the domain decomposition for
         //   sufficiently irregular trees. overall more stable behavior with the 'buffer', albeit at the expense of memory )
 #endif
@@ -761,10 +778,10 @@ void read_file(char *fname, int readTask, int lastTask)
                " ..distributing this file to tasks %d-%d\n"
                "Type 0 (gas):   %8d  (tot=%6d%09d) masstab=%g\n"
                "Type 1 (halo):  %8d  (tot=%6d%09d) masstab=%g\n"
-               "Type 2 (disk):  %8d  (tot=%6d%09d) masstab=%g\n"
-               "Type 3 (bulge): %8d  (tot=%6d%09d) masstab=%g\n"
+               "Type 2 (alt):   %8d  (tot=%6d%09d) masstab=%g\n"
+               "Type 3 (pic):   %8d  (tot=%6d%09d) masstab=%g\n"
                "Type 4 (stars): %8d  (tot=%6d%09d) masstab=%g\n"
-               "Type 5 (bndry): %8d  (tot=%6d%09d) masstab=%g\n\n", fname, ThisTask, n_in_file, readTask,
+               "Type 5 (sink):  %8d  (tot=%6d%09d) masstab=%g\n\n", fname, ThisTask, n_in_file, readTask,
                lastTask, header.npart[0], (int) (header.npartTotal[0] / 1000000000),
                (int) (header.npartTotal[0] % 1000000000), All.MassTable[0], header.npart[1],
                (int) (header.npartTotal[1] / 1000000000), (int) (header.npartTotal[1] % 1000000000),
@@ -795,9 +812,9 @@ void read_file(char *fname, int readTask, int lastTask)
 
         if(type == 0)
         {
-            if(N_gas + n_for_this_task > All.MaxPartSph)
+            if(N_gas + n_for_this_task > All.MaxPartGas)
             {
-                printf("Not enough space on task=%d for SPH particles (space for %d, need at least %lld)\n", ThisTask, All.MaxPartSph, N_gas + n_for_this_task);
+                printf("Not enough space on task=%d for gas/fluid cells (space for %d, need at least %lld)\n", ThisTask, All.MaxPartGas, N_gas + n_for_this_task);
                 fflush(stdout);
                 endrun(172);
             }
@@ -846,9 +863,12 @@ void read_file(char *fname, int readTask, int lastTask)
 #if defined(HYDRO_MESHLESS_FINITE_VOLUME) && ((HYDRO_FIX_MESH_MOTION==1)||(HYDRO_FIX_MESH_MOTION==2)||(HYDRO_FIX_MESH_MOTION==3))
                    && blocknr != IO_PARTVEL
 #endif
-#if defined(BH_GRAVCAPTURE_FIXEDSINKRADIUS)
+#if defined(BH_GRAVCAPTURE_FIXEDSINKRADIUS) && defined(INPUT_READ_SINKPROPS)
                    && blocknr != IO_SINKRAD
 #endif
+#if defined(BLACK_HOLES) && defined(INPUT_READ_SINKPROPS)
+                   && blocknr != IO_SINK_FORM_MASS
+#endif		   
 #if defined(CHIMES) && !defined(CHIMES_INITIALISE_IN_EQM)
                    && blocknr != IO_CHIMES_ABUNDANCES
 #endif
@@ -897,6 +917,20 @@ void read_file(char *fname, int readTask, int lastTask)
 
 #if !defined(RADTRANSFER)
             if(RestartFlag == 2 && blocknr == IO_RADGAMMA) {continue;}
+#endif
+
+#if !defined(EOS_CARRIES_TEMPERATURE)
+            if(RestartFlag == 2 && blocknr == IO_EOSTEMP) {continue;}
+#endif
+            
+#if defined(SINGLE_STAR_AND_SSP_HYBRID_MODEL) && defined(SINGLE_STAR_RESTART_FROM_FIRESIM)
+            if(RestartFlag == 2 && blocknr == IO_RADGAMMA) {continue;}
+            if(RestartFlag == 2 && blocknr == IO_EDDINGTON_TENSOR) {continue;}
+            if(RestartFlag == 2 && blocknr == IO_OSTAR) {continue;}
+            if(RestartFlag == 2 && blocknr == IO_DTOSTAR) {continue;}
+            if(RestartFlag == 2 && blocknr == IO_HII) {continue;}
+            if(RestartFlag == 2 && blocknr == IO_HeI) {continue;}
+            if(RestartFlag == 2 && blocknr == IO_HeII) {continue;}
 #endif
 
 #if defined(IO_MOLECFRAC_NOT_IN_ICFILE)
@@ -1082,16 +1116,11 @@ void read_file(char *fname, int readTask, int lastTask)
                         if(All.ICFormat == 1 || All.ICFormat == 2)
                         {
                             SKIP2;
-
                             if(blksize1 != blksize2)
                             {
                                 printf("incorrect block-sizes detected!\n");
                                 printf("Task=%d   blocknr=%d  blksize1=%d  blksize2=%d\n", ThisTask, bnr, blksize1, blksize2);
-                                if(blocknr == IO_ID)
-                                {
-                                    printf
-                                    ("Possible mismatch of 32bit and 64bit ID's in IC file and GIZMO compilation !\n");
-                                }
+                                if(blocknr == IO_ID) {printf("Possible mismatch of 32bit and 64bit ID's in IC file and GIZMO compilation !\n");}
                                 fflush(stdout);
                                 endrun(1889);
                             }
@@ -1307,6 +1336,15 @@ void read_header_attributes_in_hdf5(char *fname)
     }
 #endif
     
+    /* things that are not part of the header 'structure' we define in-code, but used in the hdf5 headers and wanted for read here, can be read below */
+    if(H5Aexists(hdf5_headergrp, "Minimum_Mass_For_Cell_Merge")) { /* test for existence of this field */
+        hdf5_attribute = H5Aopen_name(hdf5_headergrp, "Minimum_Mass_For_Cell_Merge"); /* open it */
+        H5Aread(hdf5_attribute, H5T_NATIVE_DOUBLE, &All.MinMassForParticleMerger); H5Aclose(hdf5_attribute);} /* read it and close */
+    
+    if(H5Aexists(hdf5_headergrp, "Maximum_Mass_For_Cell_Split")) { /* test for existence of this field */
+        hdf5_attribute = H5Aopen_name(hdf5_headergrp, "Maximum_Mass_For_Cell_Split"); /* open it */
+        H5Aread(hdf5_attribute, H5T_NATIVE_DOUBLE, &All.MaxMassForParticleSplit); H5Aclose(hdf5_attribute);} /* read it and close */
+
     H5Gclose(hdf5_headergrp);
     H5Fclose(hdf5_file);
 }
@@ -1337,7 +1375,7 @@ void find_block(char *label, FILE * fd)
         FBSKIP;
         if(blksize != 8)
         {
-            printf("Incorrect Format (blksize=%u)!\n", blksize);
+            printf("Incorrect Format (blksize=%llu)!\n", (unsigned long long)blksize);
             endrun(1891);
         }
         else

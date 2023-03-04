@@ -46,7 +46,7 @@ int density_isactive(int n)
 #if defined(GALSF)
        if(((P[n].Type == 4)||((All.ComovingIntegrationOn==0)&&((P[n].Type == 2)||(P[n].Type==3))))&&(P[n].Mass>0))
         {
-            double star_age = evaluate_stellar_age_Gyr(P[n].StellarAge);
+            double star_age = evaluate_stellar_age_Gyr(n);
             if((star_age < 0.1)&&(star_age > 0)&&(!isnan(star_age))) return 1;
         }
 #else
@@ -67,7 +67,7 @@ int density_isactive(int n)
         if(P[n].DensAroundStar<=0) return 1;
         if(All.ComovingIntegrationOn==0) // only do stellar age evaluation if we have to //
         {
-            double star_age = evaluate_stellar_age_Gyr(P[n].StellarAge);
+            double star_age = evaluate_stellar_age_Gyr(n);
             if(star_age < 0.035) return 1;
         }
 #endif
@@ -119,15 +119,12 @@ void hydrokerneldensity_particle2in(struct INPUT_STRUCT_NAME *in, int i, int loo
     in->Hsml = PPP[i].Hsml;
     for(k=0;k<3;k++) {in->Pos[k] = P[i].Pos[k];}
     for(k=0;k<3;k++) {if(P[i].Type==0) {in->Vel[k]=SphP[i].VelPred[k];} else {in->Vel[k]=P[i].Vel[k];}}
-    if(P[i].Type == 0)
-    {
 #if defined(SPHAV_CD10_VISCOSITY_SWITCH)
-        for(k=0;k<3;k++) {in->Accel[k] = All.cf_a2inv*P[i].GravAccel[k] + SphP[i].HydroAccel[k];} // PHYSICAL units //
+    if(P[i].Type == 0) {for(k=0;k<3;k++) {in->Accel[k] = All.cf_a2inv*P[i].GravAccel[k] + SphP[i].HydroAccel[k];}} // PHYSICAL units //
 #endif
 #ifdef GALSF_SUBGRID_WINDS
-        in->DelayTime = SphP[i].DelayTime;
+    if(P[i].Type==0) {in->DelayTime = SphP[i].DelayTime;} else {in->DelayTime=0;}
 #endif
-    }
 }
 
 /*! this structure defines the variables that need to be sent -back to- the 'searching' element */
@@ -149,9 +146,6 @@ static struct OUTPUT_STRUCT_NAME
 #endif
 #ifdef HYDRO_PRESSURE_SPH
     MyLongDouble EgyRho;
-#endif
-#if defined(ADAPTIVE_GRAVSOFT_FORGAS) || (ADAPTIVE_GRAVSOFT_FORALL & 1)
-    MyFloat AGS_zeta;
 #endif
 #if defined(SPHAV_CD10_VISCOSITY_SWITCH)
     MyFloat NV_D[3][3];
@@ -197,19 +191,12 @@ void hydrokerneldensity_out2particle(struct OUTPUT_STRUCT_NAME *out, int i, int 
 #ifdef HYDRO_SPH
         ASSIGN_ADD(SphP[i].DhsmlHydroSumFactor, out->DhsmlHydroSumFactor, mode);
 #endif
-
-#if defined(ADAPTIVE_GRAVSOFT_FORGAS) || (ADAPTIVE_GRAVSOFT_FORALL & 1)
-        ASSIGN_ADD(PPPZ[i].AGS_zeta, out->AGS_zeta,   mode);
-#endif
-
 #ifdef HYDRO_PRESSURE_SPH
         ASSIGN_ADD(SphP[i].EgyWtDensity,   out->EgyRho,   mode);
 #endif
-
 #if defined(TURB_DRIVING)
         for(k = 0; k < 3; k++) {ASSIGN_ADD(SphP[i].SmoothedVel[k], out->GasVel[k], mode);}
 #endif
-
 #if defined(SPHAV_CD10_VISCOSITY_SWITCH)
         for(k = 0; k < 3; k++)
             for(j = 0; j < 3; j++)
@@ -282,7 +269,7 @@ int density_evaluate(int target, int mode, int *exportflag, int *exportnodecount
             {
                 j = ngblist[n]; /* since we use the -threaded- version above of ngb-finding, its super-important this is the lower-case ngblist here! */
 #ifdef GALSF_SUBGRID_WINDS /* check if partner is a wind particle: if I'm not wind, then ignore the wind particle */
-                if(SphP[j].DelayTime > 0) {if(!(local.DelayTime > 0)) {continue;}}
+                if(SphP[j].DelayTime > 0) {if(local.DelayTime <= 0) {continue;}}
 #endif
                 if(P[j].Mass <= 0) continue;
                 kernel.dp[0] = local.Pos[0] - P[j].Pos[0];
@@ -317,9 +304,6 @@ int density_evaluate(int target, int mode, int *exportflag, int *exportnodecount
                     out.EgyRho += kernel.wk * mass_eff;
 #endif
                     out.DhsmlHydroSumFactor += -mass_eff * (NUMDIMS * kernel.hinv * kernel.wk + u * kernel.dwk);
-#endif
-#if defined(ADAPTIVE_GRAVSOFT_FORGAS) || (ADAPTIVE_GRAVSOFT_FORALL & 1)
-                    if(local.Type == 0) {out.AGS_zeta += mass_j * kernel_gravity(u, kernel.hinv, kernel.hinv3, 0);}
 #endif
                     /* for everything below, we do NOT include the particle self-contribution! */
                     if(kernel.r > 0)
@@ -396,7 +380,7 @@ void density_evaluate_extra_physics_gas(struct INPUT_STRUCT_NAME *local, struct 
             P[j].SwallowTime = MAX_REAL_NUMBER; // initialize as a large number before looking
 #endif
 #if (SINGLE_STAR_SINK_FORMATION & 8)
-            if(kernel->r < DMAX(P[j].Hsml, All.ForceSoftening[5])) {
+            if(kernel->r < DMAX(P[j].Hsml, SinkParticle_GravityKernelRadius)) {
                 #pragma omp atomic write
                 P[j].BH_Ngb_Flag = 1; // note that this particle is inside of a BH's kernel function
             }
@@ -507,10 +491,6 @@ void density(void)
             if((PPP[i].Hsml < 0) || !isfinite(PPP[i].Hsml) || (PPP[i].Hsml > 0.99*maxsoft)) {PPP[i].Hsml = 0.99*maxsoft;} /* don't set to exactly maxsoft because our looping below won't treat this correctly */
             
         }} /* done with intial zero-out loop */
-    desnumngb = All.DesNumNgb; desnumngbdev = All.MaxNumNgbDeviation;
-    /* in the initial timestep and iteration, use a much more strict tolerance for the neighbor number */
-    if(All.Time==All.TimeBegin) {if(All.MaxNumNgbDeviation > 0.05) desnumngbdev=0.05;}
-    MyLongDouble desnumngbdev_0 = desnumngbdev, Tinv[3][3], ConditionNumber=0; int k,k1,k2; k=0;
 
     /* allocate buffers to arrange communication */
     #include "../system/code_block_xchange_perform_ops_malloc.h" /* this calls the large block of code which contains the memory allocations for the MPI/OPENMP/Pthreads parallelization block which must appear below */
@@ -523,6 +503,10 @@ void density(void)
         double tstart = my_second(), tend;
         for(i = FirstActiveParticle, npleft = 0; i >= 0; i = NextActiveParticle[i])
         {
+            desnumngb = All.DesNumNgb; desnumngbdev = All.MaxNumNgbDeviation;
+            /* in the initial timestep and iteration, use a much more strict tolerance for the neighbor number */
+            if(All.Time==All.TimeBegin) {if(All.MaxNumNgbDeviation > 0.05) desnumngbdev=0.05;}
+            MyLongDouble desnumngbdev_0 = desnumngbdev, Tinv[3][3], ConditionNumber=0; int k,k1,k2; k=0;
             if(density_isactive(i))
             {
                 if(PPP[i].NumNgb > 0)
@@ -538,7 +522,7 @@ void density(void)
                 if(ags_density_isactive(i) && (P[i].Type > 0)) {PPP[i].Particle_DivVel = 0;}
 #endif
 
-                // inverse of SPH volume element (to satisfy constraint implicit in Lagrange multipliers)
+                // inverse of fluid volume element (to satisfy constraint implicit in Lagrange multipliers)
                 if(PPP[i].DhsmlNgbFactor > -0.9) {PPP[i].DhsmlNgbFactor = 1 / (1 + PPP[i].DhsmlNgbFactor);} else {PPP[i].DhsmlNgbFactor = 1;} /* note: this would be -1 if only a single particle at zero lag is found */
                 P[i].Particle_DivVel *= PPP[i].DhsmlNgbFactor;
 
@@ -586,7 +570,7 @@ void density(void)
                 if(P[i].Type==0)
                 {
                     /* use the previous timestep condition number to correct how many neighbors we should use for stability */
-                    if((iter==0)&&(ConditionNumber>SphP[i].ConditionNumber))
+                    if((iter==0)&&(ConditionNumber>SphP[i].ConditionNumber)&&(SphP[i].ConditionNumber>0))
                     {
                         /* if we find ourselves with a sudden increase in condition number - check if we have a reasonable
                             neighbor number for the previous iteration, and if so, use the new (larger) correction */
@@ -661,7 +645,7 @@ void density(void)
 #ifdef BLACK_HOLES
                 if(P[i].Type == 5) {maxsoft = All.BlackHoleMaxAccretionRadius / All.cf_atime;}  // MaxAccretionRadius is now defined in params.txt in PHYSICAL units
 #ifdef SINGLE_STAR_SINK_DYNAMICS
-		        if(P[i].Type == 5) {minsoft = All.ForceSoftening[5] / All.cf_atime;} // we should always find all neighbours within the softening kernel/accretion radius, which is a lower bound on the accretion radius
+		        if(P[i].Type == 5) {minsoft = SinkParticle_GravityKernelRadius;} // we should always find all neighbours within the softening kernel/accretion radius, which is a lower bound on the accretion radius
 #ifdef BH_GRAVCAPTURE_FIXEDSINKRADIUS
                 if(P[i].Type == 5) {minsoft = DMAX(minsoft, P[i].SinkRadius);}
 #endif
@@ -906,9 +890,9 @@ void density(void)
                     set_mesh_motion(i); // use user-specified analytic function to define mesh motions //
 #elif ((HYDRO_FIX_MESH_MOTION==5)||(HYDRO_FIX_MESH_MOTION==6))
                     double eps_pvel = 0.3; // normalization for how much 'weight' to give to neighbors (unstable if >=0.5)
-                    for(k=0;k<3;k++) {SphP[i].ParticleVel[k] = (1.-eps_pvel)*SphP[i].VelPred[k] + eps_pvel*SphP[i].ParticleVel[k]/SphP[i].Density;} // assign mixture velocity
+                    {int k; for(k=0;k<3;k++) {SphP[i].ParticleVel[k] = (1.-eps_pvel)*SphP[i].VelPred[k] + eps_pvel*SphP[i].ParticleVel[k]/SphP[i].Density;}} // assign mixture velocity
 #elif (HYDRO_FIX_MESH_MOTION==7)
-                    for(k=0;k<3;k++) {SphP[i].ParticleVel[k] = SphP[i].VelPred[k];} // move with fluid
+                    {int k; for(k=0;k<3;k++) {SphP[i].ParticleVel[k] = SphP[i].VelPred[k];}} // move with fluid
 #endif
 #endif
 
@@ -934,6 +918,7 @@ void density(void)
 
 
 #if defined(SPHAV_CD10_VISCOSITY_SWITCH)
+                    int k1, k2;
                     for(k1 = 0; k1 < 3; k1++)
                         for(k2 = 0; k2 < 3; k2++)
                         {
@@ -1011,6 +996,7 @@ void density(void)
 #if defined(GRAIN_FLUID)
             if((1 << P[i].Type) & (GRAIN_PTYPES))
             {
+                int k;
                 if(P[i].Gas_Density > 0)
                 {
                     P[i].Gas_InternalEnergy /= P[i].Gas_Density;
@@ -1025,30 +1011,6 @@ void density(void)
             }
 #endif
 
-
-#if defined(ADAPTIVE_GRAVSOFT_FORGAS) || (ADAPTIVE_GRAVSOFT_FORALL & 1)
-            /* non-gas particles are handled separately, in the ags_hsml routine */
-            if(P[i].Type==0)
-            {
-                PPPZ[i].AGS_zeta = 0;
-                double zeta_0 = 0; // 2.0 * P[i].Mass*P[i].Mass * PPP[i].Hsml*PPP[i].Hsml; // self-value of zeta if no neighbors are found //
-                if((PPP[i].Hsml > 0)&&(PPP[i].NumNgb > 0))
-                {
-                    /* the zeta terms ONLY control errors if we maintain the 'correct' neighbor number: for boundary
-                        particles, it can actually be worse. so we need to check whether we should use it or not */
-                    if((PPP[i].Hsml > 1.001*All.MinHsml) && (PPP[i].Hsml < 0.999*All.MaxHsml) &&
-                        (fabs(PPP[i].NumNgb-All.DesNumNgb)/All.DesNumNgb < 0.05))
-                    {
-                        double ndenNGB = PPP[i].NumNgb / ( NORM_COEFF * pow(PPP[i].Hsml,NUMDIMS) );
-                        PPPZ[i].AGS_zeta *= 0.5 * P[i].Mass * PPP[i].Hsml / (NUMDIMS * ndenNGB) * PPP[i].DhsmlNgbFactor;
-                    } else {
-                        PPPZ[i].AGS_zeta = zeta_0;
-                    }
-                } else {
-                    PPPZ[i].AGS_zeta = zeta_0;
-                }
-            }
-#endif
             apply_pm_hires_region_clipping_selection(i);
 
          /* finally, convert NGB to the more useful format, NumNgb^(1/NDIMS),

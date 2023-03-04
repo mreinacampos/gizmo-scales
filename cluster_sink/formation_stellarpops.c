@@ -28,7 +28,7 @@ void continuous_star_formation_in_sinks(void)
     // record: initial and current mass of stellar population, age and metallicity
     // think: which SFE to use?
 
-    double mass_gas, sp_mass;
+    double sp_mass;
     int i, j;
     // loop over particles //
     for(i = FirstActiveParticle; i >= 0; i = NextActiveParticle[i])
@@ -45,7 +45,7 @@ void continuous_star_formation_in_sinks(void)
         // loop until there's an empty entry
         for (j = 0; j<CLUSTER_SINK_NUMMSP; j++){
             if (P[i].MSP_InitialMass[j] > 0) continue;
-            printf("[formation_stellarpops.c] - i %d j %d, mass_gas %g, P[i].MSP_InitialMass[j] %g\n", i, j, mass_gas, P[i].MSP_InitialMass[j]);
+            printf("[formation_stellarpops.c] - i %d j %d, sp_mass %g, P[i].MSP_InitialMass[j] %g\n", i, j, sp_mass, P[i].MSP_InitialMass[j]);
             // assign properties
             P[i].MSP_InitialMass[j] = sp_mass;
             P[i].MSP_Mass[j] = sp_mass;
@@ -75,9 +75,10 @@ double determine_mass_gas_reservoir(int i)
     int k;
     double mass_gas, mass_msp; mass_gas = 0; mass_msp = 0;
     // calculate total mass currently in stars within the sink
-    for (k=0; k<CLUSTER_SINK_NUMMSP; k++){ mass_msp += P[i].MSP_InitialMass[k]; }
+    for (k=0; k<CLUSTER_SINK_NUMMSP; k++){ mass_msp += P[i].MSP_Mass[k]; }
     // calculate the gas mass
     mass_gas = P[i].Mass - mass_msp;
+    if (mass_gas < 0) printf("[formation_stellarpops.c - mgas] mass_gas %g, P[i].Mass %g, mass_msp %g\n", mass_gas, P[i].Mass, mass_msp);
     assert(mass_gas >= 0.);
     return mass_gas;
 }
