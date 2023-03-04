@@ -444,8 +444,16 @@ void init(void)
             if(RestartFlag == 0)
             {
                 BPP(i).BH_Mass = All.SeedBlackHoleMass;
-#if defined(SINGLE_STAR_SINK_DYNAMICS) || defined(CLUSTER_SINK_ACCRETION)
+#if defined(SINGLE_STAR_SINK_DYNAMICS)
                 BPP(i).BH_Mass = P[i].Mass;
+#endif
+#ifdef CLUSTER_SINK_ACCRETION
+                BPP(i).BH_Mass = P[i].Mass;
+                P[i].MSP_Mass[0] = P[i].Mass; // mass of the first MSP
+                P[i].MSP_InitialMass[0] = P[i].Mass; // initial mass of the first MSP
+                P[i].MSP_Age[0] = All.Time; // age of the first MSP
+                P[i].MSP_Metallicity[0] = P[i].Metallicity[0]; // metallicity of the first MSP
+                printf("[init.c] - i %d, P[i].Mass %g, P[i].MSP_Mass[0] %g \n", P[i].Mass, P[i].MSP_Mass[0]); // MRC
 #endif
 #ifdef GRAIN_FLUID
                 BPP(i).BH_Dust_Mass = 0;

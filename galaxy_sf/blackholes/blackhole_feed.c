@@ -291,7 +291,7 @@ int blackhole_feed_evaluate(int target, int mode, int *exportflag, int *exportno
                             {
                                 double dm_toacc = bh_mass_withdisk - (local.Mass + mass_markedswallow); if(dm_toacc>0) {p=dm_toacc*wk/local.Density;} else {p=0;}
                                 printf(" ..[blackhole_feed.c] - j %d dm_toacc %g, local.Mass %g, bh_mass_withdisk %g, mass_markedswallow %g, wk %g, local.Density %g, p %g\n",j, dm_toacc, local.Mass, bh_mass_withdisk, mass_markedswallow, wk, local.Density, p);
-                                // MRC - probabilities should be < 1 - otherwise EVERYTHING gets accreted
+                                assert(p<=1); // MRC - probabilities should be < 1 - otherwise EVERYTHING gets accreted
 #ifdef BH_WIND_KICK /* DAA: for stochastic winds (BH_WIND_KICK) we remove a fraction of mass from gas particles prior to kicking --> need to increase the probability here to balance black hole growth */
                                 if(f_accreted>0) {p /= f_accreted; if((bh_mass_withdisk - local.Mass) < 0) {p = ( (1-f_accreted)/f_accreted ) * local.Mdot * local.Dt * wk / local.Density;}} /* DAA: compute outflow probability when "bh_mass_withdisk < mass" - we don't need to enforce mass conservation in this case, relevant only in low-res sims where the BH seed mass is much lower than the gas particle mass */
 #endif
