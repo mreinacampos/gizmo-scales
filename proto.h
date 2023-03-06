@@ -552,7 +552,11 @@ double evaluate_time_since_t_initial_in_Gyr(double t_initial);
 #ifdef GALSF
 int is_particle_single_star_eligible(long i);
 double evaluate_stellar_age_Gyr(long i);
+#ifdef CLUSTER_SINK
+double evaluate_light_to_mass_ratio(double stellar_age_in_gyr, int i, int j);
+#else
 double evaluate_light_to_mass_ratio(double stellar_age_in_gyr, int i);
+#endif
 double calculate_relative_light_to_mass_ratio_from_imf(double stellar_age_in_gyr, int i, int mode);
 double calculate_individual_stellar_luminosity(double mdot, double mass, long i);
 double return_probability_of_this_forming_bh_from_seed_model(int i);
@@ -592,7 +596,11 @@ double get_rt_ir_lambdadust_effective(double T, double rho, double *nH0_guess, d
 #endif
 
 #if defined(GALSF_FB_FIRE_RT_HIIHEATING) || (defined(RT_CHEM_PHOTOION) && defined(GALSF))
+#ifdef CLUSTER_SINK
+double particle_ionizing_luminosity_in_cgs(long i, int j);
+#else
 double particle_ionizing_luminosity_in_cgs(long i);
+#endif
 #endif
 
 #ifdef GALSF_FB_FIRE_RT_HIIHEATING
@@ -799,7 +807,11 @@ int rt_get_source_luminosity_chimes(int i, int mode, double *lum, double *chimes
 #endif
 int rt_get_source_luminosity(int i, int mode, double *lum);
 int rt_get_donation_target_bin(int bin);
+#ifdef CLUSTER_SINK
+int rt_get_lum_band_stellarpopulation(int i, int mode, double *lum, int j);
+#else
 int rt_get_lum_band_stellarpopulation(int i, int mode, double *lum);
+#endif
 int rt_get_lum_band_agn(int i, int mode, double *lum);
 int rt_get_lum_band_singlestar(int i, int mode, double *lum);
 void rt_define_effective_frequencies_in_bands(void);

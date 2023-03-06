@@ -579,7 +579,7 @@ double determine_winds_yields(int i, double age, int k)
  * \param i                 index of the particle
  * \return                  light-to-mass ratio in Lsun/Msun
  */
-double calculate_relative_light_to_mass_ratio(double age_in_gyr, int i){
+double calculate_relative_light_to_mass_ratio(double age_in_gyr, int i, int j){
 
     double zh, age_in_myr = age_in_gyr*1e3, light_to_mass = 0, slope = 0;
     // metallicity of the stellar population - zh = 10^[Fe/H] = (N_Fe/N_H)_star / (N_Fe/N_H)_solar

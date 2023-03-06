@@ -40,7 +40,11 @@ int is_particle_single_star_eligible(long i)
 
 
 /* return the light-to-mass ratio [in units of Lsun/Msun] of a star or stellar population with a given age; used throughout the code below */
+#ifdef CLUSTER_SINK
+double evaluate_light_to_mass_ratio(double stellar_age_in_gyr, int i, int j)
+#else
 double evaluate_light_to_mass_ratio(double stellar_age_in_gyr, int i)
+#endif
 {
     if(is_particle_single_star_eligible(i)) // SINGLE-STAR VERSION: calculate single-star luminosity (and convert to solar luminosity-to-mass ratio, which this output assumes)
     {
@@ -54,7 +58,10 @@ double evaluate_light_to_mass_ratio(double stellar_age_in_gyr, int i)
 #ifdef CLUSTER_SINK 
         double lum_ssp = 0;
 #ifdef CLUSTER_SINK_RADIATION 
-        lum_ssp = calculate_relative_light_to_mass_ratio(stellar_age_in_gyr,i);
+        lum_ssp = calculate_relative_light_to_mass_ratio(stellar_age_in_gyr, i, j);
+#endif
+#ifdef CLUSTER_SINK_OUTPUT_BOLLUM
+        P[i].Light_MassRatio[j] = lum_ssp;
 #endif
         return lum_ssp;
 #endif 
@@ -116,7 +123,11 @@ double calculate_relative_light_to_mass_ratio_from_imf(double stellar_age_in_gyr
 
 #if defined(GALSF_FB_FIRE_RT_HIIHEATING) || (defined(RT_CHEM_PHOTOION) && defined(GALSF))
 /* routine to compute the -ionizing- luminosity coming from either individual stars or an SSP */
+#ifdef CLUSTER_SINK
+double particle_ionizing_luminosity_in_cgs(long i, int j)
+#else
 double particle_ionizing_luminosity_in_cgs(long i)
+#endif
 {
     if(is_particle_single_star_eligible(i)) /* SINGLE STAR VERSION: use effective temperature as a function of stellar mass and size to get ionizing photon production */
     {
@@ -129,11 +140,11 @@ double particle_ionizing_luminosity_in_cgs(long i)
     }
     else /* STELLAR POPULATION VERSION: use updated SB99 tracks: including rotation, new mass-loss tracks, etc. */
     {
-#if defined(CLUSTER_SINK) && defined(CLUSTER_SINK_RADIATION) // MRC - needs to be adapted
-        double lm_ssp = 0, star_age = evaluate_stellar_age_Gyr(P[i].StellarAge);
+#if defined(CLUSTER_SINK) && defined(CLUSTER_SINK_RADIATION)
+        double lm_ssp = 0, star_age = evaluate_stellar_age_Gyr_for_msp(i, j);
         // converts to cgs luminosity [lm_ssp is in Lsun/Msun, here]
         double f_ion = determine_ionizing_flux_fraction(star_age, i);
-        lm_ssp = f_ion * evaluate_light_to_mass_ratio(star_age, i) * SOLAR_LUM_CGS * (P[i].Mass * UNIT_MASS_IN_SOLAR);
+        lm_ssp = f_ion * evaluate_light_to_mass_ratio(star_age, i, j) * SOLAR_LUM_CGS * (P[i].MSP_Mass[j] * UNIT_MASS_IN_SOLAR);
         return lm_ssp;
 #endif
 
