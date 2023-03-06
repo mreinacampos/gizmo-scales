@@ -36,13 +36,13 @@ void set_fb_input_quantities_from_msps(struct addFB_evaluate_data_in_ *in, int i
     for(k=0;k<NUM_METAL_SPECIES;k++) { yields_snii[k] = 0.;  yields_snia[k] = 0.; yields_winds[k] = 0.;}
 
     // declare bookkeeping quantities to be used for each MSP
-    double mass_snii, mass_snia, mass_winds, velocity_winds;
+    double velocity_winds;
 
     //loop over every stellar population within the sink
     for (j = 0; j<CLUSTER_SINK_NUMMSP; j++){
 
         // zero out quantities
-        mass_snii = 0; mass_snia = 0; mass_winds = 0; velocity_winds = 0;
+        velocity_winds = 0;
 
         if (P[i].MSP_Mass[j] == 0) continue; // this MSP has no FB to produce
 
@@ -55,63 +55,52 @@ void set_fb_input_quantities_from_msps(struct addFB_evaluate_data_in_ *in, int i
         } else {
             zh = (P[i].Metallicity[0]/All.SolarAbundances[0]);
         }
+
+        // calculate the mass loss associated to each mechanism for this MSP
+        struct fb_massloss_for_msp fb_dm;
+        calculate_fb_mass_ejected_for_msps(&fb_dm, i, j);
+
 #ifdef CLUSTER_SINK_SNII
         // total mass ejected by core-collapse SNe in code units
-        mass_snii = P[i].SNII_ThisTimeStep[j] * (determine_corecollapse_sne_total_ejected_mass(age)/UNIT_MASS_IN_SOLAR); 
-        total_mass_snii += mass_snii; // increase the total budget
+        total_mass_snii += fb_dm.mass_snii; // increase the total budget
         // total energy ejected per core-collapse SNe in code units
         double eps_z = DMAX(pow(zh + 1e-4, -0.12), 1);
         total_energy_snii += P[i].SNII_ThisTimeStep[j] * (eps_z*(1.e51/UNIT_ENERGY_IN_CGS));
 #ifdef METALS
-        // MRC - scale dimensionless mass fractions by the mass of each MSP
         // yields ejected: as ejecta masses
         double total_z = 0.;
-        for(k=1;k<NUM_METAL_SPECIES;k++) { yields_snii[k] += mass_snii*determine_snii_yields(k, age); total_z += determine_snii_yields(k, age); }
-        yields_snii[0] = mass_snii*1.02*total_z; // from App. A in Hopkins+18
+        for(k=1;k<NUM_METAL_SPECIES;k++) { yields_snii[k] += fb_dm.mass_snii*determine_snii_yields(k, age); total_z += determine_snii_yields(k, age); }
+        yields_snii[0] = fb_dm.mass_snii*1.02*total_z; // from App. A in Hopkins+18
         //yields_snii[0] = DMAX(1.02*total_z, P[i].Metallicity[0]*P[i].MSP_Mass[j]/mass_snii); // from App. A in Hopkins+18
 #endif
 #endif
 
 #ifdef CLUSTER_SINK_SNIa
-        // total mass ejected by SNIa in code units - assume 1.4MSun per SNIa
-        mass_snia = P[i].SNIa_ThisTimeStep[j] * (1.4/UNIT_MASS_IN_SOLAR); 
-        total_mass_snia += mass_snia; // increase the total budget
-
+        // total mass ejected by SNIa in code units
+        total_mass_snia += fb_dm.mass_snia; // increase the total budget
         // total energy ejected by SNIa in code units - assume 1e51ergs per SNIa
         total_energy_snia += P[i].SNIa_ThisTimeStep[j] * (1.e51/UNIT_ENERGY_IN_CGS);
 #ifdef METALS
         // yields ejected: as ejecta masses
-        for(k=0;k<NUM_METAL_SPECIES;k++) { yields_snia[k] += mass_snia*determine_snia_yields(k); }
+        for(k=0;k<NUM_METAL_SPECIES;k++) { yields_snia[k] += fb_dm.mass_snia*determine_snia_yields(k); }
 #endif
 #endif
 
 #ifdef CLUSTER_SINK_WINDS
-        // particle timestep in Myr
-        double dt = GET_PARTICLE_TIMESTEP_IN_PHYSICAL(i) * UNIT_TIME_IN_MYR;
         // total mass ejected by winds in code units 
-        mass_winds = determine_winds_mass_loss_rate(age, zh) * P[i].MSP_Mass[j] * dt; 
-        total_mass_winds += mass_winds; // increase the total budget
+        total_mass_winds += fb_dm.mass_winds; // increase the total budget
         // wind injection velocity in code units 
         velocity_winds = determine_winds_velocity_injection(age, zh)/UNIT_VEL_IN_KMS;
 
         // total energy ejected by winds in code units -- assumed kinetic
-        total_energy_winds += 0.5 * mass_winds * velocity_winds * velocity_winds;
+        total_energy_winds += 0.5 * fb_dm.mass_winds * velocity_winds * velocity_winds;
 #ifdef METALS
         // yields ejected: as ejecta masses
-        for(k=0;k<NUM_METAL_SPECIES;k++) { yields_winds[k] += mass_winds*determine_winds_yields(i, k); }
+        for(k=0;k<NUM_METAL_SPECIES;k++) { yields_winds[k] += fb_dm.mass_winds*determine_winds_yields(i, k); }
 #endif
 #endif
-
-        // now remove the ejected mass from each MSP - it's not going to be numerically equivalent to the reduction in out_2FB for 
-        // P.Mass because of the sumation over the kernel weights of the particles, but should be close enough for now
-        /*if(fb_loop_iteration >= 0){ // only in the actual loop where FB is injected
-            P[i].MSP_Mass[j] -= (mass_snii + mass_snia + mass_winds);
-            assert(P[i].MSP_Mass[j] >= 0);            
-        }*/
-
-        printf("[feedback_fits.c] - ThisTask %d, i %d, P[i].ID %d - fb_loop_iteration %d, P.Mass %g - MSP j %d - MSP_Mass %g - mass_snii %g, mass_snia %g, mass_winds %g\n", ThisTask, i, P[i].ID, fb_loop_iteration, P[i].Mass, j, 
-            P[i].MSP_Mass[j], mass_snii, mass_snia, mass_winds);
-
+        printf("[MRC - set_fb_input_quantities_from_msps] - ThisTask %d, i %d, P[i].ID %d - fb_loop_iteration %d, P.Mass %g - MSP j %d - MSP_Mass %g - mass_snii %g, mass_snia %g, mass_winds %g\n", ThisTask, i, P[i].ID, fb_loop_iteration, P[i].Mass, j, 
+            P[i].MSP_Mass[j], fb_dm.mass_snii, fb_dm.mass_snia, fb_dm.mass_winds);
     }
 
     // yields ejected: convert into dimensionless ejecta mass fractions - avoid NaNs
@@ -128,9 +117,87 @@ void set_fb_input_quantities_from_msps(struct addFB_evaluate_data_in_ *in, int i
         in->yields[k] = (yields_snii[k] * total_mass_snii + yields_snia[k] * total_mass_snia + yields_winds[k] * total_mass_winds)/in->Msne;
         //printf("[feedback_fits.c] - k %d, total_mass_snii %g, total_mass_snia %g, total_mass_winds %g - yields [%g, %g, %g] = [%g]\n", k, 
         //    total_mass_snii, total_mass_snia, total_mass_winds, yields_snii[k], yields_snia[k], yields_winds[k], in->yields[k]);
-        assert(in->yields[k] >= 0.);
+        assert((in->yields[k] >= 0.)&&(in->yields[k] < 1.));
     }
 #endif
+}
+
+/** \brief Calculates the mass lost due to each feedbach mechanism from each multiple stellar populations
+ *
+ * \struct in     structure holding the mass loss associated to each mechanism
+ * \param i       index of the particle
+ * \param j       index of the multiple stellar population to look at
+ * \return        void
+ */
+void calculate_fb_mass_ejected_for_msps(struct fb_massloss_for_msp *fb_dm, int i, int j)
+{
+
+    // determine the age in Myr
+    double age = evaluate_stellar_age_Gyr(P[i].MSP_Age[j])*1e3, zh;
+    // MRC - TODO - use weighed metallicity for each MSP
+    // metallicity of the stellar population - zh = 10^[Fe/H] = (N_Fe/N_H)_star / (N_Fe/N_H)_solar
+    if (NUM_METAL_SPECIES > 1){
+        zh = (P[i].Metallicity[NUM_METAL_SPECIES-1]/(1 - P[i].Metallicity[1] - P[i].Metallicity[0]))/(All.SolarAbundances[NUM_METAL_SPECIES-1]/(1 - All.SolarAbundances[0] - All.SolarAbundances[1]));
+    } else {
+        zh = (P[i].Metallicity[0]/All.SolarAbundances[0]);
+    }
+
+    // zero out quantities
+    fb_dm->mass_snii = 0; fb_dm->mass_snia = 0; fb_dm->mass_winds = 0;
+
+#ifdef CLUSTER_SINK_SNII
+    // total mass ejected by core-collapse SNe in code units
+    fb_dm->mass_snii = P[i].SNII_ThisTimeStep[j] * (determine_corecollapse_sne_total_ejected_mass(age)/UNIT_MASS_IN_SOLAR); 
+#endif
+
+#ifdef CLUSTER_SINK_SNIa
+    // total mass ejected by SNIa in code units - assume 1.4MSun per SNIa
+    fb_dm->mass_snia = P[i].SNIa_ThisTimeStep[j] * (1.4/UNIT_MASS_IN_SOLAR); 
+#endif
+
+#ifdef CLUSTER_SINK_WINDS
+    // particle timestep in Myr
+    double dt = GET_PARTICLE_TIMESTEP_IN_PHYSICAL(i) * UNIT_TIME_IN_MYR;
+    // total mass ejected by winds in code units 
+    fb_dm->mass_winds = determine_winds_mass_loss_rate(age, zh) * P[i].MSP_Mass[j] * dt; 
+#endif
+}
+
+/** \brief Reduce the mass of the stellar particle that has done feedback and of its MSPs
+ */
+void reduce_mass_from_msps(void) 
+{
+    int i, j;
+    struct fb_massloss_for_msp fb_dm;
+    // loop over all active particles //
+    for(i = FirstActiveParticle; i >= 0; i = NextActiveParticle[i])
+    {
+        if((P[i].Type!=4)&&(P[i].Type!=5)) {continue;} // has this sink output feedback in this timestep?
+#ifdef BH_INTERACT_ON_GAS_TIMESTEP
+        if(P[i].Type == 5 && !P[i].do_gas_search_this_timestep) {continue;}
+#endif
+        if(P[i].SNe_ThisTimeStep == 0) {continue;} // has this sink output feedback in this timestep?
+
+        //loop over every stellar population within the sink
+        for (j = 0; j<CLUSTER_SINK_NUMMSP; j++){
+
+            if (P[i].MSP_Mass[j] == 0) continue; // this MSP has no FB to produce
+
+            // calculate the mass loss associated to each mechanism for this MSP
+            calculate_fb_mass_ejected_for_msps(&fb_dm, i, j);
+
+            // now remove the ejected mass from each MSP 
+            P[i].MSP_Mass[j] -= (fb_dm.mass_snii + fb_dm.mass_snia + fb_dm.mass_winds);
+            assert(P[i].MSP_Mass[j] >= 0); 
+
+            // remove mass from the total mass too - already done in out2particle_addFB
+            //P[i].Mass -= (fb_dm.mass_snii + fb_dm.mass_snia + fb_dm.mass_winds);
+            //if((P[i].Mass<0)||(isnan(P[i].Mass))) {P[i].Mass=0;}
+            
+            printf("[MRC - reduce_mass_from_msps] - ThisTask %d, i %d, P[i].ID %d - P.Mass %g, P.BH_Mass %g - MSP j %d - MSP_Mass %g - mass_snii %g, mass_snia %g, mass_winds %g\n", ThisTask, i, P[i].ID, P[i].Mass, P[i].BH_Mass, j, 
+                P[i].MSP_Mass[j], fb_dm.mass_snii, fb_dm.mass_snia, fb_dm.mass_winds);
+        }
+    }
 }
 
 

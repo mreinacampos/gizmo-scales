@@ -188,7 +188,7 @@ void particle2in_addFB_fromstars(struct addFB_evaluate_data_in_ *in, int i, int 
     if(NUM_LIVE_SPECIES_FOR_COOLTABLES>=10) {in->yields[1] = 0.4;} // (catch for Helium, which the above scaling would give bad values for)
 #endif
 
-    printf("[MRC - stellar_evolution.c] - ThisTask %d - i %d, P[i].ID %d - fb_loop_iteration %d, P.Mass %g\n", ThisTask, i, P[i].ID, fb_loop_iteration, P[i].Mass);
+    printf("[MRC - particle2in_addFB_fromstars] - ThisTask %d - i %d, P[i].ID %d - fb_loop_iteration %d, P.Mass %g, P.BH_Mass %g\n", ThisTask, i, P[i].ID, fb_loop_iteration, P[i].Mass, P[i].BH_Mass);
 #endif
 }
 
