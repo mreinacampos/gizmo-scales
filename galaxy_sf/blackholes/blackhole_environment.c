@@ -76,7 +76,7 @@ MyFloat Jgas_in_Kernel[3], Jstar_in_Kernel[3], Jalt_in_Kernel[3]; // mass/angula
 #ifdef BH_DYNFRICTION
     MyFloat DF_rms_vel, DF_mean_vel[3], DF_mmax_particles;
 #endif
-#if defined(BH_OUTPUT_MOREINFO)// MRC - not anymore || (CLUSTER_SINK_ACCRETION == 0)
+#if defined(BH_OUTPUT_MOREINFO)
     MyFloat Sfr_in_Kernel;
 #endif
 #if defined(BH_BONDI) || defined(BH_DRAG) || (BH_GRAVACCRETION >= 5) || defined(SINGLE_STAR_SINK_DYNAMICS) || defined(SINGLE_STAR_TIMESTEPPING)
@@ -120,7 +120,7 @@ static inline void OUTPUTFUNCTION_NAME(struct OUTPUT_STRUCT_NAME *out, int i, in
     if(mode==0) {BlackholeTempInfo[target].DF_mmax_particles = out->DF_mmax_particles;}
         else {if(out->DF_mmax_particles > BlackholeTempInfo[target].DF_mmax_particles) {BlackholeTempInfo[target].DF_mmax_particles = out->DF_mmax_particles;}}
 #endif
-#if defined(BH_OUTPUT_MOREINFO)// MRC - not anymore || (CLUSTER_SINK_ACCRETION == 0)
+#if defined(BH_OUTPUT_MOREINFO)
     ASSIGN_ADD(BlackholeTempInfo[target].Sfr_in_Kernel,out->Sfr_in_Kernel,mode);
 #endif
 #if defined(BH_BONDI) || defined(BH_DRAG) || (BH_GRAVACCRETION >= 5) || defined(SINGLE_STAR_SINK_DYNAMICS) || defined(SINGLE_STAR_TIMESTEPPING)
@@ -259,9 +259,8 @@ int blackhole_environment_evaluate(int target, int mode, int *exportflag, int *e
                         out.Mgas_in_Kernel += wt;
                         out.BH_InternalEnergy += wt*SphP[j].InternalEnergy;
                         out.Jgas_in_Kernel[0] += wt*(dP[1]*dv[2] - dP[2]*dv[1]); out.Jgas_in_Kernel[1] += wt*(dP[2]*dv[0] - dP[0]*dv[2]); out.Jgas_in_Kernel[2] += wt*(dP[0]*dv[1] - dP[1]*dv[0]);
-#if defined(BH_OUTPUT_MOREINFO)// MRC - not anymore || (CLUSTER_SINK_ACCRETION == 0)
+#if defined(BH_OUTPUT_MOREINFO)
                         out.Sfr_in_Kernel += SphP[j].Sfr;
-                        // MRC printf("[blackhole_environment.c] - j %d - SphP[j].Sfr %g, out.Sfr_in_Kernel %g\n", j, SphP[j].Sfr, out.Sfr_in_Kernel);
 #endif
 #if defined(BH_BONDI) || defined(BH_DRAG) || (BH_GRAVACCRETION >= 5) || defined(SINGLE_STAR_SINK_DYNAMICS) || defined(SINGLE_STAR_TIMESTEPPING)
                         for(k=0;k<3;k++) {out.BH_SurroundingGasVel[k] += wt*dv[k];}
@@ -318,7 +317,6 @@ int blackhole_environment_evaluate(int target, int mode, int *exportflag, int *e
                         double vrel=0, r2=0; for(k=0;k<3;k++) {vrel+=dv[k]*dv[k]; r2+=dP[k]*dP[k];}
                         double dr_code = sqrt(r2); vrel = sqrt(vrel) / All.cf_atime;
                         double vbound = bh_vesc(j, local.Mass, dr_code, ags_h_i);
-                        //printf("MRC - [blackhole_environment.c] - Checking if ngb %d is bound - dr %g, vrel %g < vbound %g?, ags_h_i %g, local.Mass %g\n", j, dr_code, vrel, vbound, ags_h_i, local.Mass);
 
                         if(vrel < vbound) { /* bound */
                             double local_sink_radius = SinkParticle_GravityKernelRadius;
@@ -326,8 +324,6 @@ int blackhole_environment_evaluate(int target, int mode, int *exportflag, int *e
                             local_sink_radius = local.SinkRadius;
                             double spec_mom=0; for(k=0;k<3;k++) {spec_mom += dv[k]*dP[k];} // delta_x.delta_v
                             spec_mom = (r2*vrel*vrel - spec_mom*spec_mom*All.cf_a2inv);  // specific angular momentum^2 = r^2(delta_v)^2 - (delta_v.delta_x)^2;
-                            //printf("MRC - [blackhole_environment.c] - Is ngb %d meeting spec_mom criteria? spec_mom %g < criteria %g ? - local_sink_radius %g\n", j, spec_mom, All.G * (local.Mass + P[j].Mass) * local_sink_radius, local_sink_radius);
-
                             if(spec_mom < All.G * (local.Mass + P[j].Mass) * local_sink_radius) // check Bate 1995 angular momentum criterion (in addition to bounded-ness)
 #endif
                             if( bh_check_boundedness(j,vrel,vbound,dr_code,local_sink_radius)==1 )

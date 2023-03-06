@@ -156,7 +156,6 @@ void particle2in_addFB(struct addFB_evaluate_data_in_ *in, int i, int loop_itera
     if(loop_iteration < 0) {in->Msne=P[i].Mass; in->unit_mom_SNe=1.e-4; in->SNe_v_ejecta=1.0e-4; return;} // weighting loop
     particle2in_addFB_fromstars(in,i,loop_iteration); // subroutine that actually deals with the assignment of feedback properties
     in->unit_mom_SNe = in->Msne * in->SNe_v_ejecta;
-    printf("[MRC - particle2in_addFB] - ThisTask %d - i %d, P[i].ID %d - fb_loop_iteration %d, P.Mass %g\n", ThisTask, i, P[i].ID, loop_iteration, P[i].Mass);
 }
 
 void out2particle_addFB(struct OUTPUT_STRUCT_NAME *out, int i, int mode, int loop_iteration)
@@ -172,9 +171,6 @@ void out2particle_addFB(struct OUTPUT_STRUCT_NAME *out, int i, int mode, int loo
             for(k=kmin;k<kmax;k++) {ASSIGN_ADD(P[i].Area_weighted_sum[k], out->Area_weighted_sum[k], mode);}
         } else {
             P[i].Mass -= out->M_coupled; if((P[i].Mass<0)||(isnan(P[i].Mass))) {P[i].Mass=0;}
-            printf("[MRC - out2particle_addFB] - ThisTask %d - i %d, P[i].ID %d - fb_loop_iteration %d, P.Mass %g, P.BH_Mass %g, out->M_coupled %g\n",
-             ThisTask, i, P[i].ID, loop_iteration, P[i].Mass, P[i].BH_Mass, out->M_coupled);
-
         }
     }
 }
@@ -468,7 +464,7 @@ int addFB_evaluate(int target, int mode, int *exportflag, int *exportnodecount, 
     memset(&out, 0, sizeof(struct OUTPUT_STRUCT_NAME));
 
     /* Load the data for the particle injecting feedback */
-    if(mode == 0) {particle2in_addFB(&local, target, loop_iteration);printf("[MRC - addFB_evaluate] Inside mode == 0, ThisTask %d, loop_iteration %d\n", ThisTask, loop_iteration);} else {local = DATAGET_NAME[target];printf("[MRC - addFB_evaluate] Inside mode == 1, This Task %d, loop_iteration %d\n", ThisTask, loop_iteration);}
+    if(mode == 0) {particle2in_addFB(&local, target, loop_iteration);} else {local = DATAGET_NAME[target];}
     if(local.Msne<=0) {return 0;} // no SNe for the origin particle! nothing to do here //
     if(local.Hsml<=0) {return 0;} // zero-extent kernel, no particles //
 

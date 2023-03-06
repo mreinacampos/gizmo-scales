@@ -2549,7 +2549,7 @@ extern ALIGN(32) struct particle_data
     MyFloat CumNumSNIa[CLUSTER_SINK_NUMMSP]; /* flag that indicates cumulative number of SNIa for the particle */
 #endif
 
-#ifdef CLUSTER_SINK_OUTPUT_BOLLUM // MRC - needs to be fixed
+#ifdef CLUSTER_SINK_OUTPUT_BOLLUM
     MyFloat Light_MassRatio[CLUSTER_SINK_NUMMSP]; /* flag that indicates light-to-mass ratio of each star particle */
 #endif
 #endif // CLUSTER_SINK

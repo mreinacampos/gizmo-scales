@@ -388,6 +388,8 @@ int rt_get_lum_band_stellarpopulation(int i, int mode, double *lum)
     double L = evaluate_light_to_mass_ratio(star_age, i) * m_sol / UNIT_LUM_IN_SOLAR; if(L<=0 || isnan(L)) {L=0;}
 #endif
 
+printf("[MRC - rt_get_lum_band_stellarpopulation] ThisTask %d - i %d, mode %d, j %d - star_age %g, m_sol %g, L %g\n", ThisTask, i, mode, j, star_age, m_sol, L);
+
 #if defined(GALSF_FB_FIRE_RT_LONGRANGE) /* three-band (UV, OPTICAL, IR) approximate spectra for stars as used in the FIRE (Hopkins et al.) models */
     SET_ACTIVE_RT_CHECK();
     double f_uv=All.PhotonMomentum_fUV, f_op=All.PhotonMomentum_fOPT;

@@ -262,6 +262,8 @@ void calculate_non_standard_physics(void)
         Max_Unspawned_MassUnits_fromSink=Max_Unspawned_MassUnits_fromSink_global=0.;
     }
 #endif
+    rearrange_particle_sequence(); // MRC - clean up swallowed particles - needed (for now) because we don't have COOLING ON and it's updating the chemistry below
+
     MPI_Barrier(MPI_COMM_WORLD); CPU_Step[CPU_BLACKHOLES] += measure_time();
 #endif
 

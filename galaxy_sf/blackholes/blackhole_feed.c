@@ -136,8 +136,6 @@ int blackhole_feed_evaluate(int target, int mode, int *exportflag, int *exportno
 #endif
 #if defined(BH_GRAVCAPTURE_GAS) && defined(BH_ENFORCE_EDDINGTON_LIMIT) && !defined(BH_ALPHADISK_ACCRETION)
     double meddington = bh_eddington_mdot(local.BH_Mass), medd_max_accretable = All.BlackHoleEddingtonFactor * meddington * local.Dt, eddington_factor = local.mass_to_swallow_edd / medd_max_accretable;   /* if <1 no problem, if >1, need to not set some swallowIDs */
-    //printf("MRC - [blackhole_feed.c] - BH_ENFORCE_EDDINGTON_LIMIT - meddington %g, medd_max_accretable %g, eddington_factor %g, local.mass_to_swallow_edd %g\n", meddington, medd_max_accretable, eddington_factor, local.mass_to_swallow_edd);
-
 #endif
 #if defined(BH_SWALLOWGAS)
     double mass_markedswallow,bh_mass_withdisk; mass_markedswallow=0; bh_mass_withdisk=local.BH_Mass;
@@ -176,8 +174,6 @@ int blackhole_feed_evaluate(int target, int mode, int *exportflag, int *exportno
                         r=sqrt(r2); vrel=sqrt(vrel)/All.cf_atime;  /* relative velocity in physical units. do this once and use below */
                         vesc=bh_vesc(j, local.Mass, r, ags_h_i);
                         
-                        //printf("MRC - [blackhole_feed.c] - Ngb %d - r %g, vrel %g < vesc %g?\n", j, r, vrel, vesc);
-
                         /* note that SwallowID is both read and potentially re-written below: we need to make sure this is done in a thread-safe manner */
                         MyIDType SwallowID_j;
                         #pragma omp atomic read
@@ -275,7 +271,6 @@ int blackhole_feed_evaluate(int target, int mode, int *exportflag, int *exportno
                                         p /= All.BAL_f_accretion; // we need to accrete more, then remove the mass in winds
 #endif
                                         w = get_random_number(P[j].ID);
-                                        //printf("MRC - [blackhole_feed.c] - swallowing ngb %d stochastically - r %g - w %g < p %g ?\n", j, r, w, p);
 
                                         if(w < p)
                                         {
@@ -306,7 +301,6 @@ int blackhole_feed_evaluate(int target, int mode, int *exportflag, int *exportno
                                 //double dm_toacc = bh_mass_withdisk - (local.Mass + mass_markedswallow); -- old model, used total mass as 'target' which can be a problem
                                 double dm_toacc = local.BH_AccretionDeficit - mass_markedswallow; // amount of continuous accretion 'deficit' integrated for these BHs
                                 if(dm_toacc>0) {p=dm_toacc*wk/local.Density;} else {p=0;}
-                                printf(" ..[blackhole_feed.c] - j %d dm_toacc %g, local.Mass %g, bh_mass_withdisk %g, mass_markedswallow %g, wk %g, local.Density %g, p %g\n",j, dm_toacc, local.Mass, bh_mass_withdisk, mass_markedswallow, wk, local.Density, p);
                                 assert(p<=1); // MRC - probabilities should be < 1 - otherwise EVERYTHING gets accreted
 #ifdef BH_WIND_KICK /* DAA: for stochastic winds (BH_WIND_KICK) we remove a fraction of mass from gas particles prior to kicking --> need to increase the probability here to balance black hole growth */
                                 if(f_accreted>0) {p /= f_accreted; if((bh_mass_withdisk - local.Mass) < 0) {p = ( (1-f_accreted)/f_accreted ) * local.Mdot * local.Dt * wk / local.Density;}} /* DAA: compute outflow probability when "bh_mass_withdisk < mass" - we don't need to enforce mass conservation in this case, relevant only in low-res sims where the BH seed mass is much lower than the gas particle mass */
@@ -314,9 +308,6 @@ int blackhole_feed_evaluate(int target, int mode, int *exportflag, int *exportno
 #ifdef BH_ACCRETE_NEARESTFIRST /* put all the weight on the single nearest gas particle, instead of spreading it in a kernel-weighted fashion */
                                 p=0; if(dm_toacc>0 && P[j].Mass>0 && r<1.0001*local.BH_dr_to_NearestGasNeighbor) {p=dm_toacc/P[j].Mass;}
 #endif
-//#if (CLUSTER_SINK_ACCRETION == 0) // MRC - not anymore
-//                                if (SphP[j].Sfr == 0){p = 0;} // only star-forming gas cells can be accreted
-//#endif
 #ifdef BH_EXCISION_GAS /* accrete gas elements which have gotten too close to the central BH purely on the basis of resolution criteria */
                                 if((P[j].Mass>0) && (r<SinkParticle_GravityKernelRadius) && (vrel<0.7*vesc) && (P[j].Mass<0.01*local.Mass)) {p=2.;}
 #endif

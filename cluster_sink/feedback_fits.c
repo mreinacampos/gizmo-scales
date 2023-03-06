@@ -99,8 +99,8 @@ void set_fb_input_quantities_from_msps(struct addFB_evaluate_data_in_ *in, int i
         for(k=0;k<NUM_METAL_SPECIES;k++) { yields_winds[k] += fb_dm.mass_winds*determine_winds_yields(i, age, k); }
 #endif
 #endif
-        printf("[MRC - set_fb_input_quantities_from_msps] - ThisTask %d, i %d, P[i].ID %d, P.Mass %g, P.Age %g - MSP j %d - Age %g, MSP_Mass %g - mass_snii %g, mass_snia %g, mass_winds %g\n", ThisTask,
-         i, P[i].ID, P[i].Mass, evaluate_stellar_age_Gyr(i), j, age, P[i].MSP_Mass[j], fb_dm.mass_snii, fb_dm.mass_snia, fb_dm.mass_winds);
+        //printf("[MRC - set_fb_input_quantities_from_msps] - ThisTask %d, i %d, P[i].ID %d, P.Mass %g, P.Age %g - MSP j %d - Age %g, MSP_Mass %g - mass_snii %g, mass_snia %g, mass_winds %g\n", ThisTask,
+        // i, P[i].ID, P[i].Mass, evaluate_stellar_age_Gyr(i), j, age, P[i].MSP_Mass[j], fb_dm.mass_snii, fb_dm.mass_snia, fb_dm.mass_winds);
     }
 
     // yields ejected: convert into dimensionless ejecta mass fractions - avoid NaNs
