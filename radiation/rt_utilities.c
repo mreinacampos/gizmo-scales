@@ -362,6 +362,12 @@ int rt_get_lum_band_stellarpopulation(int i, int mode, double *lum)
     int active_check = 0; // default to inactive //
 #if defined(GALSF) /* basically none of these modules make sense without the GALSF module active */
     double star_age = evaluate_stellar_age_Gyr(i), m_sol = P[i].Mass * UNIT_MASS_IN_SOLAR;
+
+
+#ifdef CLUSTER_SINK
+    for (int j = 0; j<CLUSTER_SINK_NUMMSP; j++){ // change the input quantities to the current MSP properties
+        double star_age = evaluate_stellar_age_Gyr_for_msp(i,j), m_sol = P[i].MSP_Mass[j] * UNIT_MASS_IN_SOLAR;
+#endif
     if((star_age<=0) || isnan(star_age)) {return 0;} // calculate stellar age, will be used below, and catch for bad values
 
     
@@ -379,9 +385,15 @@ int rt_get_lum_band_stellarpopulation(int i, int mode, double *lum)
     f_op *= All.PhotonMomentum_fOPT + (1-All.PhotonMomentum_fOPT)/(1+0.8*tau_op+0.85*tau_op*tau_op); /* this is a fitting function for tau_disp~0.22 'tail' w. exp(-tau) 'core', removes expensive functions [f_uv = (1-f_op)*(All.PhotonMomentum_fUV + (1-All.PhotonMomentum_fUV)*exp(-tau_uv)); f_op *= All.PhotonMomentum_fOPT + (1-All.PhotonMomentum_fOPT)*exp(-tau_op);]
      :: accounting for leakage for P(tau) ~ exp(-|logtau/tau0|/sig), following Hopkins et al. 2011, we have: [f_uv = (1-f_op)*(All.PhotonMomentum_fUV + (1-All.PhotonMomentum_fUV)/ (1 + pow(tau_uv,1./(4.*tau_disp))/(3.*tau_disp) + pow(2.*tau_disp*tau_uv,1./tau_disp))); f_op *= All.PhotonMomentum_fOPT + (1-All.PhotonMomentum_fOPT)/ (1 + pow(tau_op,1./(4.*tau_disp))/(3.*tau_disp) + pow(2.*tau_disp*tau_op,1./tau_disp));] */
 #endif
+#ifdef CLUSTER_SINK // sum contribution of all MSPs
+    lum[RT_FREQ_BIN_FIRE_UV]  += L * f_uv;
+    lum[RT_FREQ_BIN_FIRE_OPT] += L * f_op;
+    lum[RT_FREQ_BIN_FIRE_IR]  += L * (1-f_uv-f_op);
+#else
     lum[RT_FREQ_BIN_FIRE_UV]  = L * f_uv;
     lum[RT_FREQ_BIN_FIRE_OPT] = L * f_op;
     lum[RT_FREQ_BIN_FIRE_IR]  = L * (1-f_uv-f_op);
+#endif 
 #endif
     
 #if defined(RT_INFRARED) /* can add direct infrared sources, but default to no direct IR (just re-emitted light) */
@@ -392,7 +404,11 @@ int rt_get_lum_band_stellarpopulation(int i, int mode, double *lum)
     SET_ACTIVE_RT_CHECK();
     double f_op=0; if(star_age <= 0.0025) {f_op=0.09;} else {
         if(star_age <= 0.006) {f_op=0.09*(1+((star_age-0.0025)/0.004)*((star_age-0.0025)/0.004));} else {f_op=1-0.8410937/(1+sqrt((star_age-0.006)/0.3));}}
+#ifdef CLUSTER_SINK // sum contribution of all MSPs
+    lum[RT_FREQ_BIN_OPTICAL_NIR] += f_op * evaluate_light_to_mass_ratio(star_age, i) * m_sol / UNIT_LUM_IN_SOLAR;
+#else
     lum[RT_FREQ_BIN_OPTICAL_NIR] = f_op * evaluate_light_to_mass_ratio(star_age, i) * m_sol / UNIT_LUM_IN_SOLAR;
+#endif
 #endif
 
 #if defined(RT_NUV) /* Near-UV approximate spectra (UV/optical spectra, sub-photo-electric, but high-opacity) for stars as used in the FIRE (Hopkins et al.) models */
@@ -401,7 +417,11 @@ int rt_get_lum_band_stellarpopulation(int i, int mode, double *lum)
     double f_op=0; if(star_age <= 0.0025) {f_op=0.09;} else {
         if(star_age <= 0.006) {f_op=0.09*(1+((star_age-0.0025)/0.004)*((star_age-0.0025)/0.004));} else {f_op=1-0.8410937/(1+sqrt((star_age-0.006)/0.3));}}
 #endif
+#ifdef CLUSTER_SINK // sum contribution of all MSPs
+    lum[RT_FREQ_BIN_NUV] += (1-f_op) * evaluate_light_to_mass_ratio(star_age, i) * m_sol / UNIT_LUM_IN_SOLAR;
+#else
     lum[RT_FREQ_BIN_NUV] = (1-f_op) * evaluate_light_to_mass_ratio(star_age, i) * m_sol / UNIT_LUM_IN_SOLAR;
+#endif
 #endif
 
 #if defined(RT_PHOTOELECTRIC) /* photo-electric bands (8-13.6 eV, specifically): below is from integrating the spectra from STARBURST99 with the Geneva40 solar-metallicity + lower tracks */
@@ -409,7 +429,11 @@ int rt_get_lum_band_stellarpopulation(int i, int mode, double *lum)
     double l_band_pe, x_age_pe = star_age / 3.4e-3; // converts to code units, and defines age relative to convenient break time
     if(x_age_pe <= 1) {l_band_pe = 1.07e36 * (1.+x_age_pe*x_age_pe) * m_sol / UNIT_LUM_IN_CGS;}
         else {l_band_pe = 2.14e36 / (x_age_pe * sqrt(x_age_pe)) * m_sol / UNIT_LUM_IN_CGS;} // 0.1 solar, with nebular. very weak metallicity dependence, with slightly slower decay in time for lower-metallicity pops; effect smaller than binaries
+#ifdef CLUSTER_SINK // sum contribution of all MSPs
+    lum[RT_FREQ_BIN_PHOTOELECTRIC] += l_band_pe; // band luminosity //
+#else
     lum[RT_FREQ_BIN_PHOTOELECTRIC] = l_band_pe; // band luminosity //
+#endif
 #endif
     
 #if defined(RT_LYMAN_WERNER)  /* lyman-werner bands (11.2-13.6 eV, specifically): below is from integrating the spectra from STARBURST99 with the Geneva40 solar-metallicity + lower tracks */
@@ -417,13 +441,18 @@ int rt_get_lum_band_stellarpopulation(int i, int mode, double *lum)
     double l_band_lw, x_age_lw = star_age / 3.4e-3; // converts to code units, and defines age relative to convenient break time
     if(x_age_lw <= 1) {l_band_lw = 0.429e36 * (1.+x_age_lw*x_age_lw) * m_sol / UNIT_LUM_IN_CGS;}
         else {l_band_lw = 0.962e36 * pow(x_age_lw,-1.6) * exp(-x_age_lw/117.6) * m_sol / UNIT_LUM_IN_CGS;} // 0.1 solar, with nebular. very weak metallicity dependence, with slightly slower decay in time for lower-metallicity pops; effect smaller than binaries
+#ifdef CLUSTER_SINK // sum contribution of all MSPs
+    lum[RT_FREQ_BIN_LYMAN_WERNER] += l_band_lw; // band luminosity //
+#else
     lum[RT_FREQ_BIN_LYMAN_WERNER] = l_band_lw; // band luminosity //
 #endif
+#endif
 
-#if defined(RT_CHEM_PHOTOION)   /* Hydrogen and Helium ionizing bands */
+#if defined(RT_CHEM_PHOTOION)   /* Hydrogen and Helium ionizing bands */ // MRC - needs to be adapted!
     SET_ACTIVE_RT_CHECK();
     double l_ion = particle_ionizing_luminosity_in_cgs(i) / UNIT_LUM_IN_CGS; /* calculate ionizing flux based on actual stellar or BH physics */
     lum[RT_FREQ_BIN_H0] = l_ion; // default to putting everything into a single band //
+
 #if defined(RT_PHOTOION_MULTIFREQUENCY)
     int i_vec[4] = {RT_FREQ_BIN_H0, RT_FREQ_BIN_He0, RT_FREQ_BIN_He1, RT_FREQ_BIN_He2}; // these will all be the same if not using multi-frequency module //
     int k; for(k=0;k<4;k++) {lum[i_vec[k]] = l_ion * rt_ion_precalc_stellar_luminosity_fraction[i_vec[k]];} // assign flux appropriately according to pre-tabulated result //
@@ -433,6 +462,15 @@ int rt_get_lum_band_stellarpopulation(int i, int mode, double *lum)
 #if defined(RT_HARD_XRAY) || defined(RT_SOFT_XRAY) /* soft and hard X-rays for e.g. Compton heating by X-ray binaries */
     SET_ACTIVE_RT_CHECK();
     double L_HMXBs=0; if(star_age > 0.01) {L_HMXBs = 1.0e29 / (star_age*star_age);}
+
+#ifdef CLUSTER_SINK // sum contribution of all MSPs
+#if defined(RT_SOFT_XRAY)
+    lum[RT_FREQ_BIN_SOFT_XRAY] += (8.2e27 + 0.4*L_HMXBs) * m_sol / UNIT_LUM_IN_CGS; // LMXBs+HMXBs
+#endif
+#if defined(RT_HARD_XRAY)
+    lum[RT_FREQ_BIN_HARD_XRAY] += (6.3e27 + 0.6*L_HMXBs) * m_sol / UNIT_LUM_IN_CGS; // LMXBs+HMXBs
+#endif
+#else
 #if defined(RT_SOFT_XRAY)
     lum[RT_FREQ_BIN_SOFT_XRAY] = (8.2e27 + 0.4*L_HMXBs) * m_sol / UNIT_LUM_IN_CGS; // LMXBs+HMXBs
 #endif
@@ -440,7 +478,12 @@ int rt_get_lum_band_stellarpopulation(int i, int mode, double *lum)
     lum[RT_FREQ_BIN_HARD_XRAY] = (6.3e27 + 0.6*L_HMXBs) * m_sol / UNIT_LUM_IN_CGS; // LMXBs+HMXBs
 #endif
 #endif
+#endif
     
+#endif
+
+#ifdef CLUSTER_SINK
+    }
 #endif
     return active_check;
 }

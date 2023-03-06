@@ -47,7 +47,7 @@ void set_fb_input_quantities_from_msps(struct addFB_evaluate_data_in_ *in, int i
         if (P[i].MSP_Mass[j] == 0) continue; // this MSP has no FB to produce
 
         // determine the age in Myr
-        double age = evaluate_stellar_age_Gyr(P[i].MSP_Age[j])*1e3, zh;
+        double age = evaluate_stellar_age_Gyr_for_msp(i, j)*1e3, zh;
         // MRC - TODO - use weighed metallicity for each MSP
         // metallicity of the stellar population - zh = 10^[Fe/H] = (N_Fe/N_H)_star / (N_Fe/N_H)_solar
         if (NUM_METAL_SPECIES > 1){
@@ -96,11 +96,11 @@ void set_fb_input_quantities_from_msps(struct addFB_evaluate_data_in_ *in, int i
         total_energy_winds += 0.5 * fb_dm.mass_winds * velocity_winds * velocity_winds;
 #ifdef METALS
         // yields ejected: as ejecta masses
-        for(k=0;k<NUM_METAL_SPECIES;k++) { yields_winds[k] += fb_dm.mass_winds*determine_winds_yields(i, k); }
+        for(k=0;k<NUM_METAL_SPECIES;k++) { yields_winds[k] += fb_dm.mass_winds*determine_winds_yields(i, age, k); }
 #endif
 #endif
-        printf("[MRC - set_fb_input_quantities_from_msps] - ThisTask %d, i %d, P[i].ID %d - fb_loop_iteration %d, P.Mass %g - MSP j %d - MSP_Mass %g - mass_snii %g, mass_snia %g, mass_winds %g\n", ThisTask, i, P[i].ID, fb_loop_iteration, P[i].Mass, j, 
-            P[i].MSP_Mass[j], fb_dm.mass_snii, fb_dm.mass_snia, fb_dm.mass_winds);
+        printf("[MRC - set_fb_input_quantities_from_msps] - ThisTask %d, i %d, P[i].ID %d, P.Mass %g, P.Age %g - MSP j %d - Age %g, MSP_Mass %g - mass_snii %g, mass_snia %g, mass_winds %g\n", ThisTask,
+         i, P[i].ID, P[i].Mass, evaluate_stellar_age_Gyr(i), j, age, P[i].MSP_Mass[j], fb_dm.mass_snii, fb_dm.mass_snia, fb_dm.mass_winds);
     }
 
     // yields ejected: convert into dimensionless ejecta mass fractions - avoid NaNs
@@ -133,7 +133,7 @@ void calculate_fb_mass_ejected_for_msps(struct fb_massloss_for_msp *fb_dm, int i
 {
 
     // determine the age in Myr
-    double age = evaluate_stellar_age_Gyr(P[i].MSP_Age[j])*1e3, zh;
+    double age = evaluate_stellar_age_Gyr_for_msp(i, j)*1e3, zh;
     // MRC - TODO - use weighed metallicity for each MSP
     // metallicity of the stellar population - zh = 10^[Fe/H] = (N_Fe/N_H)_star / (N_Fe/N_H)_solar
     if (NUM_METAL_SPECIES > 1){
@@ -221,7 +221,7 @@ double determine_sne_rates(int i, double dt)
         double RSNII = 0., RSNIa = 0., age, p, n_sn_0 = 0;
 
         // determine the age in Myr
-        age = evaluate_stellar_age_Gyr(P[i].MSP_Age[j])*1e3;
+        age = evaluate_stellar_age_Gyr_for_msp(i, j)*1e3;
 
 #ifdef CLUSTER_SINK_SNII
         RSNII = determine_corecollapse_sne_rate(age); // determine rate from analytical fit - in SNe / Myr / MSun
@@ -534,13 +534,11 @@ double determine_winds_HC_production(double age, double z_CNO)
  * \param k       index of the yield to return
  * \return        fraction of ejecta mass in species k
  */
-double determine_winds_yields(int i, int k) 
+double determine_winds_yields(int i, double age, int k) 
 {
 
-    // determine the age in Gyr
-    double age = evaluate_stellar_age_Gyr(P[i].StellarAge);
+    // determine the CNO metallicity
     double z_CNO = (P[i].Metallicity[2] + P[i].Metallicity[3] + P[i].Metallicity[4])/(All.SolarAbundances[2]+All.SolarAbundances[3]+All.SolarAbundances[4]);
-
     double yield = 0.;
 
     double y_HHe, y_HeC, y_HC, y_CN, y_ON, y_CNO, f_h0;
@@ -593,7 +591,6 @@ double calculate_relative_light_to_mass_ratio(double age_in_gyr, int i){
 
     // metallicity-dependent coefficients aL,1, aL,2 and aL,3 - in LSun/MSun
     double RAD_coeff_alj[3] = {800, 1100*pow(zh, -0.1), 0.163}; 
-
 
     // bolometric luminosities per unit stellar mass - eq. 1 in Hopkins+ 22
     if (age_in_myr <= RAD_tlj[0]){ light_to_mass = RAD_coeff_alj[0]; }

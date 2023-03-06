@@ -351,7 +351,7 @@ extern struct Chimes_depletion_data_structure *ChimesDepletionData;
 #define GALSF_FB_MECHANICAL     // explicit algorithm including thermal+kinetic/momentum terms 
 #ifdef CLUSTER_SINK_RADIATION
 #define RT_SOURCE_INJECTION     // inject the luminosity from sources
-#define RT_SOURCES (32)         /* need to allow sinks to emit */
+#define RT_SOURCES (16+32)         /* need to allow sinks to emit */
 #endif
 
 #define CLUSTER_SINK_NUMMSP 20 // number of multiple stellar populations to allow within sinks
@@ -2549,7 +2549,7 @@ extern ALIGN(32) struct particle_data
     MyFloat CumNumSNIa[CLUSTER_SINK_NUMMSP]; /* flag that indicates cumulative number of SNIa for the particle */
 #endif
 
-#ifdef CLUSTER_SINK_OUTPUT_BOLLUM
+#ifdef CLUSTER_SINK_OUTPUT_BOLLUM // MRC - needs to be fixed
     MyFloat Light_MassRatio[CLUSTER_SINK_NUMMSP]; /* flag that indicates light-to-mass ratio of each star particle */
 #endif
 #endif // CLUSTER_SINK

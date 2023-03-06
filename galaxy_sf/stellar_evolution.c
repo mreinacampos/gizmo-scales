@@ -55,9 +55,6 @@ double evaluate_light_to_mass_ratio(double stellar_age_in_gyr, int i)
         double lum_ssp = 0;
 #ifdef CLUSTER_SINK_RADIATION 
         lum_ssp = calculate_relative_light_to_mass_ratio(stellar_age_in_gyr,i);
-#ifdef CLUSTER_SINK_OUTPUT_BOLLUM
-        P[i].Light_MassRatio = lum_ssp; // output the light-to-mass ratio in LSun/MSun
-#endif
 #endif
         return lum_ssp;
 #endif 
@@ -132,7 +129,7 @@ double particle_ionizing_luminosity_in_cgs(long i)
     }
     else /* STELLAR POPULATION VERSION: use updated SB99 tracks: including rotation, new mass-loss tracks, etc. */
     {
-#if defined(CLUSTER_SINK) && defined(CLUSTER_SINK_RADIATION)
+#if defined(CLUSTER_SINK) && defined(CLUSTER_SINK_RADIATION) // MRC - needs to be adapted
         double lm_ssp = 0, star_age = evaluate_stellar_age_Gyr(P[i].StellarAge);
         // converts to cgs luminosity [lm_ssp is in Lsun/Msun, here]
         double f_ion = determine_ionizing_flux_fraction(star_age, i);

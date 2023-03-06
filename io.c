@@ -1732,8 +1732,8 @@ void fill_write_buffer(enum iofields blocknr, int *startindex, int pc, int type)
 #endif
             break;
 
-        case IO_CLUSTER_SINK_BOLLUM:        /* mass-to-light ratio */
-#ifdef CLUSTER_SINK_OUTPUT_BOLLUM
+// MRC - needs to be fixed       case IO_CLUSTER_SINK_BOLLUM:        /* mass-to-light ratio */
+/* #ifdef CLUSTER_SINK_OUTPUT_BOLLUM
             for(n = 0; n < pc; pindex++)
                 if(P[pindex].Type == type)
                 {
@@ -1742,7 +1742,7 @@ void fill_write_buffer(enum iofields blocknr, int *startindex, int pc, int type)
                     n++;
                 }
 #endif
-            break;
+            break; */
 
         case IO_CLUSTER_SINK_MSPPROPS_MASS:        /* properties of the multiple stellar populations */
 #ifdef CLUSTER_SINK_OUTPUT_MSPPROPS

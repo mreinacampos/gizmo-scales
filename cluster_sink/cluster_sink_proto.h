@@ -8,6 +8,7 @@
 void continuous_star_formation_in_sinks(void);
 double determine_mass_gas_reservoir(int i);
 double determine_sne_rates(int i, double dt);
+double evaluate_stellar_age_Gyr_for_msp(long i, int j);
 
 // structure to contain the mass loss of a given MSP
 struct fb_massloss_for_msp
@@ -33,7 +34,7 @@ double determine_snia_yields(int k);
 #ifdef CLUSTER_SINK_WINDS
 double determine_winds_mass_loss_rate(double age, double zh);
 double determine_winds_velocity_injection(double age, double zh);
-double determine_winds_yields(int i, int k);
+double determine_winds_yields(int i, double age, int k);
 double determine_winds_HHe_production(double age, double z_CNO);
 double determine_winds_CNO_production(double age, double z_CNO);
 double determine_winds_HC_production(double age, double z_CNO);
