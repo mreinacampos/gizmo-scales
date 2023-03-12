@@ -445,6 +445,16 @@ void init(void)
 	    P[i].SuperTimestepFlag = 0;
 #endif
 #endif
+
+#ifdef CLUSTER_SINK
+        if((P[i].Type == 4) || (P[i].Type == 5)) 
+        {
+                P[i].MSP_Mass[0] = P[i].Mass; // mass of the first MSP
+                P[i].MSP_InitialMass[0] = P[i].Mass; // initial mass of the first MSP
+                P[i].MSP_Age[0] = All.Time; // age of the first MSP
+                P[i].MSP_Metallicity[0] = P[i].Metallicity[0]; // metallicity of the first MSP
+        }
+#endif
         if(P[i].Type == 5)
         {
             count_holes++;
@@ -457,10 +467,6 @@ void init(void)
 #endif
 #ifdef CLUSTER_SINK
                 BPP(i).BH_Mass = P[i].Mass;
-                P[i].MSP_Mass[0] = P[i].Mass; // mass of the first MSP
-                P[i].MSP_InitialMass[0] = P[i].Mass; // initial mass of the first MSP
-                P[i].MSP_Age[0] = All.Time; // age of the first MSP
-                P[i].MSP_Metallicity[0] = P[i].Metallicity[0]; // metallicity of the first MSP
 #endif
 #ifdef GRAIN_FLUID
                 BPP(i).BH_Dust_Mass = 0;
