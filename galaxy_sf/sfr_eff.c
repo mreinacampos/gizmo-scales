@@ -515,6 +515,12 @@ void star_formation_parent_routine(void)
 #endif
                         P[i].BH_Mdot = 0;
                         P[i].DensAroundStar = SphP[i].Density;
+#ifdef CLUSTER_SINK
+                        P[i].MSP_Mass[0] = P[i].Mass; // mass of the first MSP
+                        P[i].MSP_InitialMass[0] = P[i].Mass; // initial mass of the first MSP
+                        P[i].MSP_Age[0] = All.Time; // age of the first MSP
+                        P[i].MSP_Metallicity[0] = P[i].Metallicity[0]; // metallicity of the first MSP
+#endif
                     } else {
 #endif /* closes ifdef(BH_SEED_FROM_LOCALGAS) */
                         
