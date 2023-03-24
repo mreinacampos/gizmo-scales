@@ -79,9 +79,9 @@ void determine_where_SNe_occur(void)
                     P[i].CumNumSNIa[j] += P[i].SNIa_ThisTimeStep[j];
                 }
 #ifdef CLUSTER_SINK_DEBUG
-                printf("[MRC - determine_where_SNe_occur] ThisTask %d  - P[i].ID %d, P[i].Mass %g, P[i].BH_Mass %g - MSP %d - MSP[j].Mass %g - SNe_ThisTimeStep [%g, %g, %g], CumNumSNe [%g, %g, %g] - P[i].SNe_ThisTimeStep %g\n",
-                            ThisTask, P[i].ID, P[i].Mass, P[i].BH_Mass, j, P[i].MSP_Mass[j], P[i].SNII_ThisTimeStep[j]+P[i].SNIa_ThisTimeStep[j],
-                            P[i].SNII_ThisTimeStep[j], P[i].SNIa_ThisTimeStep[j], P[i].CumNumSNe[j], P[i].CumNumSNII[j], P[i].CumNumSNIa[j], P[i].SNe_ThisTimeStep);
+                //printf("[MRC - determine_where_SNe_occur] ThisTask %d  - P[i].ID %d, P[i].Mass %g, P[i].BH_Mass %g - MSP %d - MSP[j].Mass %g - SNe_ThisTimeStep [%g, %g, %g], CumNumSNe [%g, %g, %g] - P[i].SNe_ThisTimeStep %g\n",
+                //            ThisTask, P[i].ID, P[i].Mass, P[i].BH_Mass, j, P[i].MSP_Mass[j], P[i].SNII_ThisTimeStep[j]+P[i].SNIa_ThisTimeStep[j],
+                //            P[i].SNII_ThisTimeStep[j], P[i].SNIa_ThisTimeStep[j], P[i].CumNumSNe[j], P[i].CumNumSNII[j], P[i].CumNumSNIa[j], P[i].SNe_ThisTimeStep);
 #endif
             }
         }

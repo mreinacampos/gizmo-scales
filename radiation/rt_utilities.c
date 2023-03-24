@@ -67,7 +67,7 @@ int rt_get_source_luminosity(int i, int mode, double *lum)
     if(P[i].Mass <= 0) {return 0;} // reject invalid particles scheduled for deletion
     int active_check = 0; // default to inactive //
     
-#if defined(GALSF) // MRC -will need tweaking
+#if defined(GALSF) 
 #if defined(SINGLE_STAR_SINK_DYNAMICS)
     active_check += rt_get_lum_band_singlestar(i,mode,lum); // get luminosities for individual star/sink particles assuming they are protostars or stars
 #elif defined(CLUSTER_SINK)
@@ -77,7 +77,8 @@ int rt_get_source_luminosity(int i, int mode, double *lum)
         if(P[i].MSP_Mass[j] == 0){continue;} // this MSP has no FB
         for(int k=0;k<N_RT_FREQ_BINS;k++) {lum_msp[k] = 0;} // zero out the luminosity bins
         active_check += rt_get_lum_band_stellarpopulation(i,mode,lum_msp,j); // get luminosities for star particles assuming they represent IMF-averaged populations
-        for(int k=0;k<N_RT_FREQ_BINS;k++) {lum[k] += lum_msp[k]; printf("[MRC - rt_get_source_luminosity] ThisTask %d - i %d, j %d, k %d - lum[k] %g, lum_msp[k] %g\n", ThisTask, i, j, k, lum[k], lum_msp[k]);} // add up contributions of all MSPs
+        for(int k=0;k<N_RT_FREQ_BINS;k++) {lum[k] += lum_msp[k];} // add up contributions of all MSPs
+        //printf("[MRC - rt_get_source_luminosity] ThisTask %d - i %d, j %d, k %d - lum[k] %g, lum_msp[k] %g\n", ThisTask, i, j, k, lum[k], lum_msp[k]);
     }
 #else
     active_check += rt_get_lum_band_stellarpopulation(i,mode,lum); // get luminosities for star particles assuming they represent IMF-averaged populations
@@ -367,7 +368,7 @@ int rt_get_lum_band_stellarpopulation(int i, int mode, double *lum, int j)
 int rt_get_lum_band_stellarpopulation(int i, int mode, double *lum)
 #endif
 {
-#ifdef CLUSTER_SINK // MRC - temporary solution, we'll end up doing our own function
+#ifdef CLUSTER_SINK 
     if((P[i].Type != 4) && (P[i].Type != 5)) {return 0;} // allow 'star' and 'sink' particles act in this subroutine //
 #else
     if(!((P[i].Type == 4) || ((All.ComovingIntegrationOn==0)&&((P[i].Type==2)||(P[i].Type==3))))) {return 0;} // only star-type particles act in this subroutine //
@@ -388,7 +389,7 @@ int rt_get_lum_band_stellarpopulation(int i, int mode, double *lum)
     double L = evaluate_light_to_mass_ratio(star_age, i) * m_sol / UNIT_LUM_IN_SOLAR; if(L<=0 || isnan(L)) {L=0;}
 #endif
 
-printf("[MRC - rt_get_lum_band_stellarpopulation] ThisTask %d - i %d, mode %d, j %d - star_age %g, m_sol %g, L %g\n", ThisTask, i, mode, j, star_age, m_sol, L);
+//printf("[MRC - rt_get_lum_band_stellarpopulation] ThisTask %d - i %d, mode %d, j %d - star_age %g, m_sol %g, L %g\n", ThisTask, i, mode, j, star_age, m_sol, L);
 
 #if defined(GALSF_FB_FIRE_RT_LONGRANGE) /* three-band (UV, OPTICAL, IR) approximate spectra for stars as used in the FIRE (Hopkins et al.) models */
     SET_ACTIVE_RT_CHECK();
@@ -448,7 +449,7 @@ printf("[MRC - rt_get_lum_band_stellarpopulation] ThisTask %d - i %d, mode %d, j
     lum[RT_FREQ_BIN_LYMAN_WERNER] = l_band_lw; // band luminosity //
 #endif
 
-#if defined(RT_CHEM_PHOTOION)   /* Hydrogen and Helium ionizing bands */ // MRC - needs to be adapted!
+#if defined(RT_CHEM_PHOTOION)   /* Hydrogen and Helium ionizing bands */ 
     SET_ACTIVE_RT_CHECK();
 #ifdef CLUSTER_SINK
     double l_ion = particle_ionizing_luminosity_in_cgs(i, j) / UNIT_LUM_IN_CGS; /* calculate ionizing flux based on actual stellar or BH physics */

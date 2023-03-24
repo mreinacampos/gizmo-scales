@@ -194,8 +194,8 @@ void reduce_mass_from_msps(void)
             //P[i].Mass -= (fb_dm.mass_snii + fb_dm.mass_snia + fb_dm.mass_winds);
             //if((P[i].Mass<0)||(isnan(P[i].Mass))) {P[i].Mass=0;}
             
-            printf("[MRC - reduce_mass_from_msps] - ThisTask %d, i %d, P[i].ID %d - P.Mass %g, P.BH_Mass %g - MSP j %d - MSP_Mass %g - mass_snii %g, mass_snia %g, mass_winds %g\n", ThisTask, i, P[i].ID, P[i].Mass, P[i].BH_Mass, j, 
-                P[i].MSP_Mass[j], fb_dm.mass_snii, fb_dm.mass_snia, fb_dm.mass_winds);
+            //printf("[MRC - reduce_mass_from_msps] - ThisTask %d, i %d, P[i].ID %d - P.Mass %g, P.BH_Mass %g - MSP j %d - MSP_Mass %g - mass_snii %g, mass_snia %g, mass_winds %g\n", ThisTask, i, P[i].ID, P[i].Mass, P[i].BH_Mass, j, 
+            //    P[i].MSP_Mass[j], fb_dm.mass_snii, fb_dm.mass_snia, fb_dm.mass_winds);
         }
     }
 }

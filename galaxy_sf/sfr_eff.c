@@ -183,6 +183,7 @@ double return_probability_of_this_forming_bh_from_seed_model(int i)
 #endif
 #endif
     if(p > 12.) {p=1;} else {if(p > 1.e-4) {p=1-exp(-p);}}
+
     return p;
 }
 
@@ -306,6 +307,8 @@ double get_starformation_rate(int i, int mode)
 #endif
 #endif
 
+
+
 #if (SINGLE_STAR_SINK_FORMATION & 128) || (GALSF_SFR_VIRIAL_SF_CRITERION >= 4) /* check that the velocity gradient is negative-definite, ie. converging along all principal axes, which is much stricter than div v < 0 */
     for(j=0;j<3;j++){ // symmetrize the velocity gradient
       for(k=0;k<j;k++){double temp = gradv[3*j + k]; gradv[3*j + k] = 0.5*(gradv[3*j + k] + gradv[3*k + j]); gradv[3*k + j] = 0.5*(temp + gradv[3*k + j]);}}
@@ -364,6 +367,7 @@ double get_starformation_rate(int i, int mode)
 #if defined(SINGLE_STAR_SINK_DYNAMICS) && defined(SINGLE_STAR_SINK_FORMATION)
     rateOfSF *= 1.0e20; /* make sink formation guaranteed to happen, where it can, by setting rate super-high if non-zero */
 #endif
+
     return rateOfSF; /* finally, we have a SFR! */
 }
 
@@ -409,7 +413,7 @@ void star_formation_parent_routine(void)
 {
     int i, bin, flag, stars_spawned, tot_spawned, stars_converted, tot_converted, number_of_stars_generated;
     unsigned int bits; double dtime, mass_of_star, p, prob, rate_in_msunperyear, sfrrate, totsfrrate, sum_sm, total_sm, sm=0, rate, sum_mass_stars, total_sum_mass_stars;
-#if defined(BH_SEED_FROM_LOCALGAS) || defined(SINGLE_STAR_SINK_DYNAMICS)
+#if defined(BH_SEED_FROM_LOCALGAS) || defined(SINGLE_STAR_SINK_DYNAMICS) || defined(CLUSTER_SINK)
     int num_bhformed=0, tot_bhformed=0;
 #endif
     for(bin = 0; bin < TIMEBINS; bin++) {if(TimeBinActive[bin]) {TimeBinSfr[bin] = 0;}}
@@ -515,12 +519,6 @@ void star_formation_parent_routine(void)
 #endif
                         P[i].BH_Mdot = 0;
                         P[i].DensAroundStar = SphP[i].Density;
-#ifdef CLUSTER_SINK
-                        P[i].MSP_Mass[0] = P[i].Mass; // mass of the first MSP
-                        P[i].MSP_InitialMass[0] = P[i].Mass; // initial mass of the first MSP
-                        P[i].MSP_Age[0] = All.Time; // age of the first MSP
-                        P[i].MSP_Metallicity[0] = P[i].Metallicity[0]; // metallicity of the first MSP
-#endif
                     } else {
 #endif /* closes ifdef(BH_SEED_FROM_LOCALGAS) */
                         
@@ -550,6 +548,28 @@ void star_formation_parent_routine(void)
 #endif
 #if defined(GALSF_FB_FIRE_PROTOSTELLARJETS)
                             P[i].NewStar_Momentum_For_JetFeedback = P[i].Mass * 40./UNIT_VEL_IN_KMS;
+#endif
+
+#ifdef CLUSTER_SINK // create star as a Type 5
+                            P[i].Type = 5;
+                            num_bhformed++;
+                            P[i].BH_Mass = DMAX(All.SeedBlackHoleMass, P[i].Mass); // mass of the sink
+                            P[i].BH_Mdot = 0; // accretion rate
+                            P[i].Sink_Formation_Mass = P[i].Mass; // initial sink mass 
+
+                            // initialize the properties of the MSPs
+                            P[i].MSP_Mass[0] = P[i].Mass; // mass of the first MSP
+                            P[i].MSP_InitialMass[0] = P[i].Mass; // initial mass of the first MSP
+                            P[i].MSP_Age[0] = All.Time; // age of the first MSP
+                            P[i].MSP_Metallicity[0] = P[i].Metallicity[0]; // metallicity of the first MSP
+#ifdef BH_COUNTPROGS
+                            P[i].BH_CountProgs = 1;
+#endif
+#ifdef BH_INTERACT_ON_GAS_TIMESTEP
+                            P[i].dt_since_last_gas_search = 0;
+                            P[i].do_gas_search_this_timestep = 1;
+                            P[i].BH_TimeBinGasNeighbor = P[i].TimeBin;
+#endif
 #endif
 
 #ifdef SINGLE_STAR_SINK_DYNAMICS
@@ -691,7 +711,7 @@ void star_formation_parent_routine(void)
     
     
     
-#if defined(BH_SEED_FROM_LOCALGAS) || defined(SINGLE_STAR_SINK_DYNAMICS)
+#if defined(BH_SEED_FROM_LOCALGAS) || defined(SINGLE_STAR_SINK_DYNAMICS) || defined(CLUSTER_SINK)
     MPI_Allreduce(&num_bhformed, &tot_bhformed, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
     if( (ThisTask==0) && (tot_bhformed > 0) )
     {

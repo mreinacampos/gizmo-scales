@@ -340,14 +340,11 @@ extern struct Chimes_depletion_data_structure *ChimesDepletionData;
 #endif // closes hybrid FIRE+STARFORGE model settings
 
 
-
-// MRC
 #ifdef CLUSTER_SINK
 #define GALSF                       // top-level switch for galactic star formation model
 #define COOLING                     // top-level switch to enable radiative cooling and heating
 #define METALS                      // top-level switch to enable tracking metallicities or different heavy elements (with multiple species optional) for gas and stars
 #define BLACK_HOLES                 // top-level switch for black holes (i.e. sink particles)
-#define BH_SEED_FROM_LOCALGAS       // seed sinks from gas during star formation
 #define BH_CALC_DISTANCES           // calculate distance to nearest sink in gravity tree
 #define BH_INTERACT_ON_GAS_TIMESTEP // BH-gas interactions (feedback and accretion) occur with frequency set by the gas timestep
 #define GALSF_FB_MECHANICAL         // explicit algorithm including thermal+kinetic/momentum terms 
