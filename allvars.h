@@ -2385,6 +2385,9 @@ extern struct global_data_all_processes
 
 #ifdef CLUSTER_SINK
   double ClusterSink_MinGasMass; /* minimum gas mass to form a stellar population out of */
+  double ClusterSink_DeltaAge;   /* age difference to consider joining MSPs */
+  double ClusterSink_DeltaMetallicity;   /* metallicity difference to consider joining MSPs */
+
 #endif
 
 }
@@ -2541,7 +2544,7 @@ extern ALIGN(32) struct particle_data
     MyFloat MSP_InitialMass[CLUSTER_SINK_NUMMSP]; // initial mass
     MyFloat MSP_Mass[CLUSTER_SINK_NUMMSP]; // current mass
     MyFloat MSP_Age[CLUSTER_SINK_NUMMSP]; // age
-    MyFloat MSP_Metallicity[CLUSTER_SINK_NUMMSP]; // metallicity - total metals only (for now)
+    MyFloat MSP_Metallicity[CLUSTER_SINK_NUMMSP][NUM_METAL_SPECIES]; // metallicity - all yields
 #ifdef CLUSTER_SINK_OUTPUT_NUMSNE
     MyFloat CumNumSNe[CLUSTER_SINK_NUMMSP]; /* flag that indicates cumulative number of SNe for the particle */
     MyFloat CumNumSNII[CLUSTER_SINK_NUMMSP]; /* flag that indicates cumulative number of SNII for the particle */

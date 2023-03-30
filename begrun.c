@@ -1690,6 +1690,14 @@ void read_parameter_file(char *fname)
       strcpy(tag[nt], "ClusterSink_MinGasMass");
       addr[nt] = &All.ClusterSink_MinGasMass;
       id[nt++] = REAL;
+
+      strcpy(tag[nt], "ClusterSink_DeltaAge");
+      addr[nt] = &All.ClusterSink_DeltaAge;
+      id[nt++] = REAL;
+
+      strcpy(tag[nt], "ClusterSink_DeltaMetallicity");
+      addr[nt] = &All.ClusterSink_DeltaMetallicity;
+      id[nt++] = REAL;
 #endif
 
 #ifdef EOS_TABULATED
