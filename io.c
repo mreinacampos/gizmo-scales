@@ -1786,7 +1786,7 @@ void fill_write_buffer(enum iofields blocknr, int *startindex, int pc, int type)
                 if(P[pindex].Type == type)
                 {
                     for(k=0;k<CLUSTER_SINK_NUMMSP;k++) {
-                        for(j=0;j<NUM_METAL_SPECIES;j++) {
+                        for(int j=0;j<NUM_METAL_SPECIES;j++) {
                             fp[k*CLUSTER_SINK_NUMMSP+j] = (MyOutputFloat) P[pindex].MSP_Metallicity[k][j];
                     }}
                     fp += CLUSTER_SINK_NUMMSP*NUM_METAL_SPECIES;
