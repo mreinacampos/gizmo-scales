@@ -48,12 +48,11 @@ void set_fb_input_quantities_from_msps(struct addFB_evaluate_data_in_ *in, int i
 
         // determine the age in Myr
         double age = evaluate_stellar_age_Gyr_for_msp(i, j)*1e3, zh;
-        // MRC - TODO - use weighed metallicity for each MSP
         // metallicity of the stellar population - zh = 10^[Fe/H] = (N_Fe/N_H)_star / (N_Fe/N_H)_solar
         if (NUM_METAL_SPECIES > 1){
-            zh = (P[i].Metallicity[NUM_METAL_SPECIES-1]/(1 - P[i].Metallicity[1] - P[i].Metallicity[0]))/(All.SolarAbundances[NUM_METAL_SPECIES-1]/(1 - All.SolarAbundances[0] - All.SolarAbundances[1]));
+            zh = (P[i].MSP_Metallicity[j][NUM_METAL_SPECIES-1]/(1 - P[i].MSP_Metallicity[j][1] - P[i].MSP_Metallicity[j][0]))/(All.SolarAbundances[NUM_METAL_SPECIES-1]/(1 - All.SolarAbundances[0] - All.SolarAbundances[1]));
         } else {
-            zh = (P[i].Metallicity[0]/All.SolarAbundances[0]);
+            zh = (P[i].MSP_Metallicity[j][0]/All.SolarAbundances[0]);
         }
 
         // calculate the mass loss associated to each mechanism for this MSP
@@ -134,12 +133,11 @@ void calculate_fb_mass_ejected_for_msps(struct fb_massloss_for_msp *fb_dm, int i
 
     // determine the age in Myr
     double age = evaluate_stellar_age_Gyr_for_msp(i, j)*1e3, zh;
-    // MRC - TODO - use weighed metallicity for each MSP
     // metallicity of the stellar population - zh = 10^[Fe/H] = (N_Fe/N_H)_star / (N_Fe/N_H)_solar
     if (NUM_METAL_SPECIES > 1){
-        zh = (P[i].Metallicity[NUM_METAL_SPECIES-1]/(1 - P[i].Metallicity[1] - P[i].Metallicity[0]))/(All.SolarAbundances[NUM_METAL_SPECIES-1]/(1 - All.SolarAbundances[0] - All.SolarAbundances[1]));
+        zh = (P[i].MSP_Metallicity[j][NUM_METAL_SPECIES-1]/(1 - P[i].MSP_Metallicity[j][1] - P[i].Metallicity[0]))/(All.SolarAbundances[NUM_METAL_SPECIES-1]/(1 - All.SolarAbundances[0] - All.SolarAbundances[1]));
     } else {
-        zh = (P[i].Metallicity[0]/All.SolarAbundances[0]);
+        zh = (P[i].MSP_Metallicity[j][0]/All.SolarAbundances[0]);
     }
 
     // zero out quantities
