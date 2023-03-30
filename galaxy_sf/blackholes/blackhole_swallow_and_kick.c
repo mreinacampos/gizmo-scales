@@ -127,6 +127,9 @@ struct OUTPUT_STRUCT_NAME
 #ifdef GALSF
     MyFloat Accreted_Age;
 #endif
+#ifdef CLUSTER_SINK
+    MyFloat accreted_MetalMass[NUM_METAL_SPECIES]; 
+#endif
 }
 *DATARESULT_NAME, *DATAOUT_NAME; /* dont mess with these names, they get filled-in by your definitions automatically */
 
@@ -166,6 +169,9 @@ static inline void OUTPUTFUNCTION_NAME(struct OUTPUT_STRUCT_NAME *out, int i, in
 #ifdef GALSF
     if(P[i].StellarAge > out->Accreted_Age) {P[i].StellarAge = out->Accreted_Age;}
 #endif
+#ifdef CLUSTER_SINK
+    for(k=0;k<NUM_METAL_SPECIES;k++) {ASSIGN_ADD_PRESET(BlackholeTempInfo[target].accreted_MetalMass[k], out->accreted_MetalMass[k], mode);}
+#endif 
 }
 
 
@@ -224,7 +230,9 @@ int blackhole_swallow_and_kick_evaluate(int target, int mode, int *exportflag, i
                     Vel_j[k] = P[j].Vel[k]; // this can get modified -a lot- below, so we need to read it carefully right now
                 }
                 double Mass_j_0 = Mass_j, InternalEnergy_j_0 = InternalEnergy_j, Vel_j_0[3]; for(k=0;k<3;k++) {Vel_j_0[k]=Vel_j[k];} // save initial values to know if we need to update neighbor values below
-                
+#ifdef CLUSTER_SINK
+                double Metallicity_j_0[NUM_METAL_SPECIES]; for(k=0;k<NUM_METAL_SPECIES;k++) {Metallicity_j_0[k]=P[j].Metallicity[k];} // save initial values 
+#endif       
                 double dpos[3]={0},dvel[3]={0}; for(k=0;k<3;k++) {dpos[k]=P[j].Pos[k]-local.Pos[k]; dvel[k]=Vel_j[k]-local.Vel[k];}
                 NEAREST_XYZ(dpos[0],dpos[1],dpos[2],-1); /*  find the closest image in the given box size  */
                 NGB_SHEARBOX_BOUNDARY_VELCORR_(local.Pos,P[j].Pos,dvel,-1); /* wrap velocities for shearing boxes if needed */
@@ -343,6 +351,11 @@ int blackhole_swallow_and_kick_evaluate(int target, int mode, int *exportflag, i
 #ifdef BH_COUNTPROGS
                         out.BH_CountProgs += BPP(j).BH_CountProgs;
 #endif
+                        // MRC - missing: merge the MSPs
+                        // MRC - missing: accreted metals from another sink?
+#ifdef CLUSTER_SINK
+                        for(k=0;k<NUM_METAL_SPECIES;k++){out.accreted_MetalMass[k] += FLT(Mass_j*Metallicity_j_0[k]);}
+#endif
                         bin = P[j].TimeBin;
                         #pragma omp atomic
                         TimeBin_BH_mass[bin] -= BPP(j).BH_Mass;
@@ -399,6 +412,9 @@ int blackhole_swallow_and_kick_evaluate(int target, int mode, int *exportflag, i
 #endif
 #if defined(BH_SWALLOWGAS) && !defined(BH_GRAVCAPTURE_GAS)
                         out.BH_AccretionDeficit -= FLT(f_accreted*Mass_j); /* account for this in the 'continuous accretion' budget, since it is part of the continuous Mdot onto the BH */
+#endif
+#ifdef CLUSTER_SINK
+                        for(k=0;k<NUM_METAL_SPECIES;k++){out.accreted_MetalMass[k] += FLT(f_accreted*Mass_j*Metallicity_j_0[k]);}
 #endif
                         double Mass_initial = Mass_j; // save this for possible IO below
                         Mass_j *= (1-f_accreted);

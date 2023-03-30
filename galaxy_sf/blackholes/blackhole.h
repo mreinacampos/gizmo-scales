@@ -81,6 +81,9 @@ extern struct blackhole_temp_particle_data       // blackholedata_topass
 #if defined(BH_RETURN_BFLUX)
     MyFloat kernel_norm_topass_in_swallowloop;
 #endif    
+#ifdef CLUSTER_SINK
+    MyFloat accreted_MetalMass[NUM_METAL_SPECIES]; // accreted mass in different yields
+#endif
 }
 *BlackholeTempInfo;
 

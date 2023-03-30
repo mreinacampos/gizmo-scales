@@ -442,11 +442,6 @@ void set_blackhole_mdot(int i, int n, double dt)
 #endif
 #endif // BH_ALPHADISK_ACCRETION
 
-// MRC #if (CLUSTER_SINK_ACCRETION == 0) // Li's 17, 18 accretion rate model for clusters 
-//    mdot = BlackholeTempInfo[i].Sfr_in_Kernel;
-//    printf(" ..[blackhole.c] - set_mdot() - mdot %g Sfr_in_Kernel %g \n", mdot,BlackholeTempInfo[i].Sfr_in_Kernel);
-// #endif
-
 #ifdef BH_ENFORCE_EDDINGTON_LIMIT /* cap the maximum at the Eddington limit */
     if(mdot > All.BlackHoleEddingtonFactor * meddington) {mdot = All.BlackHoleEddingtonFactor * meddington;}
 #endif
@@ -729,6 +724,14 @@ void blackhole_final_operations(void)
 #if defined(BH_RETURN_BFLUX)
             for(k=0;k<3;k++) {P[n].B[k] += BlackholeTempInfo[i].accreted_B[k];}
 #endif
+
+#ifdef CLUSTER_SINK // MRC
+            double mf = P[j].Mass + BlackholeTempInfo[i].accreted_Mass;
+            // update the yields as mass-weighed
+            for(k=0;k<NUM_METAL_SPECIES;k++) {P[j].Metallicity[k] =(P[j].Mass/mf)*P[j].Metallicity[k] + (1./mf)*BlackholeTempInfo[target].accreted_MetalMass[k];}
+#endif
+
+
             P[n].Mass += BlackholeTempInfo[i].accreted_Mass;
 #if defined(BH_SWALLOWGAS) && !defined(BH_GRAVCAPTURE_GAS)
             P[n].BH_AccretionDeficit += BlackholeTempInfo[i].BH_AccretionDeficit;
@@ -743,6 +746,9 @@ void blackhole_final_operations(void)
 #ifdef RT_REINJECT_ACCRETED_PHOTONS
 	    BPP(n).BH_accreted_photon_energy += BlackholeTempInfo[i].accreted_photon_energy;
 #endif
+
+
+
         } // if(masses > 0) check
 #ifdef HERMITE_INTEGRATION
         else { P[n].AccretedThisTimestep = 0; }
