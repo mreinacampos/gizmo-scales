@@ -550,18 +550,13 @@ void star_formation_parent_routine(void)
                             P[i].NewStar_Momentum_For_JetFeedback = P[i].Mass * 40./UNIT_VEL_IN_KMS;
 #endif
 
-#ifdef CLUSTER_SINK // create star as a Type 5
+#ifdef CLUSTER_SINK // create a gas-only sink
                             P[i].Type = 5;
                             num_bhformed++;
                             P[i].BH_Mass = DMAX(All.SeedBlackHoleMass, P[i].Mass); // mass of the sink
                             P[i].BH_Mdot = 0; // accretion rate
                             P[i].Sink_Formation_Mass = P[i].Mass; // initial sink mass 
 
-                            // initialize the properties of the MSPs
-                            P[i].MSP_Mass[0] = P[i].Mass; // mass of the first MSP
-                            P[i].MSP_InitialMass[0] = P[i].Mass; // initial mass of the first MSP
-                            P[i].MSP_Age[0] = All.Time; // age of the first MSP
-                            P[i].MSP_Metallicity[0] = P[i].Metallicity[0]; // metallicity of the first MSP
 #ifdef BH_COUNTPROGS
                             P[i].BH_CountProgs = 1;
 #endif
