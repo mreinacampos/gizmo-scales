@@ -283,6 +283,8 @@
 #CLUSTER_SINK_SNIa              # add SNIa feedback - based on IMF-integrated analytical fits from Hopkins+22
 #CLUSTER_SINK_WINDS             # add continuous AGB&OB feedback - based on IMF-integrated analytical fits from Hopkins+22
 #CLUSTER_SINK_RADIATION         # add radiation feedback (to be used together with the RT flags) - based on IMF-integrated analytical fits from Hopkins+22
+#CLUSTER_SINK_AVOID_MERGERS     # avoid mergers of sinks
+
 ## ----------------------------------------------------------------------------------------------------
 # ----- debug options
 ## ----------------------------------------------------------------------------------------------------

@@ -52,7 +52,13 @@ struct INPUT_STRUCT_NAME
 #endif
 #ifdef SINGLE_STAR_FB_LOCAL_RP
     MyFloat Luminosity;
-#endif    
+#endif  
+#if defined(CLUSTER_SINK) && !defined(CLUSTER_SINK_AVOID_MERGERS)
+    MyFloat MSP_InitialMass[CLUSTER_SINK_NUMMSP]; 
+    MyFloat MSP_Mass[CLUSTER_SINK_NUMMSP]; 
+    MyFloat MSP_Age[CLUSTER_SINK_NUMMSP]; 
+    MyFloat MSP_Metallicity[CLUSTER_SINK_NUMMSP][NUM_METAL_SPECIES]; 
+#endif  
 }
 *DATAIN_NAME, *DATAGET_NAME; /* dont mess with these names, they get filled-in by your definitions automatically */
 
@@ -90,6 +96,14 @@ static inline void INPUTFUNCTION_NAME(struct INPUT_STRUCT_NAME *in, int i, int l
 #ifdef SINGLE_STAR_FB_LOCAL_RP
     in->Luminosity = bh_lum_bol(in->Mdot, in->BH_Mass, i);
 #endif    
+#if defined(CLUSTER_SINK) && !defined(CLUSTER_SINK_AVOID_MERGERS)
+    for(k=0;k<CLUSTER_SINK_NUMMSP;k++) {
+        in->MSP_Mass[k] = P[i].MSP_Mass[k]; 
+        in->MSP_InitialMass[k] = P[i].MSP_InitialMass[k]; 
+        in->MSP_Age[k] = evaluate_stellar_age_Gyr_for_msp(i, k)*1e3; // in Myr 
+        for(j=0;j<NUM_METAL_SPECIES;j++){in->MSP_Metallicity[k][j] = P[i].MSP_Metallicity[k][j];}
+    }
+#endif
 }
 
 
@@ -129,6 +143,12 @@ struct OUTPUT_STRUCT_NAME
 #endif
 #ifdef CLUSTER_SINK
     MyFloat accreted_MetalMass[NUM_METAL_SPECIES]; 
+#ifndef CLUSTER_SINK_AVOID_MERGERS
+    MyFloat MSP_InitialMass[CLUSTER_SINK_NUMMSP]; 
+    MyFloat MSP_Mass[CLUSTER_SINK_NUMMSP]; 
+    MyFloat MSP_Age[CLUSTER_SINK_NUMMSP]; 
+    MyFloat MSP_Metallicity[CLUSTER_SINK_NUMMSP][NUM_METAL_SPECIES]; 
+#endif
 #endif
 }
 *DATARESULT_NAME, *DATAOUT_NAME; /* dont mess with these names, they get filled-in by your definitions automatically */
@@ -351,10 +371,40 @@ int blackhole_swallow_and_kick_evaluate(int target, int mode, int *exportflag, i
 #ifdef BH_COUNTPROGS
                         out.BH_CountProgs += BPP(j).BH_CountProgs;
 #endif
-                        // MRC - missing: merge the MSPs
-                        // MRC - missing: accreted metals from another sink?
 #ifdef CLUSTER_SINK
+                        // accrete metals from another sink
                         for(k=0;k<NUM_METAL_SPECIES;k++){out.accreted_MetalMass[k] += FLT(Mass_j*Metallicity_j_0[k]);}
+
+#ifndef CLUSTER_SINK_AVOID_MERGERS
+                        // merge the MSPs
+                        for(k=0;k<CLUSTER_SINK_NUMMSP;k++){ // loop over MSPs in the ngb
+                            if(P[j].MSP_InitialMass[k] == 0){continue;} // no more MSPs to explore
+        
+                            // age of the MSP in Myr
+                            double age_ngb = evaluate_stellar_age_Gyr_for_msp(j, k)*1e3;
+                            double zh_ngb = P[j].MSP_Metallicity[k][0]; //MRC - make it relative to solar?
+                            int idx_msp_main_sink = -1; // index of the MSP within the main sink to be combined with
+                            int idx_last_msp_main_sink = -1; // index of the last MSP within the main sink 
+
+                            for(i=0;i<CLUSTER_SINK_NUMMSP;i++){ // loop over the MSPs in the main sink
+                                if (abs(age_ngb - in.MSP_Age[i]) < All.ClusterSink_DeltaAge) && abs(zh_ngb - in.MSP_Metallicity[i][0]){ idx_msp_main_sink = i;}
+                                if (in.MSP_InitialMass[i] == 0){ idx_last_msp_main_sink = i-1;} // find the last entry
+                            }
+
+                            // do the right operation for this MSP -- MRC -not happy yet
+                            if(idx_msp_main_sink > 0){ // MRC - combine as a mass-weighting
+                                out.merged_MSP_Mass[idx_msp_main_sink] += FLT(P[j].MSP_Mass[k]);
+                                out.merged_MSP_InitialMass[idx_msp_main_sink] += FLT(P[j].MSP_InitialMass[k]);
+                                out.merged_MSP_Age[idx_msp_main_sink] += FLT(P[j].MSP_Mass[k]*P[j].MSP_Age[k]);
+                                for(l=0;l<NUM_METAL_SPECIES;l++){ out.merged_MSP_MetalMass[idx_msp_main_sink] += FLT(P[j].MSP_Mass[k]*P[j].MSP_Metallicity[k][l]);}
+                            } else if((idx_msp_main_sink < 0) && (idx_last_msp_main_sink > 0)){ // MRC - append to the end of the array
+                                out.merged_MSP_Mass[idx_last_msp_main_sink] = FLT(P[j].MSP_Mass[k]);
+                                out.merged_MSP_InitialMass[idx_last_msp_main_sink] = FLT(P[j].MSP_InitialMass[k]);
+                                out.merged_MSP_Age[idx_last_msp_main_sink] = FLT(P[j].MSP_Mass[k]*P[j].MSP_Age[k]);
+                                for(l=0;l<NUM_METAL_SPECIES;l++){ out.merged_MSP_MetalMass[idx_last_msp_main_sink] = FLT(P[j].MSP_Mass[k]*P[j].MSP_Metallicity[k][l]);}
+                           }
+                        }
+#endif
 #endif
                         bin = P[j].TimeBin;
                         #pragma omp atomic

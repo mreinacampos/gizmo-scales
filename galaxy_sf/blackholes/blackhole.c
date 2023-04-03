@@ -726,9 +726,9 @@ void blackhole_final_operations(void)
 #endif
 
 #ifdef CLUSTER_SINK // MRC
-            double mf = P[j].Mass + BlackholeTempInfo[i].accreted_Mass;
+            double mf = P[n].Mass + BlackholeTempInfo[i].accreted_Mass;
             // update the yields as mass-weighed
-            for(k=0;k<NUM_METAL_SPECIES;k++) {P[j].Metallicity[k] =(P[j].Mass/mf)*P[j].Metallicity[k] + (1./mf)*BlackholeTempInfo[target].accreted_MetalMass[k];}
+            for(int k=0;k<NUM_METAL_SPECIES;k++) {P[n].Metallicity[k] =(P[n].Mass/mf)*P[n].Metallicity[k] + (1./mf)*BlackholeTempInfo[i].accreted_MetalMass[k];}
 #endif
 
 
