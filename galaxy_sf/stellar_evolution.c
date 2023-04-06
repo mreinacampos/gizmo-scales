@@ -144,7 +144,7 @@ double particle_ionizing_luminosity_in_cgs(long i)
         double lm_ssp = 0, star_age = evaluate_stellar_age_Gyr_for_msp(i, j);
         // converts to cgs luminosity [lm_ssp is in Lsun/Msun, here]
         double f_ion = determine_ionizing_flux_fraction(star_age, i);
-        lm_ssp = f_ion * evaluate_light_to_mass_ratio(star_age, i, j) * SOLAR_LUM_CGS * (P[i].MSP_Mass[j] * UNIT_MASS_IN_SOLAR);
+        lm_ssp = f_ion * evaluate_light_to_mass_ratio(star_age, i, j) * SOLAR_LUM_CGS * (P[i].MSP[j].Mass * UNIT_MASS_IN_SOLAR);
         return lm_ssp;
 #endif
 

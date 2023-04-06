@@ -449,10 +449,10 @@ void init(void)
 #ifdef CLUSTER_SINK
         if((P[i].Type == 4) || (P[i].Type == 5)) 
         {
-                P[i].MSP_Mass[0] = P[i].Mass; // mass of the first MSP
-                P[i].MSP_InitialMass[0] = P[i].Mass; // initial mass of the first MSP
-                P[i].MSP_Age[0] = All.Time; // age of the first MSP
-                for(int k=0;k<NUM_METAL_SPECIES;k++){P[i].MSP_Metallicity[0][k] = P[i].Metallicity[k];} // metallicity of the first MSP
+                P[i].MSP[0].Mass = P[i].Mass; // mass of the first MSP
+                P[i].MSP[0].InitialMass = P[i].Mass; // initial mass of the first MSP
+                P[i].MSP[0].Age = All.Time; // age of the first MSP
+                for(int k=0;k<NUM_METAL_SPECIES;k++){P[i].MSP[0].Metallicity[k] = P[i].Metallicity[k];} // metallicity of the first MSP
         }
 #endif
         if(P[i].Type == 5)

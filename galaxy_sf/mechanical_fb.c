@@ -72,7 +72,7 @@ void determine_where_SNe_occur(void)
 #ifdef CLUSTER_SINK_OUTPUT_NUMSNE
         if(P[i].SNe_ThisTimeStep>=0){ // if there's any SNe exploding
             for (int j = 0; j<CLUSTER_SINK_NUMMSP; j++){
-                if(P[i].MSP_Mass[j] == 0) continue; // this MSP has no FB to contribute
+                if(P[i].MSP[j].Mass == 0) continue; // this MSP has no FB to contribute
                 if ((P[i].SNII_ThisTimeStep[j]>0)||(P[i].SNIa_ThisTimeStep[j]>0)) { 
                     P[i].CumNumSNe[j] += (P[i].SNII_ThisTimeStep[j] + P[i].SNIa_ThisTimeStep[j]);
                     P[i].CumNumSNII[j] += P[i].SNII_ThisTimeStep[j]; 

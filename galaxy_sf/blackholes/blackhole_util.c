@@ -55,40 +55,10 @@ void blackhole_start(void)
 
 
 # if defined(CLUSTER_SINK) && !defined(CLUSTER_SINK_AVOID_MERGERS)
-            BlackholeTempInfo[Nbh].append_MSP_InitialMass = (MyFloat *) mymalloc("BHTempInfo.append_MSP_InitialMass", NTask * sizeof(MyFloat *));
-            BlackholeTempInfo[Nbh].append_MSP_Mass = (MyFloat *) mymalloc("BHTempInfo.append_MSP_Mass", NTask * sizeof(MyFloat *));
-            BlackholeTempInfo[Nbh].append_MSP_Age = (MyFloat *) mymalloc("BHTempInfo.append_MSP_Age", NTask * sizeof(MyFloat *));
-            BlackholeTempInfo[Nbh].append_MSP_Metallicity = (MyFloat *) mymalloc("BHTempInfo.append_MSP_Metallicity", NTask * sizeof(MyFloat *));
-
+            BlackholeTempInfo[Nbh].append_MSP = (struct cluster_sink_multiple_stellar_population *) mymalloc("BHTempInfo.append_MSP", NTask * CLUSTER_SINK_NUMMSP_ACCRETE * sizeof(struct cluster_sink_multiple_stellar_population));
+            memset( &BlackholeTempInfo[Nbh].append_MSP[0], 0, NTask * CLUSTER_SINK_NUMMSP_ACCRETE * sizeof(struct cluster_sink_multiple_stellar_population) );
             printf("[MRC - bh_start()] ThisTask %d - Nbh %d - allocating arrays \n", ThisTask, Nbh);
-
-            for(int j = 0; j < NTask; j++){
-                BlackholeTempInfo[Nbh].append_MSP_InitialMass[j] = (MyFloat *) mymalloc("BHTempInfo.append_MSP_InitialMass[j]", CLUSTER_SINK_NUMMSP_ACCRETE * sizeof(MyFloat));
-                BlackholeTempInfo[Nbh].append_MSP_Mass[j] = (MyFloat *) mymalloc("BHTempInfo.append_MSP_Mass[j]", CLUSTER_SINK_NUMMSP_ACCRETE * sizeof(MyFloat));
-                BlackholeTempInfo[Nbh].append_MSP_Age[j] = (MyFloat *) mymalloc("BHTempInfo.append_MSP_Age[j]", CLUSTER_SINK_NUMMSP_ACCRETE * sizeof(MyFloat));
-                BlackholeTempInfo[Nbh].append_MSP_Metallicity[j] = (MyFloat *) mymalloc("BHTempInfo.append_MSP_Metallicity[j]", CLUSTER_SINK_NUMMSP_ACCRETE * sizeof(MyFloat));
-
-                memset( BlackholeTempInfo[Nbh].append_MSP_InitialMass[j], 0, CLUSTER_SINK_NUMMSP_ACCRETE * sizeof(MyFloat) );
-                memset( BlackholeTempInfo[Nbh].append_MSP_Mass[j], 0, CLUSTER_SINK_NUMMSP_ACCRETE * sizeof(MyFloat) );
-                memset( BlackholeTempInfo[Nbh].append_MSP_Age[j], 0, CLUSTER_SINK_NUMMSP_ACCRETE * sizeof(MyFloat) );
-
-                for (int l = 0; l<CLUSTER_SINK_NUMMSP_ACCRETE; l++){
-                    BlackholeTempInfo[Nbh].append_MSP_Metallicity[j][l] = (MyFloat *) mymalloc("BHTempInfo.append_MSP_Metallicity[j][l]", NUM_METAL_SPECIES * sizeof(MyFloat));
-                    memset( BlackholeTempInfo[Nbh].append_MSP_Metallicity[j][l], 0, NUM_METAL_SPECIES * sizeof(MyFloat) );
-                    if(BlackholeTempInfo[Nbh].append_MSP_Metallicity[j][l] == NULL) {
-                        printf("Failed to allocate memory for BHTempInfo[Nbh].append_MSP_Metallicity[i][l][%d %d].\n", j, l);
-                        terminate("Failed to allocate memory for BHTempInfo[Nbh].append_MSP_Metallicity[i][l]");}
-                }
-                if(BlackholeTempInfo[Nbh].append_MSP_InitialMass[j] == NULL) {
-                    printf("Failed to allocate memory for BHTempInfo[Nbh].append_MSP_InitialMass[i][%d].\n", j);
-                    terminate("Failed to allocate memory for BHTempInfo[Nbh].append_MSP_InitialMass[i]");}
-                if(BlackholeTempInfo[Nbh].append_MSP_Mass[j] == NULL) {
-                    printf("Failed to allocate memory for BHTempInfo[Nbh].append_MSP_Mass[i][%d].\n", j);
-                    terminate("Failed to allocate memory for BHTempInfo[Nbh].append_MSP_Mass[i]");}
-                if(BlackholeTempInfo[Nbh].append_MSP_Age[j] == NULL) {
-                    printf("Failed to allocate memory for BHTempInfo[Nbh].append_MSP_Age[i][%d].\n", j);
-                    terminate("Failed to allocate memory for BHTempInfo[Nbh].append_MSP_Age[i]");}
-            }
+            if(BlackholeTempInfo[Nbh].append_MSP == NULL) { terminate("Failed to allocate memory for BHTempInfo[Nbh].append_MSP");}
  #endif
             Nbh++;
         }
@@ -159,33 +129,7 @@ void blackhole_end(void)
     }
 # if defined(CLUSTER_SINK) && !defined(CLUSTER_SINK_AVOID_MERGERS)
     if (N_active_loc_BHs > 0){
-        for(int i=N_active_loc_BHs-1; i>=0; i--){
-            for(int j = NTask-1; j >=0; j--){
-                for (int l = CLUSTER_SINK_NUMMSP_ACCRETE-1; l>=0; l--){myfree(BlackholeTempInfo[i].append_MSP_Metallicity[j][l]); BlackholeTempInfo[i].append_MSP_Metallicity[j][l] = NULL;}
-
-                //printf("[MRC - bh_end()] ThisTask %d - Freeing Metallicity[i][j][l][%d %d %d]\n",ThisTask, i,j,l);
-                myfree(BlackholeTempInfo[i].append_MSP_Metallicity[j]);
-                BlackholeTempInfo[i].append_MSP_Metallicity[j] = NULL;
-                myfree(BlackholeTempInfo[i].append_MSP_Age[j]);
-                BlackholeTempInfo[i].append_MSP_Age[j] = NULL;
-                myfree(BlackholeTempInfo[i].append_MSP_Mass[j]);
-                BlackholeTempInfo[i].append_MSP_Mass[j] = NULL;
-                myfree(BlackholeTempInfo[i].append_MSP_InitialMass[j]);
-                BlackholeTempInfo[i].append_MSP_InitialMass[j] = NULL;
-                //printf("[MRC - bh_end()] ThisTask %d - Freeing Metallicity, Age, Mass, InitialMass [i][j][%d %d]\n",ThisTask,i,j);
-            }
-            myfree(BlackholeTempInfo[i].append_MSP_Metallicity);
-            BlackholeTempInfo[i].append_MSP_Metallicity = NULL;
-            myfree(BlackholeTempInfo[i].append_MSP_Age);
-            BlackholeTempInfo[i].append_MSP_Age = NULL;
-            myfree(BlackholeTempInfo[i].append_MSP_Mass);
-            BlackholeTempInfo[i].append_MSP_Mass = NULL;
-            myfree(BlackholeTempInfo[i].append_MSP_InitialMass);
-            BlackholeTempInfo[i].append_MSP_InitialMass = NULL;
-
-            //printf("[MRC - bh_end()] ThisTask %d - Freeing Metallicity, Age, Mass, InitialMass [i][%d]\n\n",ThisTask,i);
-
-        }
+        for(int i=N_active_loc_BHs-1; i>=0; i--){ myfree(BlackholeTempInfo[i].append_MSP); BlackholeTempInfo[i].append_MSP = NULL;}
     }
 #endif
     myfree(BlackholeTempInfo);

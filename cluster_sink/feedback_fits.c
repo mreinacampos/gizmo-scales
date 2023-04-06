@@ -44,15 +44,15 @@ void set_fb_input_quantities_from_msps(struct addFB_evaluate_data_in_ *in, int i
         // zero out quantities
         velocity_winds = 0;
 
-        if (P[i].MSP_Mass[j] == 0) continue; // this MSP has no FB to produce
+        if (P[i].MSP[j].Mass == 0) continue; // this MSP has no FB to produce
 
         // determine the age in Myr
         double age = evaluate_stellar_age_Gyr_for_msp(i, j)*1e3, zh;
         // metallicity of the stellar population - zh = 10^[Fe/H] = (N_Fe/N_H)_star / (N_Fe/N_H)_solar
         if (NUM_METAL_SPECIES > 1){
-            zh = (P[i].MSP_Metallicity[j][NUM_METAL_SPECIES-1]/(1 - P[i].MSP_Metallicity[j][1] - P[i].MSP_Metallicity[j][0]))/(All.SolarAbundances[NUM_METAL_SPECIES-1]/(1 - All.SolarAbundances[0] - All.SolarAbundances[1]));
+            zh = (P[i].MSP[j].Metallicity[NUM_METAL_SPECIES-1]/(1 - P[i].MSP[j].Metallicity[1] - P[i].MSP[j].Metallicity[0]))/(All.SolarAbundances[NUM_METAL_SPECIES-1]/(1 - All.SolarAbundances[0] - All.SolarAbundances[1]));
         } else {
-            zh = (P[i].MSP_Metallicity[j][0]/All.SolarAbundances[0]);
+            zh = (P[i].MSP[j].Metallicity[0]/All.SolarAbundances[0]);
         }
 
         // calculate the mass loss associated to each mechanism for this MSP
@@ -135,9 +135,9 @@ void calculate_fb_mass_ejected_for_msps(struct fb_massloss_for_msp *fb_dm, int i
     double age = evaluate_stellar_age_Gyr_for_msp(i, j)*1e3, zh;
     // metallicity of the stellar population - zh = 10^[Fe/H] = (N_Fe/N_H)_star / (N_Fe/N_H)_solar
     if (NUM_METAL_SPECIES > 1){
-        zh = (P[i].MSP_Metallicity[j][NUM_METAL_SPECIES-1]/(1 - P[i].MSP_Metallicity[j][1] - P[i].Metallicity[0]))/(All.SolarAbundances[NUM_METAL_SPECIES-1]/(1 - All.SolarAbundances[0] - All.SolarAbundances[1]));
+        zh = (P[i].MSP[j].Metallicity[NUM_METAL_SPECIES-1]/(1 - P[i].MSP[j].Metallicity[1] - P[i].Metallicity[0]))/(All.SolarAbundances[NUM_METAL_SPECIES-1]/(1 - All.SolarAbundances[0] - All.SolarAbundances[1]));
     } else {
-        zh = (P[i].MSP_Metallicity[j][0]/All.SolarAbundances[0]);
+        zh = (P[i].MSP[j].Metallicity[0]/All.SolarAbundances[0]);
     }
 
     // zero out quantities
@@ -157,7 +157,7 @@ void calculate_fb_mass_ejected_for_msps(struct fb_massloss_for_msp *fb_dm, int i
     // particle timestep in Myr
     double dt = GET_PARTICLE_TIMESTEP_IN_PHYSICAL(i) * UNIT_TIME_IN_MYR;
     // total mass ejected by winds in code units 
-    fb_dm->mass_winds = determine_winds_mass_loss_rate(age, zh) * P[i].MSP_Mass[j] * dt; 
+    fb_dm->mass_winds = determine_winds_mass_loss_rate(age, zh) * P[i].MSP[j].Mass * dt; 
 #endif
 }
 
@@ -179,14 +179,14 @@ void reduce_mass_from_msps(void)
         //loop over every stellar population within the sink
         for (j = 0; j<CLUSTER_SINK_NUMMSP; j++){
 
-            if (P[i].MSP_Mass[j] == 0) continue; // this MSP has no FB to produce
+            if (P[i].MSP[j].Mass == 0) continue; // this MSP has no FB to produce
 
             // calculate the mass loss associated to each mechanism for this MSP
             calculate_fb_mass_ejected_for_msps(&fb_dm, i, j);
 
             // now remove the ejected mass from each MSP 
-            P[i].MSP_Mass[j] -= (fb_dm.mass_snii + fb_dm.mass_snia + fb_dm.mass_winds);
-            assert(P[i].MSP_Mass[j] >= 0); 
+            P[i].MSP[j].Mass -= (fb_dm.mass_snii + fb_dm.mass_snia + fb_dm.mass_winds);
+            assert(P[i].MSP[j].Mass >= 0); 
 
             // remove mass from the total mass too - already done in out2particle_addFB
             //P[i].Mass -= (fb_dm.mass_snii + fb_dm.mass_snia + fb_dm.mass_winds);
@@ -213,7 +213,7 @@ double determine_sne_rates(int i, double dt)
     // loop over all multiple stellar populations
     for(j = 0; j<CLUSTER_SINK_NUMMSP; j++){
         
-        if (P[i].MSP_Mass[j] == 0) continue; // this MSP has no FB to produce
+        if (P[i].MSP[j].Mass == 0) continue; // this MSP has no FB to produce
 
         // declare and define variables here
         double RSNII = 0., RSNIa = 0., age, p, n_sn_0 = 0;
@@ -232,14 +232,14 @@ double determine_sne_rates(int i, double dt)
         RSNe += RSNII + RSNIa;
 
         // determine number of SNII
-        p = RSNII * (P[i].MSP_Mass[j]*UNIT_MASS_IN_SOLAR) * (dt*UNIT_TIME_IN_MYR); // unit conversion factor
+        p = RSNII * (P[i].MSP[j].Mass*UNIT_MASS_IN_SOLAR) * (dt*UNIT_TIME_IN_MYR); // unit conversion factor
         n_sn_0=(float)floor(p);
         p-=n_sn_0;
         if(get_random_number(P[i].ID+6) < p) {n_sn_0++;} // determine if SNe occurs
         P[i].SNII_ThisTimeStep[j] = n_sn_0; // assign to particle
 
         // determine number of SNIa
-        p = RSNIa * (P[i].MSP_Mass[j]*UNIT_MASS_IN_SOLAR) * (dt*UNIT_TIME_IN_MYR); // unit conversion factor
+        p = RSNIa * (P[i].MSP[j].Mass*UNIT_MASS_IN_SOLAR) * (dt*UNIT_TIME_IN_MYR); // unit conversion factor
         n_sn_0=(float)floor(p);
         p-=n_sn_0;
         if(get_random_number(P[i].ID+6) < p) {n_sn_0++;} // determine if SNe occurs

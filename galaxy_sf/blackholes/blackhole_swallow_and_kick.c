@@ -97,7 +97,7 @@ static inline void INPUTFUNCTION_NAME(struct INPUT_STRUCT_NAME *in, int i, int l
 #if defined(CLUSTER_SINK) && !defined(CLUSTER_SINK_AVOID_MERGERS)
     for(k=0;k<CLUSTER_SINK_NUMMSP;k++) {
         in->MSP_AgeInMyr[k] = evaluate_stellar_age_Gyr_for_msp(i, k)*1e3; // in Myr 
-        in->MSP_Metallicity[k] = P[i].MSP_Metallicity[k][0]; // collect only total Z
+        in->MSP_Metallicity[k] = P[i].MSP[k].Metallicity[0]; // collect only total Z
     }
 #endif
 }
@@ -142,15 +142,9 @@ struct OUTPUT_STRUCT_NAME
 #ifndef CLUSTER_SINK_AVOID_MERGERS
     int ThisTask; // record the task from which this data came from
     // define arrays to gather information on the combined MSPs
-    MyFloat combined_MSP_InitialMass[CLUSTER_SINK_NUMMSP]; 
-    MyFloat combined_MSP_Mass[CLUSTER_SINK_NUMMSP]; 
-    MyFloat combined_MSP_Age[CLUSTER_SINK_NUMMSP]; 
-    MyFloat combined_MSP_Metallicity[CLUSTER_SINK_NUMMSP][NUM_METAL_SPECIES]; 
+    struct cluster_sink_multiple_stellar_population combined_MSP[CLUSTER_SINK_NUMMSP];  
     // define arrays to gather information on the MSPs that need to be appended
-    MyFloat append_MSP_InitialMass[CLUSTER_SINK_NUMMSP]; 
-    MyFloat append_MSP_Mass[CLUSTER_SINK_NUMMSP]; 
-    MyFloat append_MSP_Age[CLUSTER_SINK_NUMMSP]; 
-    MyFloat append_MSP_Metallicity[CLUSTER_SINK_NUMMSP][NUM_METAL_SPECIES]; 
+    struct cluster_sink_multiple_stellar_population append_MSP[CLUSTER_SINK_NUMMSP_ACCRETE]; 
 #endif
 #endif
 }
@@ -195,34 +189,34 @@ static inline void OUTPUTFUNCTION_NAME(struct OUTPUT_STRUCT_NAME *out, int i, in
 #ifdef CLUSTER_SINK
     for(k=0;k<NUM_METAL_SPECIES;k++) {
         ASSIGN_ADD_PRESET(BlackholeTempInfo[target].accreted_MetalMass[k], out->accreted_MetalMass[k], mode);
-        if ((out->accreted_MetalMass[k] !=0) || (BlackholeTempInfo[target].accreted_MetalMass[k] != 0)){
-            printf("[MRC - swallow - out2() - append] ThisTask %d, out %d - target %d, mode %d - k %d - accreted_MetalMass[k] %g, out %g\n", ThisTask, out->ThisTask,
-                target, mode, k, BlackholeTempInfo[target].accreted_MetalMass[k], out->accreted_MetalMass[k]);
-        }
+        //if ((out->accreted_MetalMass[k] !=0) || (BlackholeTempInfo[target].accreted_MetalMass[k] != 0)){
+        //    printf("[MRC - swallow - out2() - append] ThisTask %d, out %d - target %d, mode %d - k %d - accreted_MetalMass[k] %g, out %g\n", ThisTask, out->ThisTask,
+        //        target, mode, k, BlackholeTempInfo[target].accreted_MetalMass[k], out->accreted_MetalMass[k]);
+        //}
     }
 
 #ifndef CLUSTER_SINK_AVOID_MERGERS
     for(k=0;k<CLUSTER_SINK_NUMMSP;k++){ // loop over MSPs in the ngb
         // combined MSPs
-        ASSIGN_ADD_PRESET(BlackholeTempInfo[target].combined_MSP_Mass[k], out->combined_MSP_Mass[k], mode);
-        ASSIGN_ADD_PRESET(BlackholeTempInfo[target].combined_MSP_InitialMass[k], out->combined_MSP_InitialMass[k], mode);
-        ASSIGN_ADD_PRESET(BlackholeTempInfo[target].combined_MSP_Age[k], out->combined_MSP_Age[k], mode);
-        for(int l=0;l<NUM_METAL_SPECIES;l++) {ASSIGN_ADD_PRESET(BlackholeTempInfo[target].combined_MSP_Metallicity[k][l], out->combined_MSP_Metallicity[k][l], mode);}
-        if ((out->combined_MSP_Mass[k] !=0) || (out->combined_MSP_Age[k] != 0) || (BlackholeTempInfo[target].combined_MSP_Mass[k] != 0) || (BlackholeTempInfo[target].combined_MSP_Age[k] != 0)){
+        ASSIGN_ADD_PRESET(BlackholeTempInfo[target].combined_MSP[k].Mass, out->combined_MSP[k].Mass, mode);
+        ASSIGN_ADD_PRESET(BlackholeTempInfo[target].combined_MSP[k].InitialMass, out->combined_MSP[k].InitialMass, mode);
+        ASSIGN_ADD_PRESET(BlackholeTempInfo[target].combined_MSP[k].Age, out->combined_MSP[k].Age, mode);
+        for(int l=0;l<NUM_METAL_SPECIES;l++) {ASSIGN_ADD_PRESET(BlackholeTempInfo[target].combined_MSP[k].Metallicity[l], out->combined_MSP[k].Metallicity[l], mode);}
+        if ((out->combined_MSP[k].Mass !=0) || (out->combined_MSP[k].Age != 0) || (BlackholeTempInfo[target].combined_MSP[k].Mass != 0) || (BlackholeTempInfo[target].combined_MSP[k].Age != 0)){
             printf("[MRC - swallow - out2() - combine] ThisTask %d, out %d - target %d, mode %d - k %d - combined_MSP_Mass[k] %g, out %g - combined_MSP_Age[k] %g, out %g\n", ThisTask, out->ThisTask,
-            target, mode, k, BlackholeTempInfo[target].combined_MSP_Mass[k], out->combined_MSP_Mass[k], BlackholeTempInfo[target].combined_MSP_Age[k], out->combined_MSP_Age[k]);
+            target, mode, k, BlackholeTempInfo[target].combined_MSP[k].Mass, out->combined_MSP[k].Mass, BlackholeTempInfo[target].combined_MSP[k].Age, out->combined_MSP[k].Age);
         }
 
     }
     for(k=0;k<CLUSTER_SINK_NUMMSP_ACCRETE;k++){ // loop over MSPs in the ngb
        // MSPs to be appended
-        ASSIGN_ADD_PRESET(BlackholeTempInfo[target].append_MSP_Mass[out->ThisTask][k], out->append_MSP_Mass[k], mode);
-        ASSIGN_ADD_PRESET(BlackholeTempInfo[target].append_MSP_InitialMass[out->ThisTask][k], out->append_MSP_InitialMass[k], mode);
-        ASSIGN_ADD_PRESET(BlackholeTempInfo[target].append_MSP_Age[out->ThisTask][k], out->append_MSP_Age[k], mode);
-        for(int l=0;l<NUM_METAL_SPECIES;l++) {ASSIGN_ADD_PRESET(BlackholeTempInfo[target].append_MSP_Metallicity[out->ThisTask][k][l], out->append_MSP_Metallicity[k][l], mode);}
-        if ((out->append_MSP_Mass[k] !=0) || (out->append_MSP_Age[k] != 0) || (BlackholeTempInfo[target].append_MSP_Mass[out->ThisTask][k] != 0) || (BlackholeTempInfo[target].append_MSP_Age[out->ThisTask][k] != 0)){
+        ASSIGN_ADD_PRESET(BlackholeTempInfo[target].append_MSP[out->ThisTask * k].Mass, out->append_MSP[k].Mass, mode);
+        ASSIGN_ADD_PRESET(BlackholeTempInfo[target].append_MSP[out->ThisTask * k].InitialMass, out->append_MSP[k].InitialMass, mode);
+        ASSIGN_ADD_PRESET(BlackholeTempInfo[target].append_MSP[out->ThisTask * k].Age, out->append_MSP[k].Age, mode);
+        for(int l=0;l<NUM_METAL_SPECIES;l++) {ASSIGN_ADD_PRESET(BlackholeTempInfo[target].append_MSP[out->ThisTask * k].Metallicity[l], out->append_MSP[k].Metallicity[l], mode);}
+        if ((out->append_MSP[k].Mass !=0) || (out->append_MSP[k].Age != 0) || (BlackholeTempInfo[target].append_MSP[out->ThisTask * k].Mass != 0) || (BlackholeTempInfo[target].append_MSP[out->ThisTask * k].Age != 0)){
             printf("[MRC - swallow - out2() - append] ThisTask %d, out %d - target %d, mode %d - k %d - append_MSP_Mass[k] %g, out %g - append_MSP_Age[k] %g, out %g\n", ThisTask, out->ThisTask,
-                target, mode, k, BlackholeTempInfo[target].append_MSP_Mass[out->ThisTask][k], out->append_MSP_Mass[k], BlackholeTempInfo[target].append_MSP_Age[out->ThisTask][k], out->append_MSP_Age[k]);
+            target, mode, k, BlackholeTempInfo[target].append_MSP[out->ThisTask * k].Mass, out->append_MSP[k].Mass, BlackholeTempInfo[target].append_MSP[out->ThisTask * k].Age, out->append_MSP[k].Age);
         }
     }
 #endif
@@ -415,10 +409,10 @@ int blackhole_swallow_and_kick_evaluate(int target, int mode, int *exportflag, i
                         printf("[MRC - swallow - evaluate] *WE HAVE A MERGER!* - ThisTask %d\n", ThisTask);
                         // merge the MSPs
                         for(k=0;k<CLUSTER_SINK_NUMMSP;k++){ // loop over MSPs in the ngb
-                            if(P[j].MSP_InitialMass[k] == 0){continue;} // no more MSPs to explore
+                            if(P[j].MSP[k].InitialMass == 0){continue;} // no more MSPs to explore
         
                             double age_ngb_inmyr = evaluate_stellar_age_Gyr_for_msp(j, k)*1e3; // age of the MSP in Myr
-                            double zh_ngb = P[j].MSP_Metallicity[k][0]; // total metal mass fraction
+                            double zh_ngb = P[j].MSP[k].Metallicity[0]; // total metal mass fraction
                             int idx_msp_main_sink = -1; // index of the MSP within the main sink to be combined with
                             int idx_msp_to_append = -1; // index of the last MSP within the appending array in the output structure
 
@@ -434,7 +428,7 @@ int blackhole_swallow_and_kick_evaluate(int target, int mode, int *exportflag, i
                             // if not, find the last free entry in the appending array
                             if (idx_msp_main_sink < 0){ 
                                 for(int i=0;i<CLUSTER_SINK_NUMMSP;i++){ // loop over the MSPs in the output structure
-                                    if(out.append_MSP_InitialMass[i] == 0){idx_msp_to_append = i; break;}
+                                    if(out.append_MSP[i].InitialMass == 0){idx_msp_to_append = i; break;}
                                 }   
                             }
 
@@ -442,17 +436,17 @@ int blackhole_swallow_and_kick_evaluate(int target, int mode, int *exportflag, i
 
                             // now, get the data of this MSP in the right array (combine vs append)
                             if(idx_msp_main_sink > 0){ // combine as a mass-weighting
-                                out.combined_MSP_Mass[idx_msp_main_sink] += FLT(P[j].MSP_Mass[k]);
-                                out.combined_MSP_InitialMass[idx_msp_main_sink] += FLT(P[j].MSP_InitialMass[k]);
-                                out.combined_MSP_Age[idx_msp_main_sink] += FLT(P[j].MSP_Mass[k]*P[j].MSP_Age[k]);
-                                for(int l=0;l<NUM_METAL_SPECIES;l++){ out.combined_MSP_Metallicity[idx_msp_main_sink][l] += FLT(P[j].MSP_Mass[k]*P[j].MSP_Metallicity[k][l]);}
+                                out.combined_MSP[idx_msp_main_sink].Mass += FLT(P[j].MSP[k].Mass);
+                                out.combined_MSP[idx_msp_main_sink].InitialMass += FLT(P[j].MSP[k].InitialMass);
+                                out.combined_MSP[idx_msp_main_sink].Age += FLT(P[j].MSP[k].Mass*P[j].MSP[k].Age);
+                                for(int l=0;l<NUM_METAL_SPECIES;l++){ out.combined_MSP[idx_msp_main_sink].Metallicity[l] += FLT(P[j].MSP[k].Mass*P[j].MSP[k].Metallicity[l]);}
                             } else if((idx_msp_main_sink < 0) && (idx_msp_to_append > 0)){ // will be appended to the end of the array
                                 if(idx_msp_to_append > CLUSTER_SINK_NUMMSP_ACCRETE){terminate("Trying to accrete more MSPs than we have space for");}
 
-                                out.append_MSP_Mass[idx_msp_to_append] = FLT(P[j].MSP_Mass[k]);
-                                out.append_MSP_InitialMass[idx_msp_to_append] = FLT(P[j].MSP_InitialMass[k]);
-                                out.append_MSP_Age[idx_msp_to_append] = FLT(P[j].MSP_Age[k]);
-                                for(int l=0;l<NUM_METAL_SPECIES;l++){ out.append_MSP_Metallicity[idx_msp_to_append][l] = FLT(P[j].MSP_Metallicity[k][l]);}
+                                out.append_MSP[idx_msp_to_append].Mass = FLT(P[j].MSP[k].Mass);
+                                out.append_MSP[idx_msp_to_append].InitialMass = FLT(P[j].MSP[k].InitialMass);
+                                out.append_MSP[idx_msp_to_append].Age = FLT(P[j].MSP[k].Age);
+                                for(int l=0;l<NUM_METAL_SPECIES;l++){ out.append_MSP[idx_msp_to_append].Metallicity[l] = FLT(P[j].MSP[k].Metallicity[l]);}
                            }
                         }
 #endif

@@ -74,7 +74,7 @@ int rt_get_source_luminosity(int i, int mode, double *lum)
     double lum_msp[N_RT_FREQ_BINS]; 
     for(int k=0;k<N_RT_FREQ_BINS;k++) {lum[k] = 0;} // zero out the luminosity bins to avoid rubbish
     for (int j = 0; j<CLUSTER_SINK_NUMMSP; j++){ // change the input quantities to the current MSP properties
-        if(P[i].MSP_Mass[j] == 0){continue;} // this MSP has no FB
+        if(P[i].MSP[j].Mass == 0){continue;} // this MSP has no FB
         for(int k=0;k<N_RT_FREQ_BINS;k++) {lum_msp[k] = 0;} // zero out the luminosity bins
         active_check += rt_get_lum_band_stellarpopulation(i,mode,lum_msp,j); // get luminosities for star particles assuming they represent IMF-averaged populations
         for(int k=0;k<N_RT_FREQ_BINS;k++) {lum[k] += lum_msp[k];} // add up contributions of all MSPs
@@ -378,8 +378,8 @@ int rt_get_lum_band_stellarpopulation(int i, int mode, double *lum)
     double star_age = evaluate_stellar_age_Gyr(i), m_sol = P[i].Mass * UNIT_MASS_IN_SOLAR;
 
 #ifdef CLUSTER_SINK
-    if(P[i].MSP_Mass[j] == 0){return 0;} // this MSP has no FB to produce
-    star_age = evaluate_stellar_age_Gyr_for_msp(i,j), m_sol = P[i].MSP_Mass[j] * UNIT_MASS_IN_SOLAR;
+    if(P[i].MSP[j].Mass == 0){return 0;} // this MSP has no FB to produce
+    star_age = evaluate_stellar_age_Gyr_for_msp(i,j), m_sol = P[i].MSP[j].Mass * UNIT_MASS_IN_SOLAR;
 #endif
     if((star_age<=0) || isnan(star_age)) {return 0;} // calculate stellar age, will be used below, and catch for bad values
 

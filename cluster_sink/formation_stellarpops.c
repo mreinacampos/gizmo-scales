@@ -44,15 +44,15 @@ void continuous_star_formation_in_sinks(void)
 
         // loop until there's an empty entry
         for (j = 0; j<CLUSTER_SINK_NUMMSP; j++){
-            if (P[i].MSP_InitialMass[j] > 0) continue;
-            printf("[formation_stellarpops.c] - i %d j %d, sp_mass %g, P[i].MSP_InitialMass[j] %g\n", i, j, sp_mass, P[i].MSP_InitialMass[j]);
+            if (P[i].MSP[j].InitialMass > 0) continue;
+            printf("[formation_stellarpops.c] - i %d j %d, sp_mass %g, P[i].MSP_InitialMass[j] %g\n", i, j, sp_mass, P[i].MSP[j].InitialMass);
             // assign properties
-            P[i].MSP_InitialMass[j] = sp_mass;
-            P[i].MSP_Mass[j] = sp_mass;
-            P[i].MSP_Age[j] = All.Time; // scale factor or time - needs to be evaluated with evaluate_stellar_age_Gyr_for_msp(i, j)
-            for(int k=0;k<NUM_METAL_SPECIES;k++) {P[i].MSP_Metallicity[j][k] = P[i].Metallicity[k];} // collecting the mass-weighted metallicity of accreted gas
+            P[i].MSP[j].InitialMass = sp_mass;
+            P[i].MSP[j].Mass = sp_mass;
+            P[i].MSP[j].Age = All.Time; // scale factor or time - needs to be evaluated with evaluate_stellar_age_Gyr_for_msp(i, j)
+            for(int k=0;k<NUM_METAL_SPECIES;k++) {P[i].MSP[j].Metallicity[k] = P[i].Metallicity[k];} // collecting the mass-weighted metallicity of accreted gas
             printf("[formation_stellarpops.c] - i %d j %d, MSP_InitialMass[j] %g, MSP_Mass %g, MSP_Age %g, MSP_Metallicity %g\n",
-             i, j, P[i].MSP_InitialMass[j], P[i].MSP_Mass[j], P[i].MSP_Age[j], P[i].MSP_Metallicity[j][0]);
+             i, j, P[i].MSP[j].InitialMass, P[i].MSP[j].Mass, P[i].MSP[j].Age, P[i].MSP[j].Metallicity[0]);
             break;
         }
 
@@ -75,7 +75,7 @@ double determine_mass_gas_reservoir(int i)
     int k;
     double mass_gas, mass_msp; mass_gas = 0; mass_msp = 0;
     // calculate total mass currently in stars within the sink
-    for (k=0; k<CLUSTER_SINK_NUMMSP; k++){ mass_msp += P[i].MSP_Mass[k]; }
+    for (k=0; k<CLUSTER_SINK_NUMMSP; k++){ mass_msp += P[i].MSP[k].Mass; }
     // calculate the gas mass
     mass_gas = P[i].Mass - mass_msp;
     if (mass_gas < 0) printf("[formation_stellarpops.c - mgas] mass_gas %g, P[i].Mass %g, mass_msp %g\n", mass_gas, P[i].Mass, mass_msp);
@@ -92,7 +92,7 @@ double determine_mass_gas_reservoir(int i)
  */
 double evaluate_stellar_age_Gyr_for_msp(long i, int j)
 {
-    double age = evaluate_time_since_t_initial_in_Gyr(P[i].MSP_Age[j]);
+    double age = evaluate_time_since_t_initial_in_Gyr(P[i].MSP[j].Age);
     age = DMAX(age, 1.e-5); // set a floor for some routines
     return age;
 }

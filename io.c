@@ -1749,7 +1749,7 @@ void fill_write_buffer(enum iofields blocknr, int *startindex, int pc, int type)
             for(n = 0; n < pc; pindex++)
                 if(P[pindex].Type == type)
                 {
-                    for(k=0;k<CLUSTER_SINK_NUMMSP;k++) {fp[k] = (MyOutputFloat) P[pindex].MSP_Mass[k];}
+                    for(k=0;k<CLUSTER_SINK_NUMMSP;k++) {fp[k] = (MyOutputFloat) P[pindex].MSP[k].Mass;}
                     fp += CLUSTER_SINK_NUMMSP;
                     n++;
                 }
@@ -1761,7 +1761,7 @@ void fill_write_buffer(enum iofields blocknr, int *startindex, int pc, int type)
             for(n = 0; n < pc; pindex++)
                 if(P[pindex].Type == type)
                 {
-                    for(k=0;k<CLUSTER_SINK_NUMMSP;k++) {fp[k] = (MyOutputFloat) P[pindex].MSP_InitialMass[k];}
+                    for(k=0;k<CLUSTER_SINK_NUMMSP;k++) {fp[k] = (MyOutputFloat) P[pindex].MSP[k].InitialMass;}
                     fp += CLUSTER_SINK_NUMMSP;
                     n++;
                 }
@@ -1773,7 +1773,7 @@ void fill_write_buffer(enum iofields blocknr, int *startindex, int pc, int type)
             for(n = 0; n < pc; pindex++)
                 if(P[pindex].Type == type)
                 {
-                    for(k=0;k<CLUSTER_SINK_NUMMSP;k++) {fp[k] = (MyOutputFloat) P[pindex].MSP_Age[k];}
+                    for(k=0;k<CLUSTER_SINK_NUMMSP;k++) {fp[k] = (MyOutputFloat) P[pindex].MSP[k].Age;}
                     fp += CLUSTER_SINK_NUMMSP;
                     n++;
                 }
@@ -1787,7 +1787,7 @@ void fill_write_buffer(enum iofields blocknr, int *startindex, int pc, int type)
                 {
                     for(k=0;k<CLUSTER_SINK_NUMMSP;k++) {
                         for(int j=0;j<NUM_METAL_SPECIES;j++) {
-                            fp[k*CLUSTER_SINK_NUMMSP+j] = (MyOutputFloat) P[pindex].MSP_Metallicity[k][j];
+                            fp[k*CLUSTER_SINK_NUMMSP+j] = (MyOutputFloat) P[pindex].MSP[k].Metallicity[j];
                     }}
                     fp += CLUSTER_SINK_NUMMSP*NUM_METAL_SPECIES;
                     n++;

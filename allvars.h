@@ -1219,6 +1219,8 @@ typedef unsigned long long peano1D;
 #endif // METALS //
 
 
+
+
 #if defined(CRFLUID_M1)
 #define CRFLUID_REDUCED_C_CODE(k) (CRFLUID_M1) // single-bin -- compiles to simply replace this macro with the M1 value, trivially
 #endif // M1 cosmic rays
@@ -1642,6 +1644,16 @@ extern double TimeBin_BH_Medd[TIMEBINS];
 #else
 #define BH_NEIGHBOR_BITFLAG 33 /* only search for particles of types 0 and 5 (gas and black holes) around a primary BH particle */
 #endif
+#endif
+
+#ifdef CLUSTER_SINK
+extern struct cluster_sink_multiple_stellar_population
+{
+  MyFloat Mass;
+  MyFloat Age;
+  MyFloat InitialMass;
+  MyFloat Metallicity[NUM_METAL_SPECIES];
+} *ClusterSink_MSP;
 #endif
 
 #ifdef HERMITE_INTEGRATION
@@ -2543,10 +2555,7 @@ extern ALIGN(32) struct particle_data
 #endif
 
 # ifdef CLUSTER_SINK /* properties of the concurrent stellar populations forming within the sink */
-    MyFloat MSP_InitialMass[CLUSTER_SINK_NUMMSP]; // initial mass
-    MyFloat MSP_Mass[CLUSTER_SINK_NUMMSP]; // current mass
-    MyFloat MSP_Age[CLUSTER_SINK_NUMMSP]; // age
-    MyFloat MSP_Metallicity[CLUSTER_SINK_NUMMSP][NUM_METAL_SPECIES]; // metallicity - all yields
+    struct cluster_sink_multiple_stellar_population MSP[CLUSTER_SINK_NUMMSP]; // multiple stellar populations
 #ifdef CLUSTER_SINK_OUTPUT_NUMSNE
     MyFloat CumNumSNe[CLUSTER_SINK_NUMMSP]; /* flag that indicates cumulative number of SNe for the particle */
     MyFloat CumNumSNII[CLUSTER_SINK_NUMMSP]; /* flag that indicates cumulative number of SNII for the particle */
