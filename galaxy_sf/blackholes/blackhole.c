@@ -342,7 +342,7 @@ void set_blackhole_mdot(int i, int n, double dt)
         AccretionFactor = 1.0; if(rho > All.PhysDensThresh) {AccretionFactor = pow(rho/All.PhysDensThresh, All.BlackHoleAccretionFactor);}
 #endif
         mdot = 4. * M_PI * AccretionFactor * All.G * All.G * BPP(n).BH_Mass * BPP(n).BH_Mass * rho / fac;
-        printf("..[blackhole.c] - set_mdot() - mdot %g, BPP(n).BH_Mass %g, rho %g, fac %g, bhvel2 %g, soundspeed2 %g\n", mdot, BPP(n).BH_Mass, rho, fac, bhvel2, soundspeed2);
+        //printf("[MRC - set_mdot()] - mdot %g, BPP(n).BH_Mass %g, rho %g, fac %g, bhvel2 %g, soundspeed2 %g\n", mdot, BPP(n).BH_Mass, rho, fac, bhvel2, soundspeed2);
     }
 #endif // ifdef BH_BONDI
 
@@ -733,6 +733,11 @@ void blackhole_final_operations(void)
             int idx_last_msp = -1;
             for(k=0;k<CLUSTER_SINK_NUMMSP;k++){ // loop over MSPs
                 if (P[n].MSP[k].InitialMass > 0){ // already existing MSPs
+
+                    if (BlackholeTempInfo[i].combined_MSP[k].Mass > 0){
+                        printf("[MRC - bh() - pre combine] ThisTask %d, n %d, k %d - MSP Mass %g, InitialMass %g, Age %g, Metallicity[0] %g\n", ThisTask, n, k, P[n].MSP[k].Mass, P[n].MSP[k].InitialMass, P[n].MSP[k].Age, P[n].MSP[k].Metallicity[0]);
+                    }
+
                     // combined MSPs
                     P[n].MSP[k].Mass += BlackholeTempInfo[i].combined_MSP[k].Mass;
                     P[n].MSP[k].InitialMass += BlackholeTempInfo[i].combined_MSP[k].InitialMass;
@@ -748,6 +753,10 @@ void blackhole_final_operations(void)
                     assert(P[n].MSP[k].Age > 0); // MRC
                     for(int j=0;j<NUM_METAL_SPECIES;j++) {assert(P[n].MSP[k].Metallicity[j] > 0);} // MRC
                         
+                    if (BlackholeTempInfo[i].combined_MSP[k].Mass > 0){
+                        printf("[MRC - bh() - post combine] ThisTask %d, n %d, k %d - MSP Mass %g, InitialMass %g, Age %g, Metallicity[0] %g\n", ThisTask, n, k, P[n].MSP[k].Mass, P[n].MSP[k].InitialMass, P[n].MSP[k].Age, P[n].MSP[k].Metallicity[0]);
+                    }
+
                 } else { // find the last entry
                     idx_last_msp = k;
                     break;
@@ -760,6 +769,9 @@ void blackhole_final_operations(void)
             // loop over the appending arrays from each task
             for (int l = 0; l < NTask * CLUSTER_SINK_NUMMSP_ACCRETE; l++){
                 if (BlackholeTempInfo[i].append_MSP[l].Mass > 0){ // if we have collected MSPs to append
+                    printf("[MRC - bh() - pre append] ThisTask %d, n %d, k %d - MSP Mass %g, InitialMass %g, Age %g, Metallicity[0] %g\n", ThisTask,
+                     n, k, P[n].MSP[idx_last_msp].Mass, P[n].MSP[idx_last_msp].InitialMass, P[n].MSP[idx_last_msp].Age, P[n].MSP[idx_last_msp].Metallicity[0]);
+
                     P[n].MSP[idx_last_msp].Mass = BlackholeTempInfo[i].append_MSP[l].Mass;
                     P[n].MSP[idx_last_msp].InitialMass = BlackholeTempInfo[i].append_MSP[l].InitialMass;
                     P[n].MSP[idx_last_msp].Age = BlackholeTempInfo[i].append_MSP[l].Age;
@@ -769,6 +781,9 @@ void blackhole_final_operations(void)
                     assert(P[n].MSP[idx_last_msp].InitialMass > 0); // MRC
                     assert(P[n].MSP[idx_last_msp].Age > 0); // MRC
                     for(int j=0;j<NUM_METAL_SPECIES;j++) {assert(P[n].MSP[idx_last_msp].Metallicity[j] > 0);} // MRC
+
+                    printf("[MRC - bh() - post append] ThisTask %d, n %d, k %d - MSP Mass %g, InitialMass %g, Age %g, Metallicity[0] %g\n", ThisTask,
+                     n, k, P[n].MSP[idx_last_msp].Mass, P[n].MSP[idx_last_msp].InitialMass, P[n].MSP[idx_last_msp].Age, P[n].MSP[idx_last_msp].Metallicity[0]);
                     
                     printf("[MRC - bh()] ThisTask %d - appending MSPs post mergers - n %d, l %d, k %d, idx_last_msp %d\n", ThisTask, n, l, k, idx_last_msp);
 

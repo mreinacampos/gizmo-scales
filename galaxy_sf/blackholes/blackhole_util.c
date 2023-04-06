@@ -57,7 +57,7 @@ void blackhole_start(void)
 # if defined(CLUSTER_SINK) && !defined(CLUSTER_SINK_AVOID_MERGERS)
             BlackholeTempInfo[Nbh].append_MSP = (struct cluster_sink_multiple_stellar_population *) mymalloc("BHTempInfo.append_MSP", NTask * CLUSTER_SINK_NUMMSP_ACCRETE * sizeof(struct cluster_sink_multiple_stellar_population));
             memset( &BlackholeTempInfo[Nbh].append_MSP[0], 0, NTask * CLUSTER_SINK_NUMMSP_ACCRETE * sizeof(struct cluster_sink_multiple_stellar_population) );
-            printf("[MRC - bh_start()] ThisTask %d - Nbh %d - allocating arrays \n", ThisTask, Nbh);
+            //printf("[MRC - bh_start()] ThisTask %d - Nbh %d - allocating arrays \n", ThisTask, Nbh);
             if(BlackholeTempInfo[Nbh].append_MSP == NULL) { terminate("Failed to allocate memory for BHTempInfo[Nbh].append_MSP");}
  #endif
             Nbh++;
