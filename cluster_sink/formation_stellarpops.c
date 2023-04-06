@@ -52,7 +52,7 @@ void continuous_star_formation_in_sinks(void)
             P[i].MSP_Age[j] = All.Time; // scale factor or time - needs to be evaluated with evaluate_stellar_age_Gyr_for_msp(i, j)
             for(int k=0;k<NUM_METAL_SPECIES;k++) {P[i].MSP_Metallicity[j][k] = P[i].Metallicity[k];} // collecting the mass-weighted metallicity of accreted gas
             printf("[formation_stellarpops.c] - i %d j %d, MSP_InitialMass[j] %g, MSP_Mass %g, MSP_Age %g, MSP_Metallicity %g\n",
-             i, j, P[i].MSP_InitialMass[j], P[i].MSP_Mass[j], P[i].MSP_Age[j], P[i].MSP_Metallicity[j]);
+             i, j, P[i].MSP_InitialMass[j], P[i].MSP_Mass[j], P[i].MSP_Age[j], P[i].MSP_Metallicity[j][0]);
             break;
         }
 

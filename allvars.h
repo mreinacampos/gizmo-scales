@@ -354,6 +354,7 @@ extern struct Chimes_depletion_data_structure *ChimesDepletionData;
 #endif
 
 #define CLUSTER_SINK_NUMMSP 20 // number of multiple stellar populations to allow within sinks
+#define CLUSTER_SINK_NUMMSP_ACCRETE 5 // number of multiple stellar populations to append at the end of the array when merging sinks
 #define CLUSTER_SINK_OUTPUT_MSPPROPS // output properties of the multiple stellar populations by default
 
 #ifdef CLUSTER_SINK_ACCRETION
@@ -2386,8 +2387,8 @@ extern struct global_data_all_processes
 #ifdef CLUSTER_SINK
   double ClusterSink_MinGasMass; /* minimum gas mass to form a stellar population out of */
 #ifndef CLUSTER_SINK_AVOID_MERGERS
-  double ClusterSink_DeltaAge;   /* age difference to consider joining MSPs */
-  double ClusterSink_DeltaMetallicity;   /* metallicity difference to consider joining MSPs */
+  double ClusterSink_Delta_AgeInMyr;   /* age difference to consider joining MSPs */
+  double ClusterSink_Delta_ZZSun;   /* metallicity difference to consider joining MSPs */
 #endif
 #endif
 

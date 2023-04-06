@@ -83,6 +83,18 @@ extern struct blackhole_temp_particle_data       // blackholedata_topass
 #endif    
 #ifdef CLUSTER_SINK
     MyFloat accreted_MetalMass[NUM_METAL_SPECIES]; // accreted mass in different yields
+#ifndef CLUSTER_SINK_AVOID_MERGERS
+    // define arrays to gather information on the combined MSPs
+    MyFloat combined_MSP_InitialMass[CLUSTER_SINK_NUMMSP]; 
+    MyFloat combined_MSP_Mass[CLUSTER_SINK_NUMMSP]; 
+    MyFloat combined_MSP_Age[CLUSTER_SINK_NUMMSP]; 
+    MyFloat combined_MSP_Metallicity[CLUSTER_SINK_NUMMSP][NUM_METAL_SPECIES]; 
+    // define pointers to arrays to gather information on the MSPs that need to be appended
+    MyFloat **append_MSP_InitialMass; 
+    MyFloat **append_MSP_Mass; 
+    MyFloat **append_MSP_Age; 
+    MyFloat ***append_MSP_Metallicity; 
+#endif
 #endif
 }
 *BlackholeTempInfo;

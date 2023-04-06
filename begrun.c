@@ -1692,12 +1692,12 @@ void read_parameter_file(char *fname)
       id[nt++] = REAL;
 
 #ifndef CLUSTER_SINK_AVOID_MERGERS
-      strcpy(tag[nt], "ClusterSink_DeltaAge");
-      addr[nt] = &All.ClusterSink_DeltaAge;
+      strcpy(tag[nt], "ClusterSink_Delta_AgeInMyr");
+      addr[nt] = &All.ClusterSink_Delta_AgeInMyr;
       id[nt++] = REAL;
 
-      strcpy(tag[nt], "ClusterSink_DeltaMetallicity");
-      addr[nt] = &All.ClusterSink_DeltaMetallicity;
+      strcpy(tag[nt], "ClusterSink_Delta_ZZSun");
+      addr[nt] = &All.ClusterSink_Delta_ZZSun;
       id[nt++] = REAL;
 #endif
 #endif

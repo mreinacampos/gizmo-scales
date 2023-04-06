@@ -729,6 +729,56 @@ void blackhole_final_operations(void)
             double mf = P[n].Mass + BlackholeTempInfo[i].accreted_Mass;
             // update the yields as mass-weighed
             for(int k=0;k<NUM_METAL_SPECIES;k++) {P[n].Metallicity[k] =(P[n].Mass/mf)*P[n].Metallicity[k] + (1./mf)*BlackholeTempInfo[i].accreted_MetalMass[k];}
+#ifndef CLUSTER_SINK_AVOID_MERGERS
+            int idx_last_msp = -1;
+            for(k=0;k<CLUSTER_SINK_NUMMSP;k++){ // loop over MSPs
+                if (P[n].MSP_InitialMass[k] > 0){ // already existing MSPs
+                    // combined MSPs
+                    P[n].MSP_Mass[k] += BlackholeTempInfo[i].combined_MSP_Mass[k];
+                    P[n].MSP_InitialMass[k] += BlackholeTempInfo[i].combined_MSP_InitialMass[k];
+                    P[n].MSP_Age[k] += BlackholeTempInfo[i].combined_MSP_Age[k];
+                    for(int j=0;j<NUM_METAL_SPECIES;j++) {P[n].MSP_Metallicity[k][j] += BlackholeTempInfo[i].combined_MSP_Metallicity[k][j];}
+
+                    // divide by the total mass -- mass weighted
+                    P[n].MSP_Age[k] /= P[n].MSP_Mass[k];
+                    for(int j=0;j<NUM_METAL_SPECIES;j++) {P[n].MSP_Metallicity[k][j] /= P[n].MSP_Mass[k];}
+
+                    assert(P[n].MSP_Mass[k] > 0); // MRC
+                    assert(P[n].MSP_InitialMass[k] > 0); // MRC
+                    assert(P[n].MSP_Age[k] > 0); // MRC
+                    for(int j=0;j<NUM_METAL_SPECIES;j++) {assert(P[n].MSP_Metallicity[k][j] > 0);} // MRC
+                        
+                } else { // find the last entry
+                    idx_last_msp = k;
+                    break;
+                }
+            }
+
+            printf("[MRC - bh()] ThisTask %d - updating MSPs post accretion / mergers - n %d, idx_last_msp %d\n", ThisTask, n, idx_last_msp);
+
+
+            // loop over the appending arrays from each task
+            for (int l = 0; l < NTask; l++){
+                for(k=0;k<CLUSTER_SINK_NUMMSP_ACCRETE;k++){ // loop over MSPs
+                    if (BlackholeTempInfo[i].append_MSP_Mass[l][k] > 0){ // if we have collected MSPs to append
+                        P[n].MSP_Mass[idx_last_msp] = BlackholeTempInfo[i].append_MSP_Mass[l][k];
+                        P[n].MSP_InitialMass[idx_last_msp] = BlackholeTempInfo[i].append_MSP_InitialMass[l][k];
+                        P[n].MSP_Age[idx_last_msp] = BlackholeTempInfo[i].append_MSP_Age[l][k];
+                        for(int j=0;j<NUM_METAL_SPECIES;j++) {P[n].MSP_Metallicity[idx_last_msp][j] = BlackholeTempInfo[i].append_MSP_Metallicity[l][k][j];}
+                            
+                        assert(P[n].MSP_Mass[idx_last_msp] > 0); // MRC
+                        assert(P[n].MSP_InitialMass[idx_last_msp] > 0); // MRC
+                        assert(P[n].MSP_Age[idx_last_msp] > 0); // MRC
+                        for(int j=0;j<NUM_METAL_SPECIES;j++) {assert(P[n].MSP_Metallicity[idx_last_msp][j] > 0);} // MRC
+                        
+                        printf("[MRC - bh()] ThisTask %d - appending MSPs post mergers - n %d, l %d, k %d, idx_last_msp %d\n", ThisTask, n, l, k, idx_last_msp);
+
+                        idx_last_msp += 1;   
+                    }
+                }
+            }
+#endif
+
 #endif
 
 
