@@ -372,7 +372,7 @@ int blackhole_swallow_and_kick_evaluate(int target, int mode, int *exportflag, i
 #endif
 
                     
-                    
+#ifndef CLUSTER_SINK_AVOID_MERGERS
                     if(P[j].Type == 5)  /* this is a BH-BH merger */
                     {
 #ifdef BH_OUTPUT_MOREINFO
@@ -404,7 +404,6 @@ int blackhole_swallow_and_kick_evaluate(int target, int mode, int *exportflag, i
                         // accrete metals from another sink
                         for(k=0;k<NUM_METAL_SPECIES;k++){out.accreted_MetalMass[k] += FLT(Mass_j*Metallicity_j_0[k]);}
 
-#ifndef CLUSTER_SINK_AVOID_MERGERS
                         out.ThisTask = ThisTask;
                         printf("[MRC - swallow - evaluate] *WE HAVE A MERGER!* - ThisTask %d\n", ThisTask);
                         // merge the MSPs
@@ -449,7 +448,7 @@ int blackhole_swallow_and_kick_evaluate(int target, int mode, int *exportflag, i
                                 for(int l=0;l<NUM_METAL_SPECIES;l++){ out.append_MSP[idx_msp_to_append].Metallicity[l] = FLT(P[j].MSP[k].Metallicity[l]);}
                            }
                         }
-#endif
+
 #endif
                         bin = P[j].TimeBin;
                         #pragma omp atomic
@@ -469,8 +468,7 @@ int blackhole_swallow_and_kick_evaluate(int target, int mode, int *exportflag, i
                         #pragma omp atomic
                         N_BH_swallowed++;
                     } // if(P[j].Type == 5) -- BH + BH merger
-
-
+#endif
                     
                     
 #if defined(BH_GRAVCAPTURE_NONGAS) || defined(BH_EXCISION_NONGAS) /* DM and star particles can only be accreted ifdef BH_GRAVCAPTURE_NONGAS */
