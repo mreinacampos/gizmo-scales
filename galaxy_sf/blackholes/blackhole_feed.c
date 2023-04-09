@@ -203,8 +203,8 @@ int blackhole_feed_evaluate(int target, int mode, int *exportflag, int *exportno
 #endif // BH_REPOSITION_ON_POTMIN
 			
                         
-                        
                         /* check_for_bh_merger.  Easy.  No Edd limit, just a pos and vel criteria. */
+#if !defined(CLUSTER_SINK_AVOID_MERGERS)
 #if !defined(BH_DEBUG_DISABLE_MERGERS)
                         if(P[j].Type == 5)  /* we may have a black hole merger -- check below if allowed */
                             if((local.ID != P[j].ID) && (SwallowID_j == 0) && (BPP(j).BH_Mass < local.BH_Mass)) /* we'll assume most massive BH swallows the other - simplifies analysis and ensures unique results */
@@ -225,7 +225,7 @@ int blackhole_feed_evaluate(int target, int mode, int *exportflag, int *exportno
                                 }
                             } // if eligible for bh-bh mergers //
 #endif // BH_DEBUG_DISABLE_MERGERS
-                        
+#endif // CLUSTER_SINK_AVOID_MERGERS
                         
 #if defined(BH_EXCISION_NONGAS) /* for the excision of non-gas particles which are 'too close', we can follow a very simple procedure here */
                         if((P[j].Type > 0) && (P[j].Type < 5) && (SwallowID_j < local.ID)) // valid [non-gas, non-bh] particle not already marked to swallow
