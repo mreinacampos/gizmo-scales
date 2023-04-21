@@ -1787,8 +1787,11 @@ void fill_write_buffer(enum iofields blocknr, int *startindex, int pc, int type)
                 {
                     for(k=0;k<CLUSTER_SINK_NUMMSP;k++) {
                         for(int j=0;j<NUM_METAL_SPECIES;j++) {
-                            fp[k*CLUSTER_SINK_NUMMSP+j] = (MyOutputFloat) P[pindex].MSP[k].Metallicity[j];
-                    }}
+                            fp[k*NUM_METAL_SPECIES+j] = (MyOutputFloat) P[pindex].MSP[k].Metallicity[j];
+                            printf("[MRC - io.c] ThisTask %d - P.ID %d - k %d, j %d, idx %d - Metallicity[j] %g fp %g\n", ThisTask,
+                                     P[pindex].ID, k, j, k*NUM_METAL_SPECIES+j, P[pindex].MSP[k].Metallicity[j], fp[k*CLUSTER_SINK_NUMMSP+j]);
+                        }
+                    }
                     fp += CLUSTER_SINK_NUMMSP*NUM_METAL_SPECIES;
                     n++;
                 }
