@@ -1773,7 +1773,7 @@ void fill_write_buffer(enum iofields blocknr, int *startindex, int pc, int type)
             for(n = 0; n < pc; pindex++)
                 if(P[pindex].Type == type)
                 {
-                    for(k=0;k<CLUSTER_SINK_NUMMSP;k++) {fp[k] = (MyOutputFloat) P[pindex].MSP[k].Age;}
+                    for(k=0;k<CLUSTER_SINK_NUMMSP;k++) {fp[k] = (MyOutputFloat) evaluate_stellar_age_Gyr_for_msp(pindex, k);}
                     fp += CLUSTER_SINK_NUMMSP;
                     n++;
                 }
