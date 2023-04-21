@@ -184,7 +184,9 @@ static inline void OUTPUTFUNCTION_NAME(struct OUTPUT_STRUCT_NAME *out, int i, in
     BPP(i).BH_CountProgs += out->BH_CountProgs;
 #endif
 #ifdef GALSF
+#ifndef CLUSTER_SINK
     if(P[i].StellarAge > out->Accreted_Age) {P[i].StellarAge = out->Accreted_Age;}
+#endif
 #endif
 #ifdef CLUSTER_SINK
     for(k=0;k<NUM_METAL_SPECIES;k++) {
@@ -405,7 +407,7 @@ int blackhole_swallow_and_kick_evaluate(int target, int mode, int *exportflag, i
                         for(k=0;k<NUM_METAL_SPECIES;k++){out.accreted_MetalMass[k] += FLT(Mass_j*Metallicity_j_0[k]);}
 
                         out.ThisTask = ThisTask;
-                        printf("[MRC - swallow - evaluate] *WE HAVE A MERGER!* - ThisTask %d\n", ThisTask);
+                        printf("[MRC - swallow - evaluate] *WE HAVE A MERGER!* - ThisTask %d - eating ID %d - MSP[0]: Initial/Current Mass %g %g, Age %g\n", ThisTask, P[j].ID, P[j].MSP[0].InitialMass, P[j].MSP[0].Mass, P[j].MSP[0].Age);
                         // merge the MSPs
                         for(k=0;k<CLUSTER_SINK_NUMMSP;k++){ // loop over MSPs in the ngb
                             if(P[j].MSP[k].InitialMass == 0){continue;} // no more MSPs to explore
