@@ -54,6 +54,7 @@ void set_fb_input_quantities_from_msps(struct addFB_evaluate_data_in_ *in, int i
         } else {
             zh = (P[i].MSP[j].Metallicity[0]/All.SolarAbundances[0]);
         }
+        assert(zh >=0 ); // MRC
 
         // calculate the mass loss associated to each mechanism for this MSP
         struct fb_massloss_for_msp fb_dm;
@@ -68,7 +69,7 @@ void set_fb_input_quantities_from_msps(struct addFB_evaluate_data_in_ *in, int i
 #ifdef METALS
         // yields ejected: as ejecta masses
         double total_z = 0.;
-        for(k=1;k<NUM_METAL_SPECIES;k++) { yields_snii[k] += fb_dm.mass_snii*determine_snii_yields(k, age); total_z += determine_snii_yields(k, age); }
+        for(k=1;k<NUM_METAL_SPECIES;k++) { yields_snii[k] += fb_dm.mass_snii*determine_snii_yields(k, age); total_z += determine_snii_yields(k, age); assert(yields_snii[k] >= 0);}
         yields_snii[0] = fb_dm.mass_snii*1.02*total_z; // from App. A in Hopkins+18
         //yields_snii[0] = DMAX(1.02*total_z, P[i].Metallicity[0]*P[i].MSP_Mass[j]/mass_snii); // from App. A in Hopkins+18
 #endif
@@ -81,7 +82,7 @@ void set_fb_input_quantities_from_msps(struct addFB_evaluate_data_in_ *in, int i
         total_energy_snia += P[i].SNIa_ThisTimeStep[j] * (1.e51/UNIT_ENERGY_IN_CGS);
 #ifdef METALS
         // yields ejected: as ejecta masses
-        for(k=0;k<NUM_METAL_SPECIES;k++) { yields_snia[k] += fb_dm.mass_snia*determine_snia_yields(k); }
+        for(k=0;k<NUM_METAL_SPECIES;k++) { yields_snia[k] += fb_dm.mass_snia*determine_snia_yields(k);  assert(yields_snia[k] >= 0);}
 #endif
 #endif
 
@@ -95,7 +96,7 @@ void set_fb_input_quantities_from_msps(struct addFB_evaluate_data_in_ *in, int i
         total_energy_winds += 0.5 * fb_dm.mass_winds * velocity_winds * velocity_winds;
 #ifdef METALS
         // yields ejected: as ejecta masses
-        for(k=0;k<NUM_METAL_SPECIES;k++) { yields_winds[k] += fb_dm.mass_winds*determine_winds_yields(i, age, k); }
+        for(k=0;k<NUM_METAL_SPECIES;k++) { yields_winds[k] += fb_dm.mass_winds*determine_winds_yields(i, age, k); assert(yields_winds[k] >= 0);}
 #endif
 #endif
         //printf("[MRC - set_fb_input_quantities_from_msps] - ThisTask %d, i %d, P[i].ID %d, P.Mass %g, P.Age %g - MSP j %d - Age %g, MSP_Mass %g - mass_snii %g, mass_snia %g, mass_winds %g\n", ThisTask,
@@ -139,6 +140,7 @@ void calculate_fb_mass_ejected_for_msps(struct fb_massloss_for_msp *fb_dm, int i
     } else {
         zh = (P[i].MSP[j].Metallicity[0]/All.SolarAbundances[0]);
     }
+    assert(zh >=0 ); // MRC
 
     // zero out quantities
     fb_dm->mass_snii = 0; fb_dm->mass_snia = 0; fb_dm->mass_winds = 0;
@@ -158,6 +160,9 @@ void calculate_fb_mass_ejected_for_msps(struct fb_massloss_for_msp *fb_dm, int i
     double dt = GET_PARTICLE_TIMESTEP_IN_PHYSICAL(i) * UNIT_TIME_IN_MYR;
     // total mass ejected by winds in code units 
     fb_dm->mass_winds = determine_winds_mass_loss_rate(age, zh) * P[i].MSP[j].Mass * dt; 
+    assert(fb_dm->mass_winds >= 0); // MRC
+    assert(determine_winds_mass_loss_rate(age, zh) >= 0);
+    assert(dt >=0 );
 #endif
 }
 

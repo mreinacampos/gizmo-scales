@@ -28,7 +28,7 @@ void continuous_star_formation_in_sinks(void)
     // record: initial and current mass of stellar population, age and metallicity
     // think: which SFE to use?
 
-    double sp_mass;
+    double sp_mass = 0;
     int i, j;
     // loop over particles //
     for(i = FirstActiveParticle; i >= 0; i = NextActiveParticle[i])
@@ -38,21 +38,20 @@ void continuous_star_formation_in_sinks(void)
         // assume all accreted gas mass will form stars (SFE = 100%) 
         // calculate the amount of gas available within the sink
         sp_mass = determine_mass_gas_reservoir(i); 
-
+        
         // if there's not enough mass, keep accreting
-        if (sp_mass < All.ClusterSink_MinGasMass) continue;
+        if (sp_mass < All.ClusterSink_MinGasMass) {continue;}
 
         // loop until there's an empty entry
         for (j = 0; j<CLUSTER_SINK_NUMMSP; j++){
             if (P[i].MSP[j].InitialMass > 0) continue;
-            printf("[formation_stellarpops.c] - i %d j %d, sp_mass %g, P[i].MSP_InitialMass[j] %g\n", i, j, sp_mass, P[i].MSP[j].InitialMass);
             // assign properties
             P[i].MSP[j].InitialMass = sp_mass;
             P[i].MSP[j].Mass = sp_mass;
             P[i].MSP[j].Age = All.Time; // scale factor or time - needs to be evaluated with evaluate_stellar_age_Gyr_for_msp(i, j)
             for(int k=0;k<NUM_METAL_SPECIES;k++) {P[i].MSP[j].Metallicity[k] = P[i].Metallicity[k];} // collecting the mass-weighted metallicity of accreted gas
-            printf("[formation_stellarpops.c] - i %d j %d, MSP_InitialMass[j] %g, MSP_Mass %g, MSP_Age %g, MSP_Metallicity %g\n",
-             i, j, P[i].MSP[j].InitialMass, P[i].MSP[j].Mass, P[i].MSP[j].Age, P[i].MSP[j].Metallicity[0]);
+            printf("[MRC - formation_stellarpops.c] - Forming an MSP - ID %d j %d, MSP_InitialMass[j] %g, MSP_Mass %g, MSP_Age %g, MSP_Metallicity [%g %g]\n",
+                        P[i].ID, j, P[i].MSP[j].InitialMass, P[i].MSP[j].Mass, P[i].MSP[j].Age, P[i].MSP[j].Metallicity[0], P[i].MSP[j].Metallicity[1]);
             break;
         }
 
@@ -78,8 +77,8 @@ double determine_mass_gas_reservoir(int i)
     for (k=0; k<CLUSTER_SINK_NUMMSP; k++){ mass_msp += P[i].MSP[k].Mass; }
     // calculate the gas mass
     mass_gas = P[i].Mass - mass_msp;
-    if (mass_gas < 0) printf("[formation_stellarpops.c - mgas] mass_gas %g, P[i].Mass %g, mass_msp %g\n", mass_gas, P[i].Mass, mass_msp);
-    if (abs(mass_gas) < 1e-8) {mass_gas = 0;} // avoid negative values from precision round-offs
+    // avoid negative values from precision round-offs
+    if (mass_gas < 0) {mass_gas = 0; printf("[WARNING - formation_stellarpops.c - mgas] mass_gas %g, P[i].Mass %g, mass_msp %g\n", mass_gas, P[i].Mass, mass_msp);}
     assert(mass_gas >= 0.);
     return mass_gas;
 }

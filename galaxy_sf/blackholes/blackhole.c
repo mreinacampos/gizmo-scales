@@ -126,7 +126,6 @@ int bh_check_boundedness(int j, double vrel, double vesc, double dr_code, double
         double apocenter = dr_code / (1.-v2); // furthest distance the cell -could- get from the sink, on a purely radial orbit [ignoring internal energy effects, in e.g. a Keplerian potential, this is approximately twice the equivalent circular orbit, while for a highly-eccentric orbit, this is exactly the apocentric radius]
         double apocenter_max = 2.*SinkParticle_GravityKernelRadius; //  = few x epsilon (softening length); check that this is within 2x epsilon is statement that circular orbit with equivalent energy is entirely inside epsilon //
 #ifdef BH_GRAVCAPTURE_FIXEDSINKRADIUS // Bate 1995-style criterion, with a fixed sink/accretion radius that is distinct from both the force softening and the search radius
-        //printf("MRC - [blackhole.c/bh_check_boundedness] - j %d - dr_code %g < sink_radius %g ? -> bound\n", j, dr_code, sink_radius);
         if(dr_code>sink_radius) {return 0;} else {return 1;} // simply yes-no, if bound and within sink radius, gets accreted
 #endif
 #if !defined(SINGLE_STAR_SINK_DYNAMICS) && !defined(BH_GRAVCAPTURE_FIXEDSINKRADIUS) && defined(BH_SEED_GROWTH_TESTS)
@@ -137,7 +136,6 @@ int bh_check_boundedness(int j, double vrel, double vesc, double dr_code, double
 #endif
         if(apocenter < apocenter_max) {bound = 1;}
     }
-    //printf("MRC - [blackhole.c/bh_check_boundedness] - j %d, bound %d\n", j, bound);
     return bound;
 }
 
@@ -460,7 +458,6 @@ void set_blackhole_mdot(int i, int n, double dt)
     if(isnan(mdot)) {mdot=0;}
     BPP(n).BH_Mdot = DMAX(mdot,0);
 
-    //printf("MRC - [blackhole.c/set_blackhole_mdot] - n %d, BH_Mdot %g\n", n, BPP(n).BH_Mdot);
 }
 
 
@@ -738,16 +735,13 @@ void blackhole_final_operations(void)
                         printf("[MRC - bh() - pre combine] ThisTask %d, ID %d, k %d - MSP Mass %g, InitialMass %g, Age %g, Metallicity[0] %g\n", ThisTask, P[n].ID, k, P[n].MSP[k].Mass, P[n].MSP[k].InitialMass, P[n].MSP[k].Age, P[n].MSP[k].Metallicity[0]);
                     }
 
-                    // combined MSPs
+                    // combined MSPs -- ages and metallicities are mass-weighted
+                    double m0 = P[n].MSP[k].Mass, mf = P[n].MSP[k].Mass + BlackholeTempInfo[i].combined_MSP[k].Mass;;
+                    P[n].MSP[k].Age = (m0/mf)*P[n].MSP[k].Age + (1./mf)*BlackholeTempInfo[i].combined_MSP[k].Age;
+                    for(int j=0;j<NUM_METAL_SPECIES;j++) {P[n].MSP[k].Metallicity[j] = (m0/mf)*P[n].MSP[k].Metallicity[j] + (1./mf)*BlackholeTempInfo[i].combined_MSP[k].Metallicity[j];}
                     P[n].MSP[k].Mass += BlackholeTempInfo[i].combined_MSP[k].Mass;
                     P[n].MSP[k].InitialMass += BlackholeTempInfo[i].combined_MSP[k].InitialMass;
-                    P[n].MSP[k].Age += BlackholeTempInfo[i].combined_MSP[k].Age;
-                    for(int j=0;j<NUM_METAL_SPECIES;j++) {P[n].MSP[k].Metallicity[j] += BlackholeTempInfo[i].combined_MSP[k].Metallicity[j];}
-
-                    // divide by the total mass -- mass weighted
-                    P[n].MSP[k].Age /= P[n].MSP[k].Mass;
-                    for(int j=0;j<NUM_METAL_SPECIES;j++) {P[n].MSP[k].Metallicity[j] /= P[n].MSP[k].Mass;}
-
+ 
                     assert(P[n].MSP[k].Mass > 0); // MRC
                     assert(P[n].MSP[k].InitialMass > 0); // MRC
                     assert(P[n].MSP[k].Age > 0); // MRC

@@ -450,6 +450,7 @@ int blackhole_swallow_and_kick_evaluate(int target, int mode, int *exportflag, i
                                 for(int l=0;l<NUM_METAL_SPECIES;l++){ out.append_MSP[idx_msp_to_append].Metallicity[l] = FLT(P[j].MSP[k].Metallicity[l]);}
                            }
                         }
+                        //if (P[j].ID == 20204012) {assert(0);} // MRC
 
 #endif
                         bin = P[j].TimeBin;
