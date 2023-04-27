@@ -267,6 +267,11 @@ double get_starformation_rate(int i, int mode)
     alpha_vir = 1./SphP[i].AlphaVirial_SF_TimeSmoothed - 1.; /* use the rolling average below */
 #endif
     if(exceeds_force_softening_threshold) {alpha_vir /= 10.;} /* account for gravitational softening effects here, making this threshold less steep */
+#ifdef CLUSTER_SINK_OUTPUT_SFINGPROPS
+    SphP[i].SFing_AlphaVir = alpha_vir;
+    SphP[i].SFing_VDisp = sqrt(dv2abs);
+#endif
+
 #if (GALSF_SFR_VIRIAL_SF_CRITERION <= 0) && !defined(GALSF_SFR_VIRIAL_CONTINUOUS) && !(SINGLE_STAR_SINK_FORMATION & 512) /* 'weakest' mode: reduce [do not zero] SFR if above alpha_crit, and not -too- dense */
     if((alpha_vir>alpha_crit) && (SphP[i].Density*All.cf_a3inv<100.*All.PhysDensThresh)) {rateOfSF *= 0.0015;} /* PFH: note the 100x threshold limit here is an arbitrary choice currently set -by hand- to prevent runaway densities from this prescription! */
 #endif

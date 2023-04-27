@@ -1698,103 +1698,123 @@ void fill_write_buffer(enum iofields blocknr, int *startindex, int pc, int type)
 
         case IO_CLUSTER_SINK_NUMSNE:        /* cumulative number of SNe */
 #ifdef CLUSTER_SINK_OUTPUT_NUMSNE
-            for(n = 0; n < pc; pindex++)
-                if(P[pindex].Type == type)
-                {
+            for(n = 0; n < pc; pindex++){
+                if(P[pindex].Type == type){
                     for(k=0;k<CLUSTER_SINK_NUMMSP;k++) {fp[k] = (MyOutputFloat) P[pindex].CumNumSNe[k];}
                     fp += CLUSTER_SINK_NUMMSP;
                     n++;
                 }
+            }
 #endif
             break;
 
         case IO_CLUSTER_SINK_NUMSNII:        /* cumulative number of SNII */
 #ifdef CLUSTER_SINK_OUTPUT_NUMSNE
-            for(n = 0; n < pc; pindex++)
-                if(P[pindex].Type == type)
-                {
+            for(n = 0; n < pc; pindex++){
+                if(P[pindex].Type == type){
                     for(k=0;k<CLUSTER_SINK_NUMMSP;k++) {fp[k] = (MyOutputFloat) P[pindex].CumNumSNII[k];}
                     fp += CLUSTER_SINK_NUMMSP;
                     n++;
                 }
+            }
 #endif
             break;
 
         case IO_CLUSTER_SINK_NUMSNIa:        /* cumulative number of SNIa */
 #ifdef CLUSTER_SINK_OUTPUT_NUMSNE
-            for(n = 0; n < pc; pindex++)
-                if(P[pindex].Type == type)
-                {
+            for(n = 0; n < pc; pindex++){
+                if(P[pindex].Type == type){
                     for(k=0;k<CLUSTER_SINK_NUMMSP;k++) {fp[k] = (MyOutputFloat) P[pindex].CumNumSNIa[k];}
                     fp += CLUSTER_SINK_NUMMSP;
                     n++;
                 }
+            }
 #endif
             break;
 
         case IO_CLUSTER_SINK_BOLLUM:        /* mass-to-light ratio */
 #ifdef CLUSTER_SINK_OUTPUT_BOLLUM
-            for(n = 0; n < pc; pindex++)
-                if(P[pindex].Type == type)
-                {
+            for(n = 0; n < pc; pindex++){
+                if(P[pindex].Type == type){
                     for(k=0;k<CLUSTER_SINK_NUMMSP;k++) {fp[k] = (MyOutputFloat) P[pindex].Light_MassRatio[k];}
                     fp += CLUSTER_SINK_NUMMSP;
                     n++;
                 }
+            }
 #endif
             break; 
 
+        case IO_CLUSTER_SINK_ALPHAVIR:        /* virial parameter of SFing gas */
+#ifdef CLUSTER_SINK_OUTPUT_SFINGPROPS
+            for(n = 0; n < pc; pindex++){
+                if(P[pindex].Type == type){
+                    *fp++  = (MyOutputFloat) SphP[pindex].SFing_AlphaVir;
+                    n++;
+                }
+            }
+#endif
+            break;
+
+        case IO_CLUSTER_SINK_VDISP:        /* velocity dispersion of SFing gas */
+#ifdef CLUSTER_SINK_OUTPUT_SFINGPROPS
+            for(n = 0; n < pc; pindex++){
+                if(P[pindex].Type == type){
+                    *fp++  = (MyOutputFloat) SphP[pindex].SFing_VDisp;
+                    n++;
+                }
+            }
+#endif
+            break;
+
         case IO_CLUSTER_SINK_MSPPROPS_MASS:        /* properties of the multiple stellar populations */
 #ifdef CLUSTER_SINK_OUTPUT_MSPPROPS
-            for(n = 0; n < pc; pindex++)
-                if(P[pindex].Type == type)
-                {
+            for(n = 0; n < pc; pindex++){
+                if(P[pindex].Type == type){
                     for(k=0;k<CLUSTER_SINK_NUMMSP;k++) {fp[k] = (MyOutputFloat) P[pindex].MSP[k].Mass;}
                     fp += CLUSTER_SINK_NUMMSP;
                     n++;
                 }
+            }
 #endif
             break;
 
         case IO_CLUSTER_SINK_MSPPROPS_INITIALMASS:        /* properties of the multiple stellar populations */
 #ifdef CLUSTER_SINK_OUTPUT_MSPPROPS
-            for(n = 0; n < pc; pindex++)
-                if(P[pindex].Type == type)
-                {
+            for(n = 0; n < pc; pindex++){
+                if(P[pindex].Type == type){
                     for(k=0;k<CLUSTER_SINK_NUMMSP;k++) {fp[k] = (MyOutputFloat) P[pindex].MSP[k].InitialMass;}
                     fp += CLUSTER_SINK_NUMMSP;
                     n++;
                 }
+            }
 #endif
             break;
 
         case IO_CLUSTER_SINK_MSPPROPS_AGE:        /* properties of the multiple stellar populations */
 #ifdef CLUSTER_SINK_OUTPUT_MSPPROPS
-            for(n = 0; n < pc; pindex++)
-                if(P[pindex].Type == type)
-                {
+            for(n = 0; n < pc; pindex++){
+                if(P[pindex].Type == type){
                     for(k=0;k<CLUSTER_SINK_NUMMSP;k++) {fp[k] = (MyOutputFloat) evaluate_stellar_age_Gyr_for_msp(pindex, k);}
                     fp += CLUSTER_SINK_NUMMSP;
                     n++;
                 }
+            }
 #endif
             break;
 
         case IO_CLUSTER_SINK_MSPPROPS_METALLICITY:        /* properties of the multiple stellar populations */
 #ifdef CLUSTER_SINK_OUTPUT_MSPPROPS
-            for(n = 0; n < pc; pindex++)
-                if(P[pindex].Type == type)
-                {
+            for(n = 0; n < pc; pindex++){
+                if(P[pindex].Type == type){
                     for(k=0;k<CLUSTER_SINK_NUMMSP;k++) {
                         for(int j=0;j<NUM_METAL_SPECIES;j++) {
                             fp[k*NUM_METAL_SPECIES+j] = (MyOutputFloat) P[pindex].MSP[k].Metallicity[j];
-                            printf("[MRC - io.c] ThisTask %d - P.ID %d - k %d, j %d, idx %d - Metallicity[j] %g fp %g\n", ThisTask,
-                                     P[pindex].ID, k, j, k*NUM_METAL_SPECIES+j, P[pindex].MSP[k].Metallicity[j], fp[k*CLUSTER_SINK_NUMMSP+j]);
                         }
                     }
                     fp += CLUSTER_SINK_NUMMSP*NUM_METAL_SPECIES;
                     n++;
                 }
+            }
 #endif
             break;
 
@@ -1942,6 +1962,8 @@ int get_bytes_per_blockelement(enum iofields blocknr, int mode)
         case IO_DENS_AROUND_STAR:
         case IO_DELAY_TIME_HII:
         case IO_MOLECULARFRACTION:
+        case IO_CLUSTER_SINK_ALPHAVIR:
+        case IO_CLUSTER_SINK_VDISP:
             if(mode)
                 bytes_per_blockelement = sizeof(MyInputFloat);
             else
@@ -2250,6 +2272,8 @@ int get_values_per_blockelement(enum iofields blocknr)
         case IO_DENS_AROUND_STAR:
         case IO_DELAY_TIME_HII:
         case IO_MOLECULARFRACTION:
+        case IO_CLUSTER_SINK_ALPHAVIR:
+        case IO_CLUSTER_SINK_VDISP:
             values = 1;
             break;
 
@@ -2491,6 +2515,8 @@ long get_particles_in_block(enum iofields blocknr, int *typelist)
         case IO_CHIMES_NH:
         case IO_CHIMES_FLUX_G0:
         case IO_CHIMES_FLUX_ION:
+        case IO_CLUSTER_SINK_ALPHAVIR:
+        case IO_CLUSTER_SINK_VDISP:
             for(i = 1; i < 6; i++) {typelist[i] = 0;}
             return ngas;
             break;
@@ -3174,6 +3200,13 @@ int blockpresent(enum iofields blocknr)
 #endif
             break;
 
+        case IO_CLUSTER_SINK_ALPHAVIR:
+        case IO_CLUSTER_SINK_VDISP:
+#ifdef CLUSTER_SINK_OUTPUT_SFINGPROPS
+            return 1;
+#endif
+            break;
+
         case IO_CLUSTER_SINK_MSPPROPS_MASS:
         case IO_CLUSTER_SINK_MSPPROPS_INITIALMASS:
         case IO_CLUSTER_SINK_MSPPROPS_AGE:
@@ -3602,6 +3635,13 @@ void get_Tab_IO_Label(enum iofields blocknr, char *label)
         case IO_CLUSTER_SINK_MSPPROPS_METALLICITY:
             strncpy(label, "mspz", 4);
             break;
+        case IO_CLUSTER_SINK_ALPHAVIR:
+            strncpy(label, "avir", 4);
+            break;
+        case IO_CLUSTER_SINK_VDISP:
+            strncpy(label, "vdisp", 4);
+            break;
+
         case IO_LASTENTRY:
             endrun(217);
             break;
@@ -4016,6 +4056,12 @@ void get_dataset_name(enum iofields blocknr, char *buf)
             break;
         case IO_CLUSTER_SINK_MSPPROPS_METALLICITY:
             strcpy(buf, "ClusterSink_MSPs_Metallicity");
+            break;
+        case IO_CLUSTER_SINK_ALPHAVIR:
+            strcpy(buf, "ClusterSink_SFing_AlphaVir");
+            break;
+        case IO_CLUSTER_SINK_VDISP:
+            strcpy(buf, "ClusterSink_SFing_VDisp");
             break;
         case IO_LASTENTRY:
             endrun(218);

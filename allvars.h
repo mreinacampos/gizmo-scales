@@ -3193,6 +3193,10 @@ extern struct gas_cell_data
 #endif
 #endif
 
+#if defined(CLUSTER_SINK) && defined(CLUSTER_SINK_OUTPUT_SFINGPROPS)
+    MyFloat SFing_AlphaVir; /* virial parameter calculated for SFing gas */
+    MyFloat SFing_VDisp; /* velocidty dispersion calculated for SFing gas */
+#endif 
 }
   *SphP,				/*!< holds gas cell data on local processor */
   *DomainGasBuf;			/*!< buffer for gas cell data in domain decomposition */
@@ -3574,6 +3578,8 @@ enum iofields
   IO_CLUSTER_SINK_NUMSNII,
   IO_CLUSTER_SINK_NUMSNIa,
   IO_CLUSTER_SINK_BOLLUM,
+  IO_CLUSTER_SINK_ALPHAVIR,
+  IO_CLUSTER_SINK_VDISP,
   IO_CLUSTER_SINK_MSPPROPS_MASS,
   IO_CLUSTER_SINK_MSPPROPS_INITIALMASS,
   IO_CLUSTER_SINK_MSPPROPS_AGE,
