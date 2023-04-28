@@ -430,6 +430,9 @@ void star_formation_parent_routine(void)
         if((P[i].Type == 0)&&(P[i].Mass>0))
         {
             SphP[i].Sfr = 0; flag = 1; /* will be reset below if flag==0, but default to flag = 1 (non-eligible) */
+#ifdef CLUSTER_SINK_OUTPUT_SFINGPROPS
+            SphP[i].SFing_AlphaVir = 0; SphP[i].SFing_VDisp = 0;
+#endif
             dtime = GET_PARTICLE_TIMESTEP_IN_PHYSICAL(i); /*  the actual time-step */
             
             /* check whether an initial (not fully-complete!) conditions for star formation are fulfilled for a given particle */
