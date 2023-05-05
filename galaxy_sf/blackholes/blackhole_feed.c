@@ -95,6 +95,9 @@ struct OUTPUT_STRUCT_NAME
 #ifdef BH_REPOSITION_ON_POTMIN
     double BH_MinPot, BH_MinPotPos[3];
 #endif
+#ifndef CLUSTER_SINK_AVOID_MERGERS
+    int flag_SinkMerger_withMSP; 
+#endif
 }
 *DATARESULT_NAME, *DATAOUT_NAME; /* dont mess with these names, they get filled-in by your definitions automatically */
 
@@ -109,6 +112,9 @@ static inline void OUTPUTFUNCTION_NAME(struct OUTPUT_STRUCT_NAME *out, int i, in
 #ifdef BH_REPOSITION_ON_POTMIN
     if(mode==0) {BPP(i).BH_MinPot=out->BH_MinPot; for(k=0;k<3;k++) {BPP(i).BH_MinPotPos[k]=out->BH_MinPotPos[k];}
         } else {if(out->BH_MinPot < BPP(i).BH_MinPot) {BPP(i).BH_MinPot=out->BH_MinPot; for(k=0;k<3;k++) {BPP(i).BH_MinPotPos[k]=out->BH_MinPotPos[k];}}}
+#endif
+#ifndef CLUSTER_SINK_AVOID_MERGERS
+    ASSIGN_ADD_PRESET(BlackholeTempInfo[target].flag_SinkMerger_withMSP, out->flag_SinkMerger_withMSP, mode);
 #endif
 }
 
@@ -216,6 +222,9 @@ int blackhole_feed_evaluate(int target, int mode, int *exportflag, int *exportno
                                 {
                                     printf(" ..BH-BH Merger: P[j.]ID=%llu to be swallowed by id=%llu \n", (unsigned long long) P[j].ID, (unsigned long long) local.ID);
                                     SwallowID_j = local.ID;
+#ifndef CLUSTER_SINK_AVOID_MERGERS
+                                    if (P[j].MSP[0].InitialMass > 0){out.flag_SinkMerger_withMSP += 1;} // flag it as a merger with possible MSPs to append
+#endif
                                 } else {
 #if defined(BH_OUTPUT_MOREINFO)     // DAA: BH merger info will be saved in a separate output file
                                     printf(" ..ThisTask=%d, time=%g: id=%llu would like to swallow %llu, but vrel=%g vesc=%g\n", ThisTask, All.Time, (unsigned long long)local.ID, (unsigned long long)P[j].ID, vrel, vesc);
