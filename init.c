@@ -446,7 +446,7 @@ void init(void)
 #endif
 #endif
 
-#ifdef CLUSTER_SINK
+/*#ifdef CLUSTER_SINK
         if((P[i].Type == 4) || (P[i].Type == 5)) 
         {
                 P[i].MSP[0].Mass = P[i].Mass; // mass of the first MSP
@@ -454,7 +454,7 @@ void init(void)
                 P[i].MSP[0].Age = All.Time; // age of the first MSP
                 for(int k=0;k<NUM_METAL_SPECIES;k++){P[i].MSP[0].Metallicity[k] = P[i].Metallicity[k];} // metallicity of the first MSP
         }
-#endif
+#endif*/
         if(P[i].Type == 5)
         {
             count_holes++;
