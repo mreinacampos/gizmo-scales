@@ -19,6 +19,10 @@ struct fb_massloss_for_msp
 void reduce_mass_from_msps(void);
 void calculate_fb_mass_ejected_for_msps(struct fb_massloss_for_msp *fb_dm, int i, int j);
 
+#ifndef CLUSTER_SINK_AVOID_MERGERS
+void cluster_sink_allocate_merger_loop(void);
+#endif
+
 
 #ifdef CLUSTER_SINK_SNII
 double determine_corecollapse_sne_rate(double age);

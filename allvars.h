@@ -1209,7 +1209,7 @@ typedef unsigned long long peano1D;
 #define NUM_LIVE_SPECIES_FOR_COOLTABLES 0
 #endif
 
-#if defined(CLUSTER_SINK) && (defined(CLUSTER_SINK_SNII) || defined(CLUSTER_SINK_SNIa) || defined(CLUSTER_SINK_WINDS)) 
+#if !defined(COOL_METAL_LINES_BY_SPECIES) && (defined(CLUSTER_SINK) && (defined(CLUSTER_SINK_SNII) || defined(CLUSTER_SINK_SNIa) || defined(CLUSTER_SINK_WINDS)))
 #define NUM_CLUSTER_SINK_FEEDBACK_YIELDS 10
 #else
 #define NUM_CLUSTER_SINK_FEEDBACK_YIELDS 0

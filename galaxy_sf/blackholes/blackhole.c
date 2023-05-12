@@ -58,6 +58,9 @@ void blackhole_accretion(void)
      Use the above info to determine the weight functions for feedback
      ----------------------------------------------------------------------*/
     blackhole_feed_loop();       /* BH mergers and gas/star/dm accretion events are evaluated - P[j].SwallowID's are set */
+# if defined(CLUSTER_SINK) && !defined(CLUSTER_SINK_AVOID_MERGERS)
+    cluster_sink_allocate_merger_loop();
+#endif
     /*----------------------------------------------------------------------
      Now we do a THIRD pass over the particles, and
      this is where we can do the actual 'swallowing' operations
@@ -134,6 +137,7 @@ int bh_check_boundedness(int j, double vrel, double vesc, double dr_code, double
         apocenter_max = DMAX(10.0*SinkParticle_GravityKernelRadius,DMIN(50.0*SinkParticle_GravityKernelRadius,r_j));
         if(P[j].Type == 5) {apocenter_max = DMIN(apocenter_max , 1.*SinkParticle_GravityKernelRadius);}
 #endif
+        //printf("[MRC - bh_check_boundedness] - ngb ID %d - dr_code %g, v2 %g, apocenter %g, apocenter_max %g\n", P[j].ID, dr_code, v2, apocenter, apocenter_max);
         if(apocenter < apocenter_max) {bound = 1;}
     }
     return bound;
@@ -761,29 +765,31 @@ void blackhole_final_operations(void)
 
 
             // loop over the appending arrays from each task
-            for (int l = 0; l < NTask * CLUSTER_SINK_NUMMSP_ACCRETE; l++){
-                if (BlackholeTempInfo[i].append_MSP[l].Mass > 0){ // if we have collected MSPs to append
-                    printf("[MRC - bh() - pre append] ThisTask %d, n %d, k %d - MSP Mass %g, InitialMass %g, Age %g, Metallicity[0] %g\n", ThisTask,
-                     n, k, P[n].MSP[idx_last_msp].Mass, P[n].MSP[idx_last_msp].InitialMass, P[n].MSP[idx_last_msp].Age, P[n].MSP[idx_last_msp].Metallicity[0]);
+            if(BlackholeTempInfo[i].flag_SinkMerger_withMSP > 0){
+                for (int l = 0; l < NTask * CLUSTER_SINK_NUMMSP_ACCRETE; l++){
+                    if (BlackholeTempInfo[i].append_MSP[l].Mass > 0){ // if we have collected MSPs to append
+                        printf("[MRC - bh() - pre append] ThisTask %d, n %d, k %d - MSP Mass %g, InitialMass %g, Age %g, Metallicity[0] %g\n", ThisTask,
+                         n, k, P[n].MSP[idx_last_msp].Mass, P[n].MSP[idx_last_msp].InitialMass, P[n].MSP[idx_last_msp].Age, P[n].MSP[idx_last_msp].Metallicity[0]);
 
-                    P[n].MSP[idx_last_msp].Mass = BlackholeTempInfo[i].append_MSP[l].Mass;
-                    P[n].MSP[idx_last_msp].InitialMass = BlackholeTempInfo[i].append_MSP[l].InitialMass;
-                    P[n].MSP[idx_last_msp].Age = BlackholeTempInfo[i].append_MSP[l].Age;
-                    for(int j=0;j<NUM_METAL_SPECIES;j++) {P[n].MSP[idx_last_msp].Metallicity[j] = BlackholeTempInfo[i].append_MSP[l].Metallicity[j];}
+                        P[n].MSP[idx_last_msp].Mass = BlackholeTempInfo[i].append_MSP[l].Mass;
+                        P[n].MSP[idx_last_msp].InitialMass = BlackholeTempInfo[i].append_MSP[l].InitialMass;
+                        P[n].MSP[idx_last_msp].Age = BlackholeTempInfo[i].append_MSP[l].Age;
+                        for(int j=0;j<NUM_METAL_SPECIES;j++) {P[n].MSP[idx_last_msp].Metallicity[j] = BlackholeTempInfo[i].append_MSP[l].Metallicity[j];}
 
-                    assert(P[n].MSP[idx_last_msp].Mass > 0); // MRC
-                    assert(P[n].MSP[idx_last_msp].InitialMass > 0); // MRC
-                    assert(P[n].MSP[idx_last_msp].Age > 0); // MRC
-                    for(int j=0;j<NUM_METAL_SPECIES;j++) {assert(P[n].MSP[idx_last_msp].Metallicity[j] > 0);} // MRC
+                        assert(P[n].MSP[idx_last_msp].Mass > 0); // MRC
+                        assert(P[n].MSP[idx_last_msp].InitialMass > 0); // MRC
+                        assert(P[n].MSP[idx_last_msp].Age > 0); // MRC
+                        for(int j=0;j<NUM_METAL_SPECIES;j++) {assert(P[n].MSP[idx_last_msp].Metallicity[j] > 0);} // MRC
 
-                    printf("[MRC - bh() - post append] ThisTask %d, ID %d, k %d - MSP Mass %g, InitialMass %g, Age %g, Metallicity[0] %g\n", ThisTask,
-                     P[n].ID, k, P[n].MSP[idx_last_msp].Mass, P[n].MSP[idx_last_msp].InitialMass, P[n].MSP[idx_last_msp].Age, P[n].MSP[idx_last_msp].Metallicity[0]);
+                        printf("[MRC - bh() - post append] ThisTask %d, ID %d, k %d - MSP Mass %g, InitialMass %g, Age %g, Metallicity[0] %g\n", ThisTask,
+                         P[n].ID, k, P[n].MSP[idx_last_msp].Mass, P[n].MSP[idx_last_msp].InitialMass, P[n].MSP[idx_last_msp].Age, P[n].MSP[idx_last_msp].Metallicity[0]);
+                        
+                        printf("[MRC - bh() - post append] ThisTask %d - appending MSPs post mergers - ID %d, l %d, k %d, idx_last_msp %d\n", ThisTask, P[n].ID, l, k, idx_last_msp);
+
+                        idx_last_msp += 1;   
+                    }
                     
-                    printf("[MRC - bh()] ThisTask %d - appending MSPs post mergers - ID %d, l %d, k %d, idx_last_msp %d\n", ThisTask, P[n].ID, l, k, idx_last_msp);
-
-                    idx_last_msp += 1;   
                 }
-                
             }
 #endif
 

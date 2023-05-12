@@ -107,7 +107,8 @@ CC       =  mpicc -std=c11
 CXX      =  mpic++ -std=c++11
 FC       =  mpif90 
 OPTIMIZE = -g -Wall -Wno-unknown-pragmas # compiler warnings 
-OPTIMIZE += -O3 -mavx # speed
+#OPTIMIZE += -O3 -mavx # speed
+OPTIMIZE += -O0 -g -ggdb #debug
 ifeq (OPENMP,$(findstring OPENMP,$(CONFIGVARS)))
 OPTIMIZE += -parallel -openmp # openmp required compiler flags
 endif
@@ -119,7 +120,7 @@ GSL_INCL = -I/usr/include
 GSL_LIBS = -L/usr/lib64
 FFTW_INCL= 
 FFTW_LIBS= 
-HDF5INCL = -I$/usr/include/hdf/ -DH5_USE_16_API
+HDF5INCL = -I/usr/include/hdf/ -DH5_USE_16_API
 HDF5LIB  = -L/usr/lib64/ -lhdf5 -lz
 MPICHLIB = -L/usr/lib64/mpich/lib/
 OPT     += -DUSE_MPI_IN_PLACE
@@ -1375,7 +1376,7 @@ INCL    += cooling/chimes/chimes_interpol.h cooling/chimes/chimes_proto.h coolin
 endif
 
 ifeq (CLUSTER_SINK,$(findstring CLUSTER_SINK,$(CONFIGVARS)))
-OBJS    += cluster_sink/feedback_fits.o cluster_sink/formation_stellarpops.o
+OBJS    += cluster_sink/feedback_fits.o cluster_sink/formation_stellarpops.o cluster_sink/cluster_sink_util.o
 INCL    += cluster_sink/cluster_sink_proto.h  cluster_sink/feedback_fits.h 
 endif
 

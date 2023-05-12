@@ -54,12 +54,12 @@ void blackhole_start(void)
             BlackholeTempInfo[Nbh].index = i;               /* only meaningful field set here */
 
 
-# if defined(CLUSTER_SINK) && !defined(CLUSTER_SINK_AVOID_MERGERS)
-            BlackholeTempInfo[Nbh].append_MSP = (struct cluster_sink_multiple_stellar_population *) mymalloc("BHTempInfo.append_MSP", NTask * CLUSTER_SINK_NUMMSP_ACCRETE * sizeof(struct cluster_sink_multiple_stellar_population));
-            memset( &BlackholeTempInfo[Nbh].append_MSP[0], 0, NTask * CLUSTER_SINK_NUMMSP_ACCRETE * sizeof(struct cluster_sink_multiple_stellar_population) );
-            //printf("[MRC - bh_start()] ThisTask %d - Nbh %d - allocating arrays \n", ThisTask, Nbh);
-            if(BlackholeTempInfo[Nbh].append_MSP == NULL) { terminate("Failed to allocate memory for BHTempInfo[Nbh].append_MSP");}
- #endif
+//# if defined(CLUSTER_SINK) && !defined(CLUSTER_SINK_AVOID_MERGERS)
+//            BlackholeTempInfo[Nbh].append_MSP = (struct cluster_sink_multiple_stellar_population *) mymalloc("BHTempInfo.append_MSP", NTask * CLUSTER_SINK_NUMMSP_ACCRETE * sizeof(struct cluster_sink_multiple_stellar_population));
+//            memset( &BlackholeTempInfo[Nbh].append_MSP[0], 0, NTask * CLUSTER_SINK_NUMMSP_ACCRETE * sizeof(struct cluster_sink_multiple_stellar_population) );
+//            //printf("[MRC - bh_start()] ThisTask %d - Nbh %d - allocating arrays \n", ThisTask, Nbh);
+//            if(BlackholeTempInfo[Nbh].append_MSP == NULL) { terminate("Failed to allocate memory for BHTempInfo[Nbh].append_MSP");}
+// #endif
             Nbh++;
         }
     }
@@ -129,7 +129,7 @@ void blackhole_end(void)
     }
 # if defined(CLUSTER_SINK) && !defined(CLUSTER_SINK_AVOID_MERGERS)
     if (N_active_loc_BHs > 0){
-        for(int i=N_active_loc_BHs-1; i>=0; i--){ myfree(BlackholeTempInfo[i].append_MSP); BlackholeTempInfo[i].append_MSP = NULL;}
+        for(int i=N_active_loc_BHs-1; i>=0; i--){ if(BlackholeTempInfo[i].flag_SinkMerger_withMSP > 0){myfree(BlackholeTempInfo[i].append_MSP); BlackholeTempInfo[i].append_MSP = NULL;}}
     }
 #endif
     myfree(BlackholeTempInfo);
@@ -202,7 +202,4 @@ void blackhole_properties_loop(void) /* Note, normalize_temp_info_struct is now 
         /* results dumped to 'blackhole_details' files at the end of blackhole_final_operations so that BH mass is corrected for mass loss to radiation/bal outflows */
     }// for(i=0; i<N_active_loc_BHs; i++)
 }
-
-
-
 #endif // top-level flag

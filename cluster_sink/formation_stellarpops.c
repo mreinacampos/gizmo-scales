@@ -78,7 +78,7 @@ double determine_mass_gas_reservoir(int i)
     // calculate the gas mass
     mass_gas = P[i].Mass - mass_msp;
     // avoid negative values from precision round-offs
-    if (mass_gas < 0) {mass_gas = 0; printf("[WARNING - formation_stellarpops.c - mgas] mass_gas %g, P[i].Mass %g, mass_msp %g\n", mass_gas, P[i].Mass, mass_msp);}
+    if (mass_gas < 0) {mass_gas = 0;} // printf("[WARNING - formation_stellarpops.c - mgas] mass_gas %g, P[i].Mass %g, mass_msp %g\n", mass_gas, P[i].Mass, mass_msp);}
     assert(mass_gas >= 0.);
     return mass_gas;
 }

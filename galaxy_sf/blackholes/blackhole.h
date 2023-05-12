@@ -84,6 +84,8 @@ extern struct blackhole_temp_particle_data       // blackholedata_topass
 #ifdef CLUSTER_SINK
     MyFloat accreted_MetalMass[NUM_METAL_SPECIES]; // accreted mass in different yields
 #ifndef CLUSTER_SINK_AVOID_MERGERS
+    // flag whether a sink merger has MSPs to gather
+    int flag_SinkMerger_withMSP;
     // define arrays to gather information on the combined MSPs
     struct cluster_sink_multiple_stellar_population combined_MSP[CLUSTER_SINK_NUMMSP]; 
     // define pointers to arrays to gather information on the MSPs that need to be appended
