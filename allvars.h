@@ -1653,6 +1653,14 @@ extern struct cluster_sink_multiple_stellar_population
   MyFloat Age;
   MyFloat InitialMass;
   MyFloat Metallicity[NUM_METAL_SPECIES];
+#ifdef CLUSTER_SINK_OUTPUT_NUMSNE
+  MyFloat CumNumSNe; /* flag that indicates cumulative number of SNe for the particle */
+  MyFloat CumNumSNII; /* flag that indicates cumulative number of SNII for the particle */
+  MyFloat CumNumSNIa; /* flag that indicates cumulative number of SNIa for the particle */
+#endif
+#ifdef CLUSTER_SINK_OUTPUT_BOLLUM
+  MyFloat Light_MassRatio; /* flag that indicates light-to-mass ratio of each star particle */
+#endif
 } *ClusterSink_MSP;
 #endif
 
@@ -2556,14 +2564,8 @@ extern ALIGN(32) struct particle_data
 
 # ifdef CLUSTER_SINK /* properties of the concurrent stellar populations forming within the sink */
     struct cluster_sink_multiple_stellar_population MSP[CLUSTER_SINK_NUMMSP]; // multiple stellar populations
-#ifdef CLUSTER_SINK_OUTPUT_NUMSNE
-    MyFloat CumNumSNe[CLUSTER_SINK_NUMMSP]; /* flag that indicates cumulative number of SNe for the particle */
-    MyFloat CumNumSNII[CLUSTER_SINK_NUMMSP]; /* flag that indicates cumulative number of SNII for the particle */
-    MyFloat CumNumSNIa[CLUSTER_SINK_NUMMSP]; /* flag that indicates cumulative number of SNIa for the particle */
-#endif
-
 #ifdef CLUSTER_SINK_OUTPUT_BOLLUM
-    MyFloat Light_MassRatio[CLUSTER_SINK_NUMMSP]; /* flag that indicates light-to-mass ratio of each star particle */
+    MyFloat TotalLuminosity[N_RT_FREQ_BINS]; /* flag that indicates the total luminosity in each band emitted by the particle */
 #endif
 #endif // CLUSTER_SINK
 
@@ -3577,7 +3579,8 @@ enum iofields
   IO_CLUSTER_SINK_NUMSNE,
   IO_CLUSTER_SINK_NUMSNII,
   IO_CLUSTER_SINK_NUMSNIa,
-  IO_CLUSTER_SINK_BOLLUM,
+  IO_CLUSTER_SINK_MLRATIO,
+  IO_CLUSTER_SINK_TOTALLUM,
   IO_CLUSTER_SINK_ALPHAVIR,
   IO_CLUSTER_SINK_VDISP,
   IO_CLUSTER_SINK_MSPPROPS_MASS,

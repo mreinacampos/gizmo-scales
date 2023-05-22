@@ -61,7 +61,7 @@ double evaluate_light_to_mass_ratio(double stellar_age_in_gyr, int i)
         lum_ssp = calculate_relative_light_to_mass_ratio(stellar_age_in_gyr, i, j);
 #endif
 #ifdef CLUSTER_SINK_OUTPUT_BOLLUM
-        P[i].Light_MassRatio[j] = lum_ssp;
+        P[i].MSP[j].Light_MassRatio = lum_ssp;
 #endif
         return lum_ssp;
 #endif 

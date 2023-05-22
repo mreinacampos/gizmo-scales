@@ -74,9 +74,14 @@ void determine_where_SNe_occur(void)
             for (int j = 0; j<CLUSTER_SINK_NUMMSP; j++){
                 if(P[i].MSP[j].Mass == 0) continue; // this MSP has no FB to contribute
                 if ((P[i].SNII_ThisTimeStep[j]>0)||(P[i].SNIa_ThisTimeStep[j]>0)) { 
-                    P[i].CumNumSNe[j] += (P[i].SNII_ThisTimeStep[j] + P[i].SNIa_ThisTimeStep[j]);
-                    P[i].CumNumSNII[j] += P[i].SNII_ThisTimeStep[j]; 
-                    P[i].CumNumSNIa[j] += P[i].SNIa_ThisTimeStep[j];
+                    P[i].MSP[j].CumNumSNe += (P[i].SNII_ThisTimeStep[j] + P[i].SNIa_ThisTimeStep[j]);
+                    P[i].MSP[j].CumNumSNII += P[i].SNII_ThisTimeStep[j]; 
+                    P[i].MSP[j].CumNumSNIa += P[i].SNIa_ThisTimeStep[j];
+                    printf("[MRC - determine_where_SNe_occur] ThisTask %d  - P[i].ID %d, P[i].Mass %g - MSP %d - MSP[j].Mass %g Age %g - SNe_ThisTimeStep [%g, %g, %g], CumNumSNe [%g, %g, %g] - P[i].SNe_ThisTimeStep %g\n",
+                            ThisTask, P[i].ID, P[i].Mass, j, P[i].MSP[j].Mass, P[i].MSP[j].Age, 
+                            P[i].SNII_ThisTimeStep[j]+P[i].SNIa_ThisTimeStep[j], P[i].SNII_ThisTimeStep[j], P[i].SNIa_ThisTimeStep[j],
+                            P[i].MSP[j].CumNumSNe, P[i].MSP[j].CumNumSNII, P[i].MSP[j].CumNumSNIa, P[i].SNe_ThisTimeStep);
+
                 }
 #ifdef CLUSTER_SINK_DEBUG
                 //printf("[MRC - determine_where_SNe_occur] ThisTask %d  - P[i].ID %d, P[i].Mass %g, P[i].BH_Mass %g - MSP %d - MSP[j].Mass %g - SNe_ThisTimeStep [%g, %g, %g], CumNumSNe [%g, %g, %g] - P[i].SNe_ThisTimeStep %g\n",

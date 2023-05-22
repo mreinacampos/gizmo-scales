@@ -1700,7 +1700,7 @@ void fill_write_buffer(enum iofields blocknr, int *startindex, int pc, int type)
 #ifdef CLUSTER_SINK_OUTPUT_NUMSNE
             for(n = 0; n < pc; pindex++){
                 if(P[pindex].Type == type){
-                    for(k=0;k<CLUSTER_SINK_NUMMSP;k++) {fp[k] = (MyOutputFloat) P[pindex].CumNumSNe[k];}
+                    for(k=0;k<CLUSTER_SINK_NUMMSP;k++) {fp[k] = (MyOutputFloat) P[pindex].MSP[k].CumNumSNe;}
                     fp += CLUSTER_SINK_NUMMSP;
                     n++;
                 }
@@ -1712,7 +1712,7 @@ void fill_write_buffer(enum iofields blocknr, int *startindex, int pc, int type)
 #ifdef CLUSTER_SINK_OUTPUT_NUMSNE
             for(n = 0; n < pc; pindex++){
                 if(P[pindex].Type == type){
-                    for(k=0;k<CLUSTER_SINK_NUMMSP;k++) {fp[k] = (MyOutputFloat) P[pindex].CumNumSNII[k];}
+                    for(k=0;k<CLUSTER_SINK_NUMMSP;k++) {fp[k] = (MyOutputFloat) P[pindex].MSP[k].CumNumSNII;}
                     fp += CLUSTER_SINK_NUMMSP;
                     n++;
                 }
@@ -1724,7 +1724,7 @@ void fill_write_buffer(enum iofields blocknr, int *startindex, int pc, int type)
 #ifdef CLUSTER_SINK_OUTPUT_NUMSNE
             for(n = 0; n < pc; pindex++){
                 if(P[pindex].Type == type){
-                    for(k=0;k<CLUSTER_SINK_NUMMSP;k++) {fp[k] = (MyOutputFloat) P[pindex].CumNumSNIa[k];}
+                    for(k=0;k<CLUSTER_SINK_NUMMSP;k++) {fp[k] = (MyOutputFloat) P[pindex].MSP[k].CumNumSNIa;}
                     fp += CLUSTER_SINK_NUMMSP;
                     n++;
                 }
@@ -1732,12 +1732,24 @@ void fill_write_buffer(enum iofields blocknr, int *startindex, int pc, int type)
 #endif
             break;
 
-        case IO_CLUSTER_SINK_BOLLUM:        /* mass-to-light ratio */
+        case IO_CLUSTER_SINK_MLRATIO:        /* mass-to-light ratio */
 #ifdef CLUSTER_SINK_OUTPUT_BOLLUM
             for(n = 0; n < pc; pindex++){
                 if(P[pindex].Type == type){
-                    for(k=0;k<CLUSTER_SINK_NUMMSP;k++) {fp[k] = (MyOutputFloat) P[pindex].Light_MassRatio[k];}
+                    for(k=0;k<CLUSTER_SINK_NUMMSP;k++) {fp[k] = (MyOutputFloat) P[pindex].MSP[k].Light_MassRatio;}
                     fp += CLUSTER_SINK_NUMMSP;
+                    n++;
+                }
+            }
+#endif
+            break; 
+
+        case IO_CLUSTER_SINK_TOTALLUM:        /* total luminosity in each band ratio */
+#ifdef CLUSTER_SINK_OUTPUT_BOLLUM
+            for(n = 0; n < pc; pindex++){
+                if(P[pindex].Type == type){
+                    for(k=0;k<N_RT_FREQ_BINS;k++) {fp[k] = (MyOutputFloat) P[pindex].TotalLuminosity[k];}
+                    fp += N_RT_FREQ_BINS;
                     n++;
                 }
             }
@@ -2092,7 +2104,7 @@ int get_bytes_per_blockelement(enum iofields blocknr, int mode)
         case IO_CLUSTER_SINK_NUMSNE:
         case IO_CLUSTER_SINK_NUMSNII:
         case IO_CLUSTER_SINK_NUMSNIa:
-        case IO_CLUSTER_SINK_BOLLUM:
+        case IO_CLUSTER_SINK_MLRATIO:
         case IO_CLUSTER_SINK_MSPPROPS_MASS:
         case IO_CLUSTER_SINK_MSPPROPS_INITIALMASS:
         case IO_CLUSTER_SINK_MSPPROPS_AGE:
@@ -2111,6 +2123,15 @@ int get_bytes_per_blockelement(enum iofields blocknr, int mode)
                 bytes_per_blockelement = (CLUSTER_SINK_NUMMSP*NUM_METAL_SPECIES) * sizeof(MyOutputFloat);
 #endif
             break;
+
+        case IO_CLUSTER_SINK_TOTALLUM:
+#ifdef CLUSTER_SINK
+            if(mode)
+                bytes_per_blockelement = (N_RT_FREQ_BINS) * sizeof(MyInputFloat);
+            else
+                bytes_per_blockelement = (N_RT_FREQ_BINS) * sizeof(MyOutputFloat);
+#endif
+            break; 
 
         case IO_LASTENTRY:
             endrun(214);
@@ -2359,7 +2380,7 @@ int get_values_per_blockelement(enum iofields blocknr)
         case IO_CLUSTER_SINK_NUMSNE:
         case IO_CLUSTER_SINK_NUMSNII:
         case IO_CLUSTER_SINK_NUMSNIa:
-        case IO_CLUSTER_SINK_BOLLUM:
+        case IO_CLUSTER_SINK_MLRATIO:
         case IO_CLUSTER_SINK_MSPPROPS_MASS:
         case IO_CLUSTER_SINK_MSPPROPS_INITIALMASS:
         case IO_CLUSTER_SINK_MSPPROPS_AGE:
@@ -2370,6 +2391,11 @@ int get_values_per_blockelement(enum iofields blocknr)
         case IO_CLUSTER_SINK_MSPPROPS_METALLICITY:
 #ifdef CLUSTER_SINK
             values = CLUSTER_SINK_NUMMSP*NUM_METAL_SPECIES;
+#endif
+            break;
+        case IO_CLUSTER_SINK_TOTALLUM:
+#ifdef CLUSTER_SINK
+            values = N_RT_FREQ_BINS;
 #endif
             break;
 
@@ -2550,7 +2576,8 @@ long get_particles_in_block(enum iofields blocknr, int *typelist)
         case IO_CLUSTER_SINK_NUMSNE:
         case IO_CLUSTER_SINK_NUMSNII:
         case IO_CLUSTER_SINK_NUMSNIa:
-        case IO_CLUSTER_SINK_BOLLUM:
+        case IO_CLUSTER_SINK_MLRATIO:
+        case IO_CLUSTER_SINK_TOTALLUM:
         case IO_CLUSTER_SINK_MSPPROPS_MASS:
         case IO_CLUSTER_SINK_MSPPROPS_INITIALMASS:
         case IO_CLUSTER_SINK_MSPPROPS_AGE:
@@ -3194,7 +3221,8 @@ int blockpresent(enum iofields blocknr)
 #endif
             break;
 
-        case IO_CLUSTER_SINK_BOLLUM:
+        case IO_CLUSTER_SINK_MLRATIO:
+        case IO_CLUSTER_SINK_TOTALLUM:
 #ifdef CLUSTER_SINK_OUTPUT_BOLLUM
             return 1;
 #endif
@@ -3620,8 +3648,11 @@ void get_Tab_IO_Label(enum iofields blocknr, char *label)
         case IO_CLUSTER_SINK_NUMSNIa:
             strncpy(label, "nsia", 4);
             break;
-        case IO_CLUSTER_SINK_BOLLUM:
+        case IO_CLUSTER_SINK_MLRATIO:
             strncpy(label, "lssp", 4);
+            break;
+        case IO_CLUSTER_SINK_TOTALLUM:
+            strncpy(label, "totl", 4);
             break;
         case IO_CLUSTER_SINK_MSPPROPS_MASS:
             strncpy(label, "mspm", 4);
@@ -4034,16 +4065,19 @@ void get_dataset_name(enum iofields blocknr, char *buf)
             strcpy(buf, "DynamicErrorDefault");
             break;
         case IO_CLUSTER_SINK_NUMSNE:
-            strcpy(buf, "ClusterSink_CumNumSNe");
+            strcpy(buf, "ClusterSink_MSPs_CumNumSNe");
             break;
         case IO_CLUSTER_SINK_NUMSNII:
-            strcpy(buf, "ClusterSink_CumNumSNII");
+            strcpy(buf, "ClusterSink_MSPs_CumNumSNII");
             break;
         case IO_CLUSTER_SINK_NUMSNIa:
-            strcpy(buf, "ClusterSink_CumNumSNIa");
+            strcpy(buf, "ClusterSink_MSPs_CumNumSNIa");
             break;
-        case IO_CLUSTER_SINK_BOLLUM:
-            strcpy(buf, "ClusterSink_LightMassRatio");
+        case IO_CLUSTER_SINK_MLRATIO:
+            strcpy(buf, "ClusterSink_MSPs_LightMassRatio");
+            break;
+        case IO_CLUSTER_SINK_TOTALLUM:
+            strcpy(buf, "ClusterSink_TotalLuminosity");
             break;
         case IO_CLUSTER_SINK_MSPPROPS_MASS:
             strcpy(buf, "ClusterSink_MSPs_Mass");

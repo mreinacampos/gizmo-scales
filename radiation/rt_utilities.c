@@ -77,8 +77,12 @@ int rt_get_source_luminosity(int i, int mode, double *lum)
         if(P[i].MSP[j].Mass == 0){continue;} // this MSP has no FB
         for(int k=0;k<N_RT_FREQ_BINS;k++) {lum_msp[k] = 0;} // zero out the luminosity bins
         active_check += rt_get_lum_band_stellarpopulation(i,mode,lum_msp,j); // get luminosities for star particles assuming they represent IMF-averaged populations
-        for(int k=0;k<N_RT_FREQ_BINS;k++) {lum[k] += lum_msp[k];} // add up contributions of all MSPs
-        //printf("[MRC - rt_get_source_luminosity] ThisTask %d - i %d, j %d, k %d - lum[k] %g, lum_msp[k] %g\n", ThisTask, i, j, k, lum[k], lum_msp[k]);
+        for(int k=0;k<N_RT_FREQ_BINS;k++) { // add up contributions of all MSPs
+            lum[k] += lum_msp[k];
+#ifdef CLUSTER_SINK_OUTPUT_BOLLUM
+            P[i].TotalLuminosity[k] += lum_msp[k];
+#endif
+        }
     }
 #else
     active_check += rt_get_lum_band_stellarpopulation(i,mode,lum); // get luminosities for star particles assuming they represent IMF-averaged populations
