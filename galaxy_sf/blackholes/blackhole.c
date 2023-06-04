@@ -343,6 +343,7 @@ void set_blackhole_mdot(int i, int n, double dt)
         AccretionFactor = 1.0; if(rho > All.PhysDensThresh) {AccretionFactor = pow(rho/All.PhysDensThresh, All.BlackHoleAccretionFactor);}
 #endif
         mdot = 4. * M_PI * AccretionFactor * All.G * All.G * BPP(n).BH_Mass * BPP(n).BH_Mass * rho / fac;
+        printf("[MRC - mdot] ThisTask %d, P.ID %d - mdot %g, BH_Mass %g, rho %g, fac %g, soundspeed2 %g, bhvel2 %g, BH_InternalEnergy %g\n", ThisTask, P[n].ID, mdot, BPP(n).BH_Mass, rho, fac, soundspeed2, bhvel2, BlackholeTempInfo[i].BH_InternalEnergy);
     }
 #endif // ifdef BH_BONDI
 
@@ -738,7 +739,7 @@ void blackhole_final_operations(void)
             }
 
             for(k=0;k<CLUSTER_SINK_NUMMSP;k++){ // loop over MSPs
-                if (P[n].MSP[k].InitialMass > 0){ // already existing MSPs
+                if (BlackholeTempInfo[i].combined_MSP[k].Mass > 0){ // if any MSPs needs to be combined
 
                     if (BlackholeTempInfo[i].combined_MSP[k].Mass > 0){
                         printf("[MRC - bh() - pre combine] ThisTask %d, ID %d, k %d - MSP Mass %g, InitialMass %g, Age %g, Metallicity[0] %g\n", ThisTask, P[n].ID, k, P[n].MSP[k].Mass, P[n].MSP[k].InitialMass, P[n].MSP[k].Age, P[n].MSP[k].Metallicity[0]);
