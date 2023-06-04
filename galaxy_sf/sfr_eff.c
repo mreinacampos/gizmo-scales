@@ -561,7 +561,7 @@ void star_formation_parent_routine(void)
 #ifdef CLUSTER_SINK // create a gas-only sink
                             P[i].Type = 5;
                             num_bhformed++;
-                            P[i].BH_Mass = DMAX(All.SeedBlackHoleMass, P[i].Mass); // mass of the sink
+                            P[i].BH_Mass = P[i].Mass; // mass of the sink
                             P[i].BH_Mdot = 0; // accretion rate
                             P[i].Sink_Formation_Mass = P[i].Mass; // initial sink mass 
 
