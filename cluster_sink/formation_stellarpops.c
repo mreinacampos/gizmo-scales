@@ -44,19 +44,35 @@ void continuous_star_formation_in_sinks(void)
 
         // loop until there's an empty entry
         for (j = 0; j<CLUSTER_SINK_NUMMSP; j++){
-            if (P[i].MSP[j].InitialMass > 0) continue;
-            // assign properties
+
+            // if the MSP is younger than 0.5 Myr, add the mass here as a mass-weight
+            if (P[i].MSP[j].InitialMass > 0){
+                if (evaluate_stellar_age_Gyr_for_msp(i, j)*1e3 < 0.5){
+                    //printf("[MRC - formation_stellarpops.c] - Pre-combining MSPs - ID %d Mass %g - j %d, MSP_InitialMass[j] %g, MSP_Mass %g, MSP_Age %g, MSP_Metallicity [%g %g]\n",
+                    //    P[i].ID, P[i].Mass, j, P[i].MSP[j].InitialMass, P[i].MSP[j].Mass, P[i].MSP[j].Age, P[i].MSP[j].Metallicity[0], P[i].MSP[j].Metallicity[1]);
+
+                    double m0 = P[i].MSP[j].Mass, mf = P[i].MSP[j].Mass + sp_mass;
+                    P[i].MSP[j].Age = (m0/mf)*P[i].MSP[j].Age + (sp_mass/mf)*All.Time;
+                    for(int k=0;k<NUM_METAL_SPECIES;k++) {P[i].MSP[j].Metallicity[k] = (m0/mf)*P[i].MSP[j].Metallicity[k] + (sp_mass/mf)*P[i].Metallicity[k];}
+                    P[i].MSP[j].Mass += sp_mass;
+                    P[i].MSP[j].InitialMass += sp_mass;
+
+                    //printf("[MRC - formation_stellarpops.c] - Post-combining MSPs - ID %d Mass %g - j %d, MSP_InitialMass[j] %g, MSP_Mass %g, MSP_Age %g, MSP_Metallicity [%g %g]\n",
+                    //    P[i].ID, P[i].Mass, j, P[i].MSP[j].InitialMass, P[i].MSP[j].Mass, P[i].MSP[j].Age, P[i].MSP[j].Metallicity[0], P[i].MSP[j].Metallicity[1]);
+                    break;
+                } else { continue; } }
+
+            // if no existing MSP is younger than 0.5Myr, create a new one
             P[i].MSP[j].InitialMass = sp_mass;
             P[i].MSP[j].Mass = sp_mass;
             P[i].MSP[j].Age = All.Time; // scale factor or time - needs to be evaluated with evaluate_stellar_age_Gyr_for_msp(i, j)
             for(int k=0;k<NUM_METAL_SPECIES;k++) {P[i].MSP[j].Metallicity[k] = P[i].Metallicity[k];} // collecting the mass-weighted metallicity of accreted gas
-            printf("[MRC - formation_stellarpops.c] - Forming an MSP - ID %d j %d, MSP_InitialMass[j] %g, MSP_Mass %g, MSP_Age %g, MSP_Metallicity [%g %g]\n",
-                        P[i].ID, j, P[i].MSP[j].InitialMass, P[i].MSP[j].Mass, P[i].MSP[j].Age, P[i].MSP[j].Metallicity[0], P[i].MSP[j].Metallicity[1]);
+            //printf("[MRC - formation_stellarpops.c] - Forming an MSP - ID %d Mass %g BH_Mass %g - j %d, MSP_InitialMass[j] %g, MSP_Mass %g, MSP_Age %g, MSP_Metallicity [%g %g]\n",
+            //            P[i].ID, P[i].Mass, P[i].BH_Mass, j, P[i].MSP[j].InitialMass, P[i].MSP[j].Mass, P[i].MSP[j].Age, P[i].MSP[j].Metallicity[0], P[i].MSP[j].Metallicity[1]);
             break;
         }
 
-    // MRC - assert that mass budget is correct
-    // assert that we can keep on going even if end of array is reached
+        if (j >= CLUSTER_SINK_NUMMSP){printf("[MRC - formation_stellarpops.c] ThisTask %d, P.ID %d - MISSING MSP Mass %g because array is full\n", ThisTask, P[i].ID, sp_mass);}
 
     } // loop over active particles
 }

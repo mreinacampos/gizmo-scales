@@ -574,13 +574,13 @@ void star_formation_parent_routine(void)
                             P[i].BH_TimeBinGasNeighbor = P[i].TimeBin;
 #endif
 
-#if !defined(CLUSTER_SINK_ACCRETION) && !defined(CLUSTER_SINK_AVOID_MERGERS) // sinks can't accrete nor merge
+#if !defined(CLUSTER_SINK_ACCRETION) && defined(CLUSTER_SINK_AVOID_MERGERS) // sinks can't accrete nor merge
                             // initialize the properties of the MSPs to have FB
                             P[i].MSP[0].Mass = P[i].Mass; // mass of the first MSP
                             P[i].MSP[0].InitialMass = P[i].Mass; // initial mass of the first MSP
                             P[i].MSP[0].Age = All.Time; // age of the first MSP
                             // collecting the mass-weighted metallicity of accreted gas
-                            for(int k=0;k<NUM_METAL_SPECIES;k++) {P[i].MSP[j].Metallicity[k] = P[i].Metallicity[k];} 
+                            for(int k=0;k<NUM_METAL_SPECIES;k++) {P[i].MSP[0].Metallicity[k] = P[i].Metallicity[k];} 
 #endif
 #endif
 

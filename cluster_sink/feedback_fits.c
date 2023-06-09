@@ -99,8 +99,10 @@ void set_fb_input_quantities_from_msps(struct addFB_evaluate_data_in_ *in, int i
         for(k=0;k<NUM_METAL_SPECIES;k++) { yields_winds[k] += fb_dm.mass_winds*determine_winds_yields(i, age, k); assert(yields_winds[k] >= 0);}
 #endif
 #endif
-        //printf("[MRC - set_fb_input_quantities_from_msps] - ThisTask %d, i %d, P[i].ID %d, P.Mass %g, P.Age %g - MSP j %d - Age %g, MSP_Mass %g - mass_snii %g, mass_snia %g, mass_winds %g\n", ThisTask,
-        // i, P[i].ID, P[i].Mass, evaluate_stellar_age_Gyr(i), j, age, P[i].MSP_Mass[j], fb_dm.mass_snii, fb_dm.mass_snia, fb_dm.mass_winds);
+        //if (P[i].ID == DEBUG_ID){
+        //    printf("[MRC - set_fb_input_quantities_from_msps] - ThisTask %d, P[i].ID %d, P.Mass %g, P.Age %g - MSP j %d - Age %g, MSP_Mass %g tform %g - mass_snii %g, mass_snia %g, mass_winds %g -- Current NumSNe [%g, %g, %g]\n", ThisTask,
+        // P[i].ID, P[i].Mass, evaluate_stellar_age_Gyr(i)*1e3, j, age, P[i].MSP[j].Mass, P[i].MSP[j].Age, fb_dm.mass_snii, fb_dm.mass_snia, fb_dm.mass_winds, P[i].SNe_ThisTimeStep, P[i].SNII_ThisTimeStep[j], P[i].SNIa_ThisTimeStep[j]); 
+        //}
     }
 
     // yields ejected: convert into dimensionless ejecta mass fractions - avoid NaNs
@@ -112,6 +114,11 @@ void set_fb_input_quantities_from_msps(struct addFB_evaluate_data_in_ *in, int i
     in->Msne = total_mass_snii + total_mass_snia + total_mass_winds;
     // velocity of the combined ejecta in code units
     in->SNe_v_ejecta = sqrt(2.*(total_energy_snii + total_energy_snia + total_energy_winds)/in->Msne); 
+
+    //if (P[i].ID == DEBUG_ID){
+    //    printf("[MRC - set_fb_input_quantities_from_msps] - FINAL - ThisTask %d, P[i].ID %d, P.Mass %g, P.Age %g - total mass_snii %g, mass_snia %g, mass_winds %g, Msne %g -- total energy snii %g snia %g winds %g vejecta %g\n", ThisTask,
+    //        P[i].ID, P[i].Mass, evaluate_stellar_age_Gyr(i)*1e3, total_mass_snii, total_mass_snia, total_mass_winds, in->Msne, total_energy_snii, total_energy_snia, total_energy_winds, in->SNe_v_ejecta);  
+    //}
 #ifdef METALS
     for(k=0;k<NUM_METAL_SPECIES;k++) {
         in->yields[k] = (yields_snii[k] * total_mass_snii + yields_snia[k] * total_mass_snia + yields_winds[k] * total_mass_winds)/in->Msne;
@@ -120,6 +127,7 @@ void set_fb_input_quantities_from_msps(struct addFB_evaluate_data_in_ *in, int i
         assert((in->yields[k] >= 0.)&&(in->yields[k] < 1.));
     }
 #endif
+
 }
 
 /** \brief Calculates the mass lost due to each feedbach mechanism from each multiple stellar populations
@@ -158,12 +166,21 @@ void calculate_fb_mass_ejected_for_msps(struct fb_massloss_for_msp *fb_dm, int i
 #ifdef CLUSTER_SINK_WINDS
     // particle timestep in Myr
     double dt = GET_PARTICLE_TIMESTEP_IN_PHYSICAL(i) * UNIT_TIME_IN_MYR;
+#ifdef BH_INTERACT_ON_GAS_TIMESTEP
+    dt = P[i].dt_since_last_gas_search * UNIT_TIME_IN_MYR;
+#endif
     // total mass ejected by winds in code units 
     fb_dm->mass_winds = determine_winds_mass_loss_rate(age, zh) * P[i].MSP[j].Mass * dt; 
     assert(fb_dm->mass_winds >= 0); // MRC
     assert(determine_winds_mass_loss_rate(age, zh) >= 0);
     assert(dt >=0 );
 #endif
+
+    //if (P[i].ID == DEBUG_ID){
+    //    printf("[MRC - calculate_fb_mass_ejected_for_msps] - ThisTask %d, P[i].ID %d - P.Mass %g - MSP j %d - MSP_Mass %g tform %g - dt %g, zh %g, mass_snii %g, mass_snia %g, mass_winds %g -- Current NumSNe [%g, %g, %g]\n", ThisTask, P[i].ID, P[i].Mass, j, 
+    //            P[i].MSP[j].Mass, P[i].MSP[j].Age, dt, zh, fb_dm->mass_snii, fb_dm->mass_snia, fb_dm->mass_winds, P[i].SNe_ThisTimeStep, P[i].SNII_ThisTimeStep[j], P[i].SNIa_ThisTimeStep[j]);
+    //}
+
 }
 
 /** \brief Reduce the mass of the stellar particle that has done feedback and of its MSPs
@@ -196,9 +213,30 @@ void reduce_mass_from_msps(void)
             // remove mass from the total mass too - already done in out2particle_addFB
             //P[i].Mass -= (fb_dm.mass_snii + fb_dm.mass_snia + fb_dm.mass_winds);
             //if((P[i].Mass<0)||(isnan(P[i].Mass))) {P[i].Mass=0;}
+
+            // remove mass from the expected BH mass too
+            P[i].BH_Mass -= (fb_dm.mass_snii + fb_dm.mass_snia + fb_dm.mass_winds);
             
-            //printf("[MRC - reduce_mass_from_msps] - ThisTask %d, i %d, P[i].ID %d - P.Mass %g, P.BH_Mass %g - MSP j %d - MSP_Mass %g - mass_snii %g, mass_snia %g, mass_winds %g\n", ThisTask, i, P[i].ID, P[i].Mass, P[i].BH_Mass, j, 
-            //    P[i].MSP_Mass[j], fb_dm.mass_snii, fb_dm.mass_snia, fb_dm.mass_winds);
+            //if (P[i].ID == DEBUG_ID){
+            //    printf("[MRC - reduce_mass_from_msps] - ThisTask %d, P[i].ID %d - P.Mass %g, P.BH_Mass %g - MSP j %d - MSP_Mass %g tform %g - mass_snii %g, mass_snia %g, mass_winds %g -- Cum NumSNe [%g, %g, %g]\n", ThisTask, P[i].ID, P[i].Mass, P[i].BH_Mass, j, 
+            //        P[i].MSP[j].Mass, P[i].MSP[j].Age, fb_dm.mass_snii, fb_dm.mass_snia, fb_dm.mass_winds, P[i].MSP[j].CumNumSNe, P[i].MSP[j].CumNumSNII, P[i].MSP[j].CumNumSNIa);
+            //}
+
+#ifdef CLUSTER_SINK_OUTPUT_NUMSNE
+            if ((P[i].SNII_ThisTimeStep[j]>0)||(P[i].SNIa_ThisTimeStep[j]>0)) { 
+                P[i].MSP[j].CumNumSNe += (P[i].SNII_ThisTimeStep[j] + P[i].SNIa_ThisTimeStep[j]);
+                P[i].MSP[j].CumNumSNII += P[i].SNII_ThisTimeStep[j]; 
+                P[i].MSP[j].CumNumSNIa += P[i].SNIa_ThisTimeStep[j];
+            }
+#ifdef CLUSTER_SINK_DEBUG
+            //if ((P[i].ID == DEBUG_ID) && (P[i].MSP[j].InitialMass > 0)){
+            //    printf("[MRC - determine_where_SNe_occur] ThisTask %d  - P[i].ID %d, P[i].Mass %g - MSP %d - MSP[j].Mass %g Age %g - SNe_ThisTimeStep [%g, %g, %g], CumNumSNe [%g, %g, %g] - P[i].SNe_ThisTimeStep %g\n",
+            //            ThisTask, P[i].ID, P[i].Mass, j, P[i].MSP[j].Mass, P[i].MSP[j].Age, 
+            //            P[i].SNII_ThisTimeStep[j]+P[i].SNIa_ThisTimeStep[j], P[i].SNII_ThisTimeStep[j], P[i].SNIa_ThisTimeStep[j],
+            //            P[i].MSP[j].CumNumSNe, P[i].MSP[j].CumNumSNII, P[i].MSP[j].CumNumSNIa, P[i].SNe_ThisTimeStep);
+            //}
+#endif
+#endif
         }
     }
 }
@@ -243,12 +281,22 @@ double determine_sne_rates(int i, double dt)
         if(get_random_number(P[i].ID+6) < p) {n_sn_0++;} // determine if SNe occurs
         P[i].SNII_ThisTimeStep[j] = n_sn_0; // assign to particle
 
+        //if(P[i].ID == DEBUG_ID){
+        //    printf("[MRC - determine_snii_rate] ThisTask %d, P[i].ID %d - MSP %d, Mass %g, age %g, dt %g, RSNII %g, p %g, n_sn_0 %g, SN [%g]\n", 
+        //        ThisTask, P[i].ID, j, P[i].MSP[j].Mass, age, dt, RSNII, p, n_sn_0, P[i].SNII_ThisTimeStep[j]);
+        //}
+
         // determine number of SNIa
         p = RSNIa * (P[i].MSP[j].Mass*UNIT_MASS_IN_SOLAR) * (dt*UNIT_TIME_IN_MYR); // unit conversion factor
         n_sn_0=(float)floor(p);
         p-=n_sn_0;
         if(get_random_number(P[i].ID+6) < p) {n_sn_0++;} // determine if SNe occurs
         P[i].SNIa_ThisTimeStep[j] = n_sn_0; // assign to particle
+
+        //if(P[i].ID == DEBUG_ID){
+        //    printf("[MRC - determine_snia_rate] ThisTask %d, P[i].ID %d - MSP %d, Mass %g, age %g, dt %g, RSNIa %g, p %g, n_sn_0 %g, SN[%g]\n", 
+        //        ThisTask, P[i].ID, j, P[i].MSP[j].Mass, age, dt, RSNIa, p, n_sn_0, P[i].SNIa_ThisTimeStep[j]);
+        //}
 
         // total number of SNe per timestep over all MSPs
         P[i].SNe_ThisTimeStep += P[i].SNII_ThisTimeStep[j] + P[i].SNIa_ThisTimeStep[j]; 
@@ -277,7 +325,7 @@ double determine_sne_rates(int i, double dt)
 double determine_corecollapse_sne_rate(double age) 
 {
     double rate = 0., slope = 0.;
-    // power-law analytical fit
+    // power-law analytical fit - eq. 2 in Hopkins+22
     if((age < SNII_tsj[0])|| (age > SNII_tsj[2])){ rate = 0.;}
     else if ((age >= SNII_tsj[0]) && (age <= SNII_tsj[1])) {
         slope = log(SNII_coeff_asj[1]/SNII_coeff_asj[0])/log(SNII_tsj[1]/SNII_tsj[0]);
@@ -299,7 +347,7 @@ double determine_corecollapse_sne_rate(double age)
 double determine_corecollapse_sne_total_ejected_mass(double age) 
 {
     double mass = 0., slope = 0.;
-    // power-law analytical fit - eq. 2 in Hopkins+22
+    // power-law analytical fit - eq. 7 in Hopkins+22
     if(age <= 6.5){ slope = 2.22;}
     else if (age > 6.5){ slope = 0.267;}
     mass = 10 * pow(age / 6.5, -slope);

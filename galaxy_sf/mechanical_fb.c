@@ -69,28 +69,6 @@ void determine_where_SNe_occur(void)
         if(P[i].Type<5) {if(P[i].IMF_NumMassiveStars>0) {P[i].IMF_NumMassiveStars=DMAX(0,P[i].IMF_NumMassiveStars-P[i].SNe_ThisTimeStep);}} // lose an O-star for every SNe //
 #endif
         if(P[i].SNe_ThisTimeStep>0) {ntotal+=P[i].SNe_ThisTimeStep; nhosttotal++;}
-#ifdef CLUSTER_SINK_OUTPUT_NUMSNE
-        if(P[i].SNe_ThisTimeStep>=0){ // if there's any SNe exploding
-            for (int j = 0; j<CLUSTER_SINK_NUMMSP; j++){
-                if(P[i].MSP[j].Mass == 0) continue; // this MSP has no FB to contribute
-                if ((P[i].SNII_ThisTimeStep[j]>0)||(P[i].SNIa_ThisTimeStep[j]>0)) { 
-                    P[i].MSP[j].CumNumSNe += (P[i].SNII_ThisTimeStep[j] + P[i].SNIa_ThisTimeStep[j]);
-                    P[i].MSP[j].CumNumSNII += P[i].SNII_ThisTimeStep[j]; 
-                    P[i].MSP[j].CumNumSNIa += P[i].SNIa_ThisTimeStep[j];
-                    printf("[MRC - determine_where_SNe_occur] ThisTask %d  - P[i].ID %d, P[i].Mass %g - MSP %d - MSP[j].Mass %g Age %g - SNe_ThisTimeStep [%g, %g, %g], CumNumSNe [%g, %g, %g] - P[i].SNe_ThisTimeStep %g\n",
-                            ThisTask, P[i].ID, P[i].Mass, j, P[i].MSP[j].Mass, P[i].MSP[j].Age, 
-                            P[i].SNII_ThisTimeStep[j]+P[i].SNIa_ThisTimeStep[j], P[i].SNII_ThisTimeStep[j], P[i].SNIa_ThisTimeStep[j],
-                            P[i].MSP[j].CumNumSNe, P[i].MSP[j].CumNumSNII, P[i].MSP[j].CumNumSNIa, P[i].SNe_ThisTimeStep);
-
-                }
-#ifdef CLUSTER_SINK_DEBUG
-                //printf("[MRC - determine_where_SNe_occur] ThisTask %d  - P[i].ID %d, P[i].Mass %g, P[i].BH_Mass %g - MSP %d - MSP[j].Mass %g - SNe_ThisTimeStep [%g, %g, %g], CumNumSNe [%g, %g, %g] - P[i].SNe_ThisTimeStep %g\n",
-                //            ThisTask, P[i].ID, P[i].Mass, P[i].BH_Mass, j, P[i].MSP_Mass[j], P[i].SNII_ThisTimeStep[j]+P[i].SNIa_ThisTimeStep[j],
-                //            P[i].SNII_ThisTimeStep[j], P[i].SNIa_ThisTimeStep[j], P[i].CumNumSNe[j], P[i].CumNumSNII[j], P[i].CumNumSNIa[j], P[i].SNe_ThisTimeStep);
-#endif
-            }
-        }
-#endif
         dtmean += dt;
     } // for(i = FirstActiveParticle; i >= 0; i = NextActiveParticle[i]) //
 
@@ -762,7 +740,7 @@ int addFB_evaluate(int target, int mode, int *exportflag, int *exportnodecount, 
                 double E_sne_initial = pnorm * Energy_injected_codeunits;
                 double d_Egy_internal = KE_initial + E_sne_initial - KE_final; /* now calculate the residual energy with option to add it as thermal */
 
-#ifndef CLUSTER_SINK_DEBUG_NOTHERMALLOSS // MRC - just to debug
+#ifndef CLUSTER_SINK_DEBUG_NOTHERMALLOSS 
 #if !defined(SINGLE_STAR_FB_WINDS) /* (for single-star modules we ignore this b/c assume always trying to resolve R_cool) */
                 if(feedback_type_is_SNe == 1) /* if coupling radius > R_cooling, account for thermal energy loss in the post-shock medium: from Thornton et al. thermal energy scales as R^(-6.5) for R>R_cool. only use for SNe b/c scalings [like momentum] only apply there. over-cooling if code wants to do it will easily occur next timestep. */
                 {
@@ -840,7 +818,7 @@ void verify_and_assign_local_mechfb_integrals(void)
                 double dU = (-dm/mf)*SphP[j].InternalEnergy + (1./mf)*dTE; /* using new mass get updated internal energy */
                 double dt = GET_PARTICLE_TIMESTEP_IN_PHYSICAL(j), implied_heating_cgs=(dU*UNIT_SPECEGY_IN_CGS*PROTONMASS_CGS)/(dt*UNIT_TIME_IN_CGS), typical_cooling_cgs=1.e-23*(SphP[j].Density*All.cf_a3inv*UNIT_DENSITY_IN_NHCGS);
 
-#ifndef CLUSTER_SINK_DEBUG_NOTHERMALLOSS // MRC - just to debug
+#ifndef CLUSTER_SINK_DEBUG_NOTHERMALLOSS 
                 if((implied_heating_cgs < 0.3*typical_cooling_cgs) && (dt > MIN_REAL_NUMBER) && ((dU < 4.*SphP[j].InternalEnergy) || ((dU < 1000.*SphP[j].InternalEnergy) && ((dU+SphP[j].InternalEnergy)*U_TO_TEMP_UNITS*2./3.*1.28 < 5.e5)))) {SphP[j].DtInternalEnergy += dU/dt;} else {SphP[j].InternalEnergy += dU; SphP[j].InternalEnergyPred += dU;}
 #else
                 SphP[j].InternalEnergy += dU; SphP[j].InternalEnergyPred += dU; /* update internal energy; simpler (old) way to do it - less accurate phase diagrams at high density, however */
