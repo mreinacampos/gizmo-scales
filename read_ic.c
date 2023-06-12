@@ -544,6 +544,15 @@ void empty_read_buffer(enum iofields blocknr, int offset, int pc, int type)
                     for(int l=0;l<NUM_METAL_SPECIES;l++){
                         P[offset + n].MSP[k].Metallicity[l] = *fp++;}}} // normal read-in
 
+        case IO_CLUSTER_SINK_NUMSNE:
+            for (n = 0; n < pc; n++) { for(k=0;k<CLUSTER_SINK_NUMMSP;k++) {P[offset + n].MSP[k].CumNumSNe = *fp++;}} // normal read-in
+
+        case IO_CLUSTER_SINK_NUMSNII:
+            for (n = 0; n < pc; n++) { for(k=0;k<CLUSTER_SINK_NUMMSP;k++) {P[offset + n].MSP[k].CumNumSNII = *fp++;}} // normal read-in
+
+        case IO_CLUSTER_SINK_NUMSNIa:
+            for (n = 0; n < pc; n++) { for(k=0;k<CLUSTER_SINK_NUMMSP;k++) {P[offset + n].MSP[k].CumNumSNIa = *fp++;}} // normal read-in
+
 
         /* the other input fields (if present) are not needed to define the
              initial conditions of the code */
@@ -621,9 +630,6 @@ void empty_read_buffer(enum iofields blocknr, int offset, int pc, int type)
         case IO_DELAY_TIME_HII:
         case IO_CHIMES_FLUX_G0:
         case IO_CHIMES_FLUX_ION:
-        case IO_CLUSTER_SINK_NUMSNE:
-        case IO_CLUSTER_SINK_NUMSNII:
-        case IO_CLUSTER_SINK_NUMSNIa:
         case IO_CLUSTER_SINK_MLRATIO:
         case IO_CLUSTER_SINK_TOTALLUM:
         case IO_CLUSTER_SINK_ALPHAVIR:

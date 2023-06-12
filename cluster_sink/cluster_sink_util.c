@@ -15,6 +15,7 @@
 #ifdef CLUSTER_SINK
 
 #if !defined(CLUSTER_SINK_AVOID_MERGERS)
+// function to allocate the arrays needed to collect the information of the MSPs that have to be appended
 void cluster_sink_allocate_merger_loop(void) 
 {
     for(int i=0; i<N_active_loc_BHs; i++)
@@ -22,7 +23,6 @@ void cluster_sink_allocate_merger_loop(void)
         if (BlackholeTempInfo[i].flag_SinkMerger_withMSP > 0){
             BlackholeTempInfo[i].append_MSP = (struct cluster_sink_multiple_stellar_population *) mymalloc("BHTempInfo.append_MSP", NTask * CLUSTER_SINK_NUMMSP_ACCRETE * sizeof(struct cluster_sink_multiple_stellar_population));
             memset( &BlackholeTempInfo[i].append_MSP[0], 0, NTask * CLUSTER_SINK_NUMMSP_ACCRETE * sizeof(struct cluster_sink_multiple_stellar_population) );
-            //printf("[MRC - bh_start()] ThisTask %d - Nbh %d - allocating arrays \n", ThisTask, Nbh);
             if(BlackholeTempInfo[i].append_MSP == NULL) { terminate("Failed to allocate memory for BHTempInfo[Nbh].append_MSP");}
         }
     }// for(i=0; i<N_active_loc_BHs; i++)

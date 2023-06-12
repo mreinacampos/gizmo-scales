@@ -341,7 +341,9 @@ extern struct Chimes_depletion_data_structure *ChimesDepletionData;
 
 
 #ifdef CLUSTER_SINK
-#define DEBUG_ID 54376 // MRC - just to debug
+#ifdef CLUSTER_SINK_DEBUG
+#define DEBUG_ID 89899 
+#endif
 #define GALSF                       // top-level switch for galactic star formation model
 #define COOLING                     // top-level switch to enable radiative cooling and heating
 #define METALS                      // top-level switch to enable tracking metallicities or different heavy elements (with multiple species optional) for gas and stars
@@ -360,7 +362,7 @@ extern struct Chimes_depletion_data_structure *ChimesDepletionData;
 
 #ifdef CLUSTER_SINK_ACCRETION
 #define BH_SWALLOWGAS           // need to swallow gas [part of sink model]
-//#define BH_WAKEUP_GAS // wake up all gas cells within interaction radius of the sink (MRC?)
+//#define BH_WAKEUP_GAS // wake up all gas cells within interaction radius of the sink 
 #if (CLUSTER_SINK_ACCRETION == 0) // default: adative sink radius, normal Bondi-Hoyle accretion rate
 //#define BH_GRAVACCRETION 9      // [9] does not exists, prevents overlap with previous code
 #define BH_BONDI 0                // use 'normal' Bondi-Hoyle accretion rate
