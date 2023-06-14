@@ -2414,8 +2414,8 @@ extern struct global_data_all_processes
 #ifdef CLUSTER_SINK
   double ClusterSink_MinGasMass; /* minimum gas mass to form a stellar population out of */
 #ifndef CLUSTER_SINK_AVOID_MERGERS
-  double ClusterSink_Delta_AgeInMyr;   /* age difference to consider joining MSPs */
-  double ClusterSink_Delta_ZZSun;   /* metallicity difference to consider joining MSPs */
+  double ClusterSink_Delta_AgeInMyr;   /* age difference (in Myr) to consider joining MSPs */
+  double ClusterSink_Delta_ZZSun;   /* metallicity difference ([Z/ZSun], in dex) to consider joining MSPs */
 #endif
 #endif
 

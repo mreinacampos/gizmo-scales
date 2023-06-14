@@ -461,6 +461,11 @@ void set_blackhole_mdot(int i, int n, double dt)
     if(jmag>0 && lmag>0) {BlackholeTempInfo[i].angmom_norm_topass_in_swallowloop = angmom_toreturn / sqrt(jmag);} /* this should be in units such that, times CODE radius and (code=physical) ang-mom, gives CODE velocity: looks ok at present */
 #endif
 
+
+#ifdef CLUSTER_SINK
+    if (mdot > BlackholeTempInfo[i].Mgas_in_Kernel/dt) {mdot = BlackholeTempInfo[i].Mgas_in_Kernel/dt;} // accretion rate per timestep should be smaller than the available mass within the kernel
+#endif
+
     /* alright, now we can FINALLY set the BH accretion rate */
     if(isnan(mdot)) {mdot=0;}
     BPP(n).BH_Mdot = DMAX(mdot,0);

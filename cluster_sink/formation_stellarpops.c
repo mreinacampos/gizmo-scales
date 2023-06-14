@@ -48,12 +48,15 @@ void continuous_star_formation_in_sinks(void)
             // if the MSP is younger than 0.5 Myr, add the mass here as a mass-weight
             if (P[i].MSP[j].InitialMass > 0){
                 if (evaluate_stellar_age_Gyr_for_msp(i, j)*1e3 < 0.5){
-                    double m0 = P[i].MSP[j].Mass, mf = P[i].MSP[j].Mass + sp_mass;
-                    P[i].MSP[j].Age = (m0/mf)*P[i].MSP[j].Age + (sp_mass/mf)*All.Time;
-                    for(int k=0;k<NUM_METAL_SPECIES;k++) {P[i].MSP[j].Metallicity[k] = (m0/mf)*P[i].MSP[j].Metallicity[k] + (sp_mass/mf)*P[i].Metallicity[k];}
-                    P[i].MSP[j].Mass += sp_mass;
-                    P[i].MSP[j].InitialMass += sp_mass;
-                    break;
+                    // only combine MSPs if the metallicity difference \Delta [Z/ZSun] is less than 0.05 dex
+                    if (fabs(log10(P[i].Metallicity[0]/All.SolarAbundances[0]) - log10(P[i].MSP[j].Metallicity[0]/All.SolarAbundances[0])) < 0.05){
+                        double m0 = P[i].MSP[j].Mass, mf = P[i].MSP[j].Mass + sp_mass;
+                        P[i].MSP[j].Age = (m0/mf)*P[i].MSP[j].Age + (sp_mass/mf)*All.Time;
+                        for(int k=0;k<NUM_METAL_SPECIES;k++) {P[i].MSP[j].Metallicity[k] = (m0/mf)*P[i].MSP[j].Metallicity[k] + (sp_mass/mf)*P[i].Metallicity[k];}
+                        P[i].MSP[j].Mass += sp_mass;
+                        P[i].MSP[j].InitialMass += sp_mass;
+                        break;
+                    } else { continue; } 
                 } else { continue; } }
 
             // if no existing MSP is younger than 0.5Myr, create a new one

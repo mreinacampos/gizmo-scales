@@ -447,8 +447,9 @@ int blackhole_swallow_and_kick_evaluate(int target, int mode, int *exportflag, i
                                     zh_ngb, zh_ngb/All.SolarAbundances[0], fabs(zh_ngb/All.SolarAbundances[0] - local.MSP_Metallicity[i]/All.SolarAbundances[0]), 
                                     idx_msp_main_sink, idx_msp_to_append);
 #endif
+                                // combine MSPs if within the age and metallicity ranges
                                 if ((fabs(age_ngb_inmyr - local.MSP_AgeInMyr[i]) < All.ClusterSink_Delta_AgeInMyr) 
-                                    && (fabs(zh_ngb/All.SolarAbundances[0] - local.MSP_Metallicity[i]/All.SolarAbundances[0]) < All.ClusterSink_Delta_ZZSun)){ 
+                                    && (fabs(log10(zh_ngb/All.SolarAbundances[0]) - log10(local.MSP_Metallicity[i]/All.SolarAbundances[0])) < All.ClusterSink_Delta_ZZSun)){ 
                                     idx_msp_main_sink = i;
                                     break;
                                 }
