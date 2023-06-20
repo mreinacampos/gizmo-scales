@@ -72,7 +72,11 @@ int rt_get_source_luminosity(int i, int mode, double *lum)
     active_check += rt_get_lum_band_singlestar(i,mode,lum); // get luminosities for individual star/sink particles assuming they are protostars or stars
 #elif defined(CLUSTER_SINK)
     double lum_msp[N_RT_FREQ_BINS]; 
-    for(int k=0;k<N_RT_FREQ_BINS;k++) {lum[k] = 0;} // zero out the luminosity bins to avoid rubbish
+    for(int k=0;k<N_RT_FREQ_BINS;k++) {lum[k] = 0; 
+#ifdef CLUSTER_SINK_OUTPUT_BOLLUM
+    P[i].TotalLuminosity[k] = 0;
+#endif
+    } // zero out the luminosity bins to avoid rubbish
     for (int j = 0; j<CLUSTER_SINK_NUMMSP; j++){ // change the input quantities to the current MSP properties
         if(P[i].MSP[j].Mass == 0){continue;} // this MSP has no FB
         for(int k=0;k<N_RT_FREQ_BINS;k++) {lum_msp[k] = 0;} // zero out the luminosity bins
@@ -81,6 +85,7 @@ int rt_get_source_luminosity(int i, int mode, double *lum)
             lum[k] += lum_msp[k];
 #ifdef CLUSTER_SINK_OUTPUT_BOLLUM
             P[i].TotalLuminosity[k] += lum_msp[k];
+            //printf("[MRC - rt_get_source_luminosity] ThisTask %d - ID %d - MSP %d, k %d - lum_msp[k] %g, lum[k] %g, P[i].TotalLuminosity[k] %g\n", ThisTask, P[i].ID, j, k, lum_msp[k], lum[k], P[i].TotalLuminosity[k]);
 #endif
         }
     }
@@ -389,6 +394,7 @@ int rt_get_lum_band_stellarpopulation(int i, int mode, double *lum)
 
 #ifdef CLUSTER_SINK
     double L = evaluate_light_to_mass_ratio(star_age, i, j) * m_sol / UNIT_LUM_IN_SOLAR; if(L<=0 || isnan(L)) {L=0;}
+    //printf("[MRC - rt_get_lum_band_stellarpopulation] ThisTask %d - ID %d - MSP %d, star_age %g, m_sol %g - L %g\n", ThisTask, P[i].ID, j, star_age, m_sol, L);
 #else 
     double L = evaluate_light_to_mass_ratio(star_age, i) * m_sol / UNIT_LUM_IN_SOLAR; if(L<=0 || isnan(L)) {L=0;}
 #endif
@@ -397,7 +403,6 @@ int rt_get_lum_band_stellarpopulation(int i, int mode, double *lum)
     SET_ACTIVE_RT_CHECK();
     double f_uv=All.PhotonMomentum_fUV, f_op=All.PhotonMomentum_fOPT;
     //double L = evaluate_light_to_mass_ratio(star_age, i) * m_sol / UNIT_LUM_IN_SOLAR; if(L<=0 || isnan(L)) {L=0;}
-    double
 #ifndef RT_FIRE_FIX_SPECTRAL_SHAPE
     double sigma_eff = evaluate_NH_from_GradRho(P[i].GradRho,PPP[i].Hsml,P[i].DensAroundStar,PPP[i].NumNgb,0,i); if((sigma_eff <= 0)||(isnan(sigma_eff))) {sigma_eff=0;} // sigma here is in code units
     if(star_age <= 0.0025) {f_op=0.09;} else {if(star_age <= 0.006) {f_op=0.09*(1+((star_age-0.0025)/0.004)*((star_age-0.0025)/0.004));} else {f_op=1-0.8410937/(1+sqrt((star_age-0.006)/0.3));}}
@@ -423,9 +428,11 @@ int rt_get_lum_band_stellarpopulation(int i, int mode, double *lum)
         if(star_age <= 0.006) {f_op=0.09*(1+((star_age-0.0025)/0.004)*((star_age-0.0025)/0.004));} else {f_op=1-0.8410937/(1+sqrt((star_age-0.006)/0.3));}}
     //lum[RT_FREQ_BIN_OPTICAL_NIR] = f_op * evaluate_light_to_mass_ratio(star_age, i) * m_sol / UNIT_LUM_IN_SOLAR;
     lum[RT_FREQ_BIN_OPTICAL_NIR] = f_op * L;
+    //printf("[MRC - rt_get_lum_band_stellarpopulation] ThisTask %d - ID %d - MSP %d, star_age %g, f_op %g - Lnir %g\n", ThisTask, P[i].ID, j, star_age, f_op, L*f_op);
 #endif
 
-#if defined(RT_NUV) /* Near-UV approximate spectra (UV/optical spectra, sub-photo-electric, but high-opacity) for stars as used in the FIRE (Hopkins et al.) models */
+// MRC
+#if defined(RT_NUV) && !defined(CLUSTER_SINK) /* Near-UV approximate spectra (UV/optical spectra, sub-photo-electric, but high-opacity) for stars as used in the FIRE (Hopkins et al.) models */
     SET_ACTIVE_RT_CHECK();
 #if !defined(RT_OPTICAL_NIR)
     double f_op=0; if(star_age <= 0.0025) {f_op=0.09;} else {
@@ -441,6 +448,8 @@ int rt_get_lum_band_stellarpopulation(int i, int mode, double *lum)
     if(x_age_pe <= 1) {l_band_pe = 1.07e36 * (1.+x_age_pe*x_age_pe) * m_sol / UNIT_LUM_IN_CGS;}
         else {l_band_pe = 2.14e36 / (x_age_pe * sqrt(x_age_pe)) * m_sol / UNIT_LUM_IN_CGS;} // 0.1 solar, with nebular. very weak metallicity dependence, with slightly slower decay in time for lower-metallicity pops; effect smaller than binaries
     lum[RT_FREQ_BIN_PHOTOELECTRIC] = l_band_pe; // band luminosity //
+    //printf("[MRC - rt_get_lum_band_stellarpopulation] ThisTask %d - ID %d - MSP %d, star_age %g - Lphotoelectric %g\n", ThisTask, P[i].ID, j, star_age, l_band_pe);
+
 #endif
     
 #if defined(RT_LYMAN_WERNER)  /* lyman-werner bands (11.2-13.6 eV, specifically): below is from integrating the spectra from STARBURST99 with the Geneva40 solar-metallicity + lower tracks */
@@ -465,6 +474,21 @@ int rt_get_lum_band_stellarpopulation(int i, int mode, double *lum)
     int k; for(k=0;k<4;k++) {lum[i_vec[k]] = l_ion * rt_ion_precalc_stellar_luminosity_fraction[i_vec[k]];} // assign flux appropriately according to pre-tabulated result //
 #endif
 #endif
+
+// MRC - moved (used to be after optical/NIR)
+#if defined(RT_NUV) && defined(CLUSTER_SINK)/* Near-UV approximate spectra (UV/optical spectra, sub-photo-electric, but high-opacity) for stars as used in the FIRE (Hopkins et al.) models */
+    SET_ACTIVE_RT_CHECK();
+    double f_nuv = 0;
+    for(int k=0;k<N_RT_FREQ_BINS;k++){
+        if(k!=RT_FREQ_BIN_NUV){ f_nuv += lum[k]/L;}
+        //printf("[MRC - rt_get_lum_band_stellarpopulation] ThisTask %d - ID %d - MSP %d - NUV %d, f_nuv %g, lum[k]/L %g\n", ThisTask, P[i].ID, j, k, f_nuv, lum[k]/L);
+    }
+    //lum[RT_FREQ_BIN_NUV] = (1-f_op) * evaluate_light_to_mass_ratio(star_age, i) * m_sol / UNIT_LUM_IN_SOLAR;
+    lum[RT_FREQ_BIN_NUV] = (1-f_nuv) * L;
+    //printf("[MRC - rt_get_lum_band_stellarpopulation] ThisTask %d - ID %d - MSP %d, star_age %g, f_nuv %g - Lnuv %g\n", ThisTask, P[i].ID, j, star_age, 1-f_nuv, L*(1-f_nuv));
+#endif
+
+
 
 #if defined(RT_HARD_XRAY) || defined(RT_SOFT_XRAY) /* soft and hard X-rays for e.g. Compton heating by X-ray binaries */
     SET_ACTIVE_RT_CHECK();
