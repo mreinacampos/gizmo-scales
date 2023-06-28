@@ -764,7 +764,7 @@ void blackhole_final_operations(void)
                     P[n].MSP[k].CumNumSNIa += BlackholeTempInfo[i].combined_MSP[k].CumNumSNIa;
 #endif 
 
-                } else { // find the last entry
+                } else if (P[n].MSP[k].InitialMass == 0) { // find the last entry
                     idx_last_msp = k;
                     break;
                 }
