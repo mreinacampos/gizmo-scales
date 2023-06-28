@@ -2125,7 +2125,7 @@ int get_bytes_per_blockelement(enum iofields blocknr, int mode)
             break;
 
         case IO_CLUSTER_SINK_TOTALLUM:
-#ifdef CLUSTER_SINK
+#ifdef CLUSTER_SINK_OUTPUT_TOTALLUM
             if(mode)
                 bytes_per_blockelement = (N_RT_FREQ_BINS) * sizeof(MyInputFloat);
             else
@@ -2394,7 +2394,7 @@ int get_values_per_blockelement(enum iofields blocknr)
 #endif
             break;
         case IO_CLUSTER_SINK_TOTALLUM:
-#ifdef CLUSTER_SINK
+#ifdef CLUSTER_SINK_OUTPUT_TOTALLUM
             values = N_RT_FREQ_BINS;
 #endif
             break;

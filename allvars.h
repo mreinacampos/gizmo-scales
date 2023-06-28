@@ -342,7 +342,7 @@ extern struct Chimes_depletion_data_structure *ChimesDepletionData;
 
 #ifdef CLUSTER_SINK
 #ifdef CLUSTER_SINK_DEBUG
-#define DEBUG_ID 89899 
+#define DEBUG_ID 10963 
 #endif
 #define GALSF                       // top-level switch for galactic star formation model
 #define COOLING                     // top-level switch to enable radiative cooling and heating
@@ -2572,7 +2572,7 @@ extern ALIGN(32) struct particle_data
 
 # ifdef CLUSTER_SINK /* properties of the concurrent stellar populations forming within the sink */
     struct cluster_sink_multiple_stellar_population MSP[CLUSTER_SINK_NUMMSP]; // multiple stellar populations
-#ifdef CLUSTER_SINK_OUTPUT_BOLLUM
+#if defined(CLUSTER_SINK_RADIATION) && defined(CLUSTER_SINK_OUTPUT_BOLLUM)
     MyFloat TotalLuminosity[N_RT_FREQ_BINS]; /* flag that indicates the total luminosity in each band emitted by the particle */
 #endif
 #endif // CLUSTER_SINK
