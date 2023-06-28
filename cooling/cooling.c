@@ -746,11 +746,12 @@ double find_abundances_and_rates(double logT, double rho, int target, double shi
 	double error_old = fabs(n_elec - neold); // save the old error to compare with the new one, so we can check if we're converging
         neold = n_elec;
         n_elec = nHp + nHep + 2 * nHepp;	/* eqn (38) */
+
 #ifdef COOL_LOW_TEMPERATURES
         n_elec += return_electron_fraction_from_heavy_ions(target, pow(10.,logT), rho, n_elec);
 #endif
-	
-        if(J_UV == 0) break;
+	        
+        // MRC if(J_UV == 0) break;
 	
 	    // keep track of these bounds in case we need to switch to bisection
 	    if(n_elec > neold) {ne_lower = DMAX(neold, ne_lower);}
@@ -768,7 +769,7 @@ double find_abundances_and_rates(double logT, double rho, int target, double shi
         n_elec = nenew;
         if(!isfinite(n_elec)) {n_elec=1;}
         necgs = n_elec * nHcgs;
-
+        
         double dneTHhold = DMAX(n_elec*0.01 , 1.0e-14); // desired absolute tolerance for n_elec
         if(fabs(n_elec - neold) < dneTHhold) break;
 
