@@ -2125,7 +2125,7 @@ int get_bytes_per_blockelement(enum iofields blocknr, int mode)
             break;
 
         case IO_CLUSTER_SINK_TOTALLUM:
-#ifdef CLUSTER_SINK_OUTPUT_TOTALLUM
+#ifdef CLUSTER_SINK_OUTPUT_BOLLUM
             if(mode)
                 bytes_per_blockelement = (N_RT_FREQ_BINS) * sizeof(MyInputFloat);
             else
@@ -2394,7 +2394,7 @@ int get_values_per_blockelement(enum iofields blocknr)
 #endif
             break;
         case IO_CLUSTER_SINK_TOTALLUM:
-#ifdef CLUSTER_SINK_OUTPUT_TOTALLUM
+#ifdef CLUSTER_SINK_OUTPUT_BOLLUM
             values = N_RT_FREQ_BINS;
 #endif
             break;
@@ -5005,7 +5005,7 @@ void write_header_attributes_in_hdf5(hid_t handle)
 size_t my_fwrite(void *ptr, size_t size, size_t nmemb, FILE * stream)
 {
     size_t nwritten;
-
+ 
     if(size * nmemb > 0)
     {
         if((nwritten = fwrite(ptr, size, nmemb, stream)) != nmemb)
