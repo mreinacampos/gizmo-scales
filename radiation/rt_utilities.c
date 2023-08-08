@@ -75,6 +75,7 @@ int rt_get_source_luminosity(int i, int mode, double *lum)
     for(int k=0;k<N_RT_FREQ_BINS;k++) {lum[k] = 0; 
 #ifdef CLUSTER_SINK_OUTPUT_BOLLUM
     P[i].TotalLuminosity[k] = 0;
+    //printf("[MRC - rt_get_source_luminosity - zero'ing] ThisTask %d - ID %d - k %d - lum[k] %g, P[i].TotalLuminosity[k] %g\n", ThisTask, P[i].ID, k, lum[k], P[i].TotalLuminosity[k]);
 #endif
     } // zero out the luminosity bins to avoid rubbish
     for (int j = 0; j<CLUSTER_SINK_NUMMSP; j++){ // change the input quantities to the current MSP properties
