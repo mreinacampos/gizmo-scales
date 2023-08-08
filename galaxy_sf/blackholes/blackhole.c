@@ -807,6 +807,13 @@ void blackhole_final_operations(void)
 
 #endif
 
+#if (CLUSTER_SINK_ACCRETION == 1) // accounts for both sink mergers and gas accretion
+            dt = GET_PARTICLE_TIMESTEP_IN_PHYSICAL(n);
+#ifdef BH_INTERACT_ON_GAS_TIMESTEP
+            dt = P[n].dt_since_last_gas_search;
+#endif
+            BPP(n).BH_Mdot = BlackholeTempInfo[i].accreted_BH_Mass/dt;
+#endif
 #endif
 
 

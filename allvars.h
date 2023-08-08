@@ -368,12 +368,9 @@ extern struct Chimes_depletion_data_structure *ChimesDepletionData;
 //#define BH_GRAVACCRETION 9      // [9] does not exists, prevents overlap with previous code
 #define BH_BONDI 0                // use 'normal' Bondi-Hoyle accretion rate
 #endif
-#if (CLUSTER_SINK_ACCRETION == 1) // default: adative sink radius, normal Bondi-Hoyle accretion rate
-#define BH_BONDI 1                // ignore the contribution of the relative velocities to the Bondi-Hoyle accretion rate
-#endif
-#if (CLUSTER_SINK_ACCRETION == 1)
+#if (CLUSTER_SINK_ACCRETION == 1) // adative accretion radius, gravitational capture of gas particles (same criteria as mergers)
 #define BH_GRAVCAPTURE_GAS
-#define BH_GRAVCAPTURE_FIXEDSINKRADIUS // modify grav capture to Bate-style, fixed (in time) sink radius based on SF neighbor distance, plus angular momentum criterion
+//#define BH_GRAVCAPTURE_FIXEDSINKRADIUS // modify grav capture to Bate-style, fixed (in time) sink radius based on SF neighbor distance, plus angular momentum criterion
 #endif
 #endif
 
@@ -2572,7 +2569,7 @@ extern ALIGN(32) struct particle_data
 
 # ifdef CLUSTER_SINK /* properties of the concurrent stellar populations forming within the sink */
     struct cluster_sink_multiple_stellar_population MSP[CLUSTER_SINK_NUMMSP]; // multiple stellar populations
-#if defined(CLUSTER_SINK_RADIATION) && defined(CLUSTER_SINK_OUTPUT_BOLLUM)
+#if defined(CLUSTER_SINK_OUTPUT_BOLLUM)
     MyFloat TotalLuminosity[N_RT_FREQ_BINS]; /* flag that indicates the total luminosity in each band emitted by the particle */
 #endif
 #endif // CLUSTER_SINK
