@@ -200,6 +200,9 @@ void do_the_cooling_for_particle(int i)
 #endif
                         SphP[i].Rad_E_gamma[k] += de_rad; /* energy gained by gas is lost here (or vice versa if dust is acting as a net coolant) */
                         SphP[i].Rad_E_gamma_Pred[k] = SphP[i].Rad_E_gamma[k]; /* updated drifted */
+                        if (de_rad > 0){
+                            printf("[MRC - cooling.c] ThisTask %d, P.ID %d - k %d, de_rad %g, Rad_E_gamma %g, Rad_E_gamma_Pred %g\n", ThisTask, P[i].ID, k, de_rad, SphP[i].Rad_E_gamma[k], SphP[i].Rad_E_gamma_Pred[k]);
+                        }
 #if defined(RT_EVOLVE_INTENSITIES)
                         int k_tmp; for(k_tmp=0;k_tmp<N_RT_INTENSITY_BINS;k_tmp++) {SphP[i].Rad_Intensity[k][k_tmp] += de_rad/RT_INTENSITY_BINS_DOMEGA; SphP[i].Rad_Intensity_Pred[k][k_tmp] += de_rad/RT_INTENSITY_BINS_DOMEGA;}
 #endif
@@ -538,6 +541,11 @@ double convert_u_to_temp(double u, double rho, int target, double *ne_guess, dou
         if(temp < 0.5*temp_old) {temp = 0.5*temp_old;} // limiter to prevent un-physical overshoot before we have bracketing established
         if(temp > 3.0*temp_old) {temp = 3.0*temp_old;} // limiter to prevent un-physical overshoot before we have bracketing established
         
+
+        if((*ne_guess > 1) && (*nHp_guess > 0.95) || (temp > 1e4)){ // MRC
+            printf("[MRC - convert_u_to_temp] ThisTask %d - temp %g, ne_guess %g, nHp_guess %g\n", ThisTask, temp, ne_guess, nHp_guess);
+        }
+
         if(T_bracket_errneg > 0 && T_bracket_errpos > 0) // if have bracketing and this wants to go outside brackets, revert to bisection
         {
             if(temp >= T_bracket_max || temp <= T_bracket_min) {temp = sqrt(T_bracket_min*T_bracket_max);} // bisect (in log-space)

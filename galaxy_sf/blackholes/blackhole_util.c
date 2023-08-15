@@ -145,6 +145,7 @@ double bh_lum_bol(double mdot, double mass, long pindex)
 #ifdef SINGLE_STAR_SINK_DYNAMICS
     lum = calculate_individual_stellar_luminosity(mdot,mass,pindex);
 #endif
+    printf("[MRC - bh_lum_bol] ThisTask %d, pindex %d - mdot %g, mass %g, lum %g, All.BlackHoleFeedbackFactor * lum %g\n", ThisTask, pindex, mdot, mass, lum, All.BlackHoleFeedbackFactor * lum);
     return All.BlackHoleFeedbackFactor * lum;
 }
 
