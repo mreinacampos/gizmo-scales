@@ -1864,6 +1864,18 @@ extern FILE *FdHIIHeating;	/*!< file handle for HIIheating.txt log-file */
 #ifdef GALSF_FB_MECHANICAL
 extern FILE *FdSneIIHeating;	/*!< file handle for SNIIheating.txt log-file */
 #endif
+#ifdef CLUSTER_SINK // MRC
+#ifdef CLUSTER_SINK_OUTPUT_FORMPROPS 
+extern FILE *FdCSFormationDetails;
+#endif
+#ifdef CLUSTER_SINK_OUTPUT_ACCRETIONHIST 
+extern FILE *FdCSAccretionDetails;
+extern FILE *FdCSMergingDetails;
+#endif
+#ifdef CLUSTER_SINK_OUTPUT_FBGASPROPS 
+extern FILE *FdCSFBGasProps;
+#endif
+#endif
 #ifdef BLACK_HOLES
 extern FILE *FdBlackHoles;	/*!< file handle for blackholes.txt log-file. */
 #ifdef OUTPUT_SINK_ACCRETION_HIST

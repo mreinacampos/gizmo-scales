@@ -622,6 +622,24 @@ void open_outputfiles(void)
 #endif // bh-output-more-info if
 #endif // black-holes if
 
+#ifdef CLUSTER_SINK
+    if(ThisTask == 0) {sprintf(buf, "%scluster_sink", All.OutputDir); mkdir(buf, 02755);}
+#ifdef CLUSTER_SINK_OUTPUT_FORMPROPS
+  sprintf(buf, "%scluster_sink/sink_formation_%d.txt", All.OutputDir, ThisTask);
+  if(!(FdCSFormationDetails = fopen(buf, mode))) {printf("error in opening file '%s'\n", buf); endrun(1);}
+#endif
+#ifdef CLUSTER_SINK_OUTPUT_ACCRETIONHIST
+  sprintf(buf, "%scluster_sink/sink_accretionhist_%d.txt", All.OutputDir, ThisTask);
+  if(!(FdCSAccretionDetails = fopen(buf, mode))) {printf("error in opening file '%s'\n", buf); endrun(1);}
+  sprintf(buf, "%scluster_sink/sink_merginghist_%d.txt", All.OutputDir, ThisTask);
+  if(!(FdCSMergingDetails = fopen(buf, mode))) {printf("error in opening file '%s'\n", buf); endrun(1);}
+#endif
+#ifdef CLUSTER_SINK_OUTPUT_FBGASPROPS
+  sprintf(buf, "%scluster_sink/sink_fbgasprops_%d.txt", All.OutputDir, ThisTask);
+  if(!(FdCSFBGasProps = fopen(buf, mode))) {printf("error in opening file '%s'\n", buf); endrun(1);}
+#endif
+#endif
+
     if(ThisTask != 0) {return;}	/* only the root processors writes to the log files listed below */
 
     sprintf(buf, "%s%s", All.OutputDir, "cpu.txt");

@@ -582,6 +582,23 @@ void star_formation_parent_routine(void)
                             // collecting the mass-weighted metallicity of accreted gas
                             for(int k=0;k<NUM_METAL_SPECIES;k++) {P[i].MSP[0].Metallicity[k] = P[i].Metallicity[k];} 
 #endif
+#ifdef CLUSTER_SINK_OUTPUT_FORMPROPS
+                            // save properties of the natal environment of the sink
+                            double ne=1, nh0=0, nHe0, nHepp, nhp, nHeII, temperature, mu_meanwt=1, rho=SphP[i].Density*All.cf_a3inv, u0=SphP[i].InternalEnergyPred; // pull various known thermal properties, prepare to extract others //
+                            double temp = ThermalProperties(u0, rho, i, &mu_meanwt, &ne, &nh0, &nhp, &nHe0, &nHeII, &nHepp); // get thermodynamic properties, like neutral fraction, temperature, etc, that we will use below //
+                            double dv2_abs = ((1./2.)*((SphP[i].Gradients.Velocity[1][0]+SphP[i].Gradients.Velocity[0][1])*(SphP[i].Gradients.Velocity[1][0]+SphP[i].Gradients.Velocity[0][1]) // squared norm of the trace-free symmetric [shear] component of the velocity gradient tensor //
+                                                    + (SphP[i].Gradients.Velocity[2][0]+SphP[i].Gradients.Velocity[0][2])*(SphP[i].Gradients.Velocity[2][0]+SphP[i].Gradients.Velocity[0][2]) + (SphP[i].Gradients.Velocity[2][1]+SphP[i].Gradients.Velocity[1][2])*(SphP[i].Gradients.Velocity[2][1]+SphP[i].Gradients.Velocity[1][2])) +
+                                           (2./3.)*((SphP[i].Gradients.Velocity[0][0]*SphP[i].Gradients.Velocity[0][0] + SphP[i].Gradients.Velocity[1][1]*SphP[i].Gradients.Velocity[1][1] + SphP[i].Gradients.Velocity[2][2]*SphP[i].Gradients.Velocity[2][2]) - (SphP[i].Gradients.Velocity[1][1]*SphP[i].Gradients.Velocity[2][2] + SphP[i].Gradients.Velocity[0][0]*SphP[i].Gradients.Velocity[1][1] + SphP[i].Gradients.Velocity[0][0]*SphP[i].Gradients.Velocity[2][2]))) * All.cf_a2inv*All.cf_a2inv;
+                            // 0:Time, 1:ID, 2:Mass, 3-5:Position, 6-8:Velocity, 9:Internal energy, 10: temperature, 11:Density, 12: pressure, 13:effective sound speed, 14:particle size, 15:local velocity dispersion, 16: virial parameter, 17: distance to closest BH, 18 - 27: metallicities
+                            fprintf(FdCSFormationDetails,"%.16g %llu %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g \n", 
+                                All.Time, (unsigned long long)P[i].ID, P[i].Mass, P[i].Pos[0], P[i].Pos[1], P[i].Pos[2],  
+                                P[i].Vel[0], P[i].Vel[1],P[i].Vel[2], 
+                                SphP[i].InternalEnergyPred, temp, SphP[i].Density * All.cf_a3inv, SphP[i].Pressure,
+                                Get_Gas_effective_soundspeed_i(i) * All.cf_afac3, 
+                                Get_Particle_Size(i) * All.cf_atime, dv2_abs, SphP[i].SFing_AlphaVir, P[i].min_dist_to_bh,
+                                P[i].Metallicity[0], P[i].Metallicity[1], P[i].Metallicity[2], P[i].Metallicity[3], P[i].Metallicity[4],
+                                P[i].Metallicity[5], P[i].Metallicity[6], P[i].Metallicity[7], P[i].Metallicity[8], P[i].Metallicity[9]); fflush(FdCSFormationDetails);
+#endif
 #endif
 
 #ifdef SINGLE_STAR_SINK_DYNAMICS

@@ -238,6 +238,19 @@ FILE *FdHIIHeating;	/*!< file handle for HIIheating.txt log-file */
 FILE *FdSneIIHeating;	/*!< file handle for SNIIheating.txt log-file */
 #endif
 
+#ifdef CLUSTER_SINK
+#ifdef CLUSTER_SINK_OUTPUT_FORMPROPS
+FILE *FdCSFormationDetails;
+#endif
+#ifdef CLUSTER_SINK_OUTPUT_ACCRETIONHIST
+FILE *FdCSAccretionDetails;
+FILE *FdCSMergingDetails;
+#endif
+#ifdef CLUSTER_SINK_OUTPUT_FBGASPROPS
+FILE *FdCSFBGasProps;
+#endif
+#endif
+
 #ifdef BLACK_HOLES
 FILE *FdBlackHoles;		/*!< file handle for blackholes.txt log-file. */
 #ifdef OUTPUT_SINK_ACCRETION_HIST

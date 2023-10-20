@@ -72,6 +72,21 @@ void determine_where_SNe_occur(void)
         dtmean += dt;
     } // for(i = FirstActiveParticle; i >= 0; i = NextActiveParticle[i]) //
 
+#ifdef CLUSTER_SINK_OUTPUT_FBGASPROPS
+
+    if (P[i].SNe_ThisTimeStep >= 1.){ // don't record it for winds
+        int num_snia = 0, num_snii = 0;
+        for(int j = 0; j<CLUSTER_SINK_NUMMSP; j++){ if (P[i].MSP[j].Mass > 0) { num_snia += P[i].SNIa_ThisTimeStep[j]; num_snii += P[i].SNII_ThisTimeStep[j];} }
+        // 0: Time, 1: ID, 2: Mass, 3-5: Pos, 6: total number of SNII, 7: total number of SNIa, 8: total number of SNe, 9: density within the kernel, 10: 
+        fprintf(FdCSFBGasProps,"%.16g %llu %g %2.16g %2.16g %2.16g %2.16g %2.16g %2.16g %2.16g \n", 
+            All.Time, (unsigned long long)P[i].ID, P[i].Mass, P[i].Pos[0], P[i].Pos[1], P[i].Pos[2],  
+            num_snii, num_snia, P[i].SNe_ThisTimeStep, 
+            BPP(i).DensAroundStar * All.cf_a3inv); 
+        fflush(FdCSFBGasProps);
+    }
+#endif
+
+
     MPI_Reduce(&dtmean, &mpi_dtmean, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
     MPI_Reduce(&rmean, &mpi_rmean, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
     MPI_Reduce(&ptotal, &mpi_ptotal, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
