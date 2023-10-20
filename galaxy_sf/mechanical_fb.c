@@ -804,7 +804,6 @@ int addFB_evaluate(int target, int mode, int *exportflag, int *exportnodecount, 
                     #pragma omp atomic
                     LocalGasMechFBInfoTemp[j].Z_injected[k] += Mass_j*Metallicity_j[k] - Mass_j_0*Metallicity_j_0[k]; // delta-update of conserved quantity (total metal mass)
                 }
-//MRC #endif
                 for(k=0;k<3;k++) {
                     #pragma omp atomic
                     LocalGasMechFBInfoTemp[j].p_injected[k] += (Mass_j*Vel_j[k] - Mass_j_0*Vel_j_0[k]) / All.cf_atime; // delta-update of conserved quantity (total momentum), converted to physical units

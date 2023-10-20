@@ -75,7 +75,6 @@ int rt_get_source_luminosity(int i, int mode, double *lum)
     for(int k=0;k<N_RT_FREQ_BINS;k++) {lum[k] = 0; 
 #ifdef CLUSTER_SINK_OUTPUT_BOLLUM
     P[i].TotalLuminosity[k] = 0;
-    //printf("[MRC - rt_get_source_luminosity - zero'ing] ThisTask %d - ID %d - k %d - lum[k] %g, P[i].TotalLuminosity[k] %g\n", ThisTask, P[i].ID, k, lum[k], P[i].TotalLuminosity[k]);
 #endif
     } // zero out the luminosity bins to avoid rubbish
     for (int j = 0; j<CLUSTER_SINK_NUMMSP; j++){ // change the input quantities to the current MSP properties
@@ -86,7 +85,6 @@ int rt_get_source_luminosity(int i, int mode, double *lum)
             lum[k] += lum_msp[k];
 #ifdef CLUSTER_SINK_OUTPUT_BOLLUM
             P[i].TotalLuminosity[k] += lum_msp[k];
-            //printf("[MRC - rt_get_source_luminosity] ThisTask %d - ID %d - MSP %d, k %d - lum_msp[k] %g, lum[k] %g, P[i].TotalLuminosity[k] %g\n", ThisTask, P[i].ID, j, k, lum_msp[k], lum[k], P[i].TotalLuminosity[k]);
 #endif
         }
     }
@@ -368,7 +366,6 @@ int rt_get_lum_band_stellarpopulation(int i, int mode, double *lum)
 
 #ifdef CLUSTER_SINK
     double L = evaluate_light_to_mass_ratio(star_age, i, j) * m_sol / UNIT_LUM_IN_SOLAR; if(L<=0 || isnan(L)) {L=0;}
-    //printf("[MRC - rt_get_lum_band_stellarpopulation] ThisTask %d - ID %d - MSP %d, star_age %g, m_sol %g - L %g\n", ThisTask, P[i].ID, j, star_age, m_sol, L);
 #else 
     double L = evaluate_light_to_mass_ratio(star_age, i) * m_sol / UNIT_LUM_IN_SOLAR; if(L<=0 || isnan(L)) {L=0;}
 #endif
@@ -402,17 +399,14 @@ int rt_get_lum_band_stellarpopulation(int i, int mode, double *lum)
         if(star_age <= 0.006) {f_op=0.09*(1+((star_age-0.0025)/0.004)*((star_age-0.0025)/0.004));} else {f_op=1-0.8410937/(1+sqrt((star_age-0.006)/0.3));}}
     //lum[RT_FREQ_BIN_OPTICAL_NIR] = f_op * evaluate_light_to_mass_ratio(star_age, i) * m_sol / UNIT_LUM_IN_SOLAR;
     lum[RT_FREQ_BIN_OPTICAL_NIR] = f_op * L;
-    //printf("[MRC - rt_get_lum_band_stellarpopulation] ThisTask %d - ID %d - MSP %d, star_age %g, f_op %g - Lnir %g\n", ThisTask, P[i].ID, j, star_age, f_op, L*f_op);
 #endif
 
-// MRC
 #if defined(RT_NUV) && !defined(CLUSTER_SINK) /* Near-UV approximate spectra (UV/optical spectra, sub-photo-electric, but high-opacity) for stars as used in the FIRE (Hopkins et al.) models */
     SET_ACTIVE_RT_CHECK();
 #if !defined(RT_OPTICAL_NIR)
     double f_op=0; if(star_age <= 0.0025) {f_op=0.09;} else {
         if(star_age <= 0.006) {f_op=0.09*(1+((star_age-0.0025)/0.004)*((star_age-0.0025)/0.004));} else {f_op=1-0.8410937/(1+sqrt((star_age-0.006)/0.3));}}
 #endif
-    //lum[RT_FREQ_BIN_NUV] = (1-f_op) * evaluate_light_to_mass_ratio(star_age, i) * m_sol / UNIT_LUM_IN_SOLAR;
     lum[RT_FREQ_BIN_NUV] = (1-f_op) * L;
 #endif
 
@@ -422,8 +416,6 @@ int rt_get_lum_band_stellarpopulation(int i, int mode, double *lum)
     if(x_age_pe <= 1) {l_band_pe = 1.07e36 * (1.+x_age_pe*x_age_pe) * m_sol / UNIT_LUM_IN_CGS;}
         else {l_band_pe = 2.14e36 / (x_age_pe * sqrt(x_age_pe)) * m_sol / UNIT_LUM_IN_CGS;} // 0.1 solar, with nebular. very weak metallicity dependence, with slightly slower decay in time for lower-metallicity pops; effect smaller than binaries
     lum[RT_FREQ_BIN_PHOTOELECTRIC] = l_band_pe; // band luminosity //
-    //printf("[MRC - rt_get_lum_band_stellarpopulation] ThisTask %d - ID %d - MSP %d, star_age %g - Lphotoelectric %g\n", ThisTask, P[i].ID, j, star_age, l_band_pe);
-
 #endif
     
 #if defined(RT_LYMAN_WERNER)  /* lyman-werner bands (11.2-13.6 eV, specifically): below is from integrating the spectra from STARBURST99 with the Geneva40 solar-metallicity + lower tracks */
@@ -449,17 +441,13 @@ int rt_get_lum_band_stellarpopulation(int i, int mode, double *lum)
 #endif
 #endif
 
-// MRC - moved (used to be after optical/NIR)
 #if defined(RT_NUV) && defined(CLUSTER_SINK)/* Near-UV approximate spectra (UV/optical spectra, sub-photo-electric, but high-opacity) for stars as used in the FIRE (Hopkins et al.) models */
     SET_ACTIVE_RT_CHECK();
     double f_nuv = 0;
     for(int k=0;k<N_RT_FREQ_BINS;k++){
         if(k!=RT_FREQ_BIN_NUV){ f_nuv += lum[k]/L;}
-        //printf("[MRC - rt_get_lum_band_stellarpopulation] ThisTask %d - ID %d - MSP %d - NUV %d, f_nuv %g, lum[k]/L %g\n", ThisTask, P[i].ID, j, k, f_nuv, lum[k]/L);
     }
-    //lum[RT_FREQ_BIN_NUV] = (1-f_op) * evaluate_light_to_mass_ratio(star_age, i) * m_sol / UNIT_LUM_IN_SOLAR;
     lum[RT_FREQ_BIN_NUV] = (1-f_nuv) * L;
-    //printf("[MRC - rt_get_lum_band_stellarpopulation] ThisTask %d - ID %d - MSP %d, star_age %g, f_nuv %g - Lnuv %g\n", ThisTask, P[i].ID, j, star_age, 1-f_nuv, L*(1-f_nuv));
 #endif
 
 
@@ -506,6 +494,7 @@ int rt_get_lum_band_agn(int i, int mode, double *lum)
 #endif
 #if defined(RT_NUV) /* Near-UV approximate spectra (UV/optical spectra, sub-photo-electric, but high-opacity) for stars as used in the FIRE (Hopkins et al.) models; from 3.4-8 eV */
     SET_ACTIVE_RT_CHECK(); lum[RT_FREQ_BIN_NUV] = 0.141 * R_opt_xr * l_bol;
+
 #endif
 #ifdef RT_PHOTOELECTRIC /* photo-electric bands (8-13.6 eV, specifically): below is from integrating the spectra from STARBURST99 with the Geneva40 solar-metallicity + lower tracks */
     SET_ACTIVE_RT_CHECK(); lum[RT_FREQ_BIN_PHOTOELECTRIC] = 0.117 * R_opt_xr * l_bol; // broad band here [note can 2x-count with LW because that is a sub-band, but include it b/c need to total for dust PE heating
@@ -808,6 +797,10 @@ void rt_update_driftkick(int i, double dt_entr, int mode)
     if(SphP[i].Dust_Temperature <= T_min) {SphP[i].Dust_Temperature = T_min;} // dust temperature shouldn't be below CMB
 #endif    
 
+    //double v = sqrt(P[i].Vel[0]*P[i].Vel[0] + P[i].Vel[1]*P[i].Vel[1] +P[i].Vel[2]*P[i].Vel[2]);
+    //if(DMAX(v,sqrt(SphP[i].InternalEnergy)) > 100) {PRINT_WARNING("\n [MRC ThisTask %d - line 817 -- max > 100 km/s] All.Time %g, P[i].ID %d - v %g, SphP[i].InternalEnergy %g - Pos [%g, %g, %g] - IR Energy %g\n",
+    //    All.Time, P[i].ID, v, SphP[i].InternalEnergy, P[i].Pos[0], P[i].Pos[1], P[i].Pos[2], SphP[i].Rad_E_gamma[0]);}
+
     for(k_tmp=0; k_tmp<N_RT_FREQ_BINS; k_tmp++)
     {
 #ifdef RT_INFRARED
@@ -859,10 +852,13 @@ void rt_update_driftkick(int i, double dt_entr, int mode)
 		        double u_in=SphP[i].InternalEnergy, rho_in=SphP[i].Density*All.cf_a3inv, mu=1, ne=1, nHI=0, nHII=0, nHeI=1, nHeII=0, nHeIII=0;
 		        double temp = ThermalProperties(u_in, rho_in, i, &mu, &ne, &nHI, &nHII, &nHeI, &nHeII, &nHeIII);
 		        double nHcgs = HYDROGEN_MASSFRAC * UNIT_DENSITY_IN_CGS * SphP[i].Density * All.cf_a3inv / PROTONMASS_CGS;
-		        SphP[i].Dust_Temperature = rt_eqm_dust_temp(i, temp, total_absorption_rate * vol_inv_phys / RT_SPEEDOFLIGHT_REDUCTION);                                
+		        SphP[i].Dust_Temperature = rt_eqm_dust_temp(i, temp, total_absorption_rate * vol_inv_phys / RT_SPEEDOFLIGHT_REDUCTION);         
 #else
                 SphP[i].Dust_Temperature = rt_eqm_dust_temp(i, 0, total_absorption_rate * vol_inv_phys / RT_SPEEDOFLIGHT_REDUCTION); // Calling with T=0 will account for dust absorption only
 #endif
+                // should prevent dust temperature from dropping below Tmin
+                if(SphP[i].Dust_Temperature <= T_min) {PRINT_WARNING("P.ID %d - Dust Temperature %g will be reset to Tmin %g\n", P[i].ID, SphP[i].Dust_Temperature, T_min); SphP[i].Dust_Temperature = T_min;} // dust temperature shouldn't be below CMB
+
                 double Tdust_eff = SphP[i].Dust_Temperature;                
                 if(mode==0) // only update temperatures on kick operations //
                 {
@@ -873,6 +869,8 @@ void rt_update_driftkick(int i, double dt_entr, int mode)
                     SphP[i].Radiation_Temperature = DMIN(SphP[i].Radiation_Temperature, T_max);
                 }
                 if(SphP[i].Radiation_Temperature < T_min) {SphP[i].Radiation_Temperature = T_min;} // radiation temperature shouldn't be below CMB
+                    
+
             }
 #endif
             
@@ -890,15 +888,16 @@ void rt_update_driftkick(int i, double dt_entr, int mode)
             
             double ef = e0 * e_abs_0 + total_de_dt * dt_entr * slabfac; // gives exact solution for dE/dt = -E*abs + de , the 'reduction factor' appropriately suppresses the source term //
 #ifdef RT_INFRARED
-            if(isnan(ef)) {PRINT_WARNING("\n ef energy prediction is NaN for cell-ID=%llu, e0=%g e_abs_0=%g abs_0=%g a0_abs=%g total_de_dt=%g dt_entr=%g slabfac=%g Trad=%g Tdust=%g\n", (unsigned long long) P[i].ID,e0, e_abs_0,abs_0, a0_abs, total_de_dt,dt_entr,slabfac,SphP[i].Radiation_Temperature,SphP[i].Dust_Temperature);}
+            if(isnan(ef)||(ef<0)) {PRINT_WARNING("\n ef[kf=%d] energy prediction is NaN or null for cell-ID=%llu, e0=%g e_abs_0=%g abs_0=%g a0_abs=%g total_de_dt=%g dt_entr=%g slabfac=%g Trad=%g Tdust=%g\n", kf, (unsigned long long) P[i].ID,e0, e_abs_0,abs_0, a0_abs, total_de_dt,dt_entr,slabfac,SphP[i].Radiation_Temperature,SphP[i].Dust_Temperature);}
 #else
-            if(isnan(ef)) {PRINT_WARNING("\n ef energy prediction is NaN for cell-ID=%llu, e0=%g e_abs_0=%g abs_0=%g a0_abs=%g total_de_dt=%g dt_entr=%g slabfac=%g\n", (unsigned long long) P[i].ID,e0, e_abs_0,abs_0, a0_abs, total_de_dt,dt_entr,slabfac);}
+            if(isnan(ef)||(ef<0)) {PRINT_WARNING("\n ef[kf=%d] energy prediction is NaN or null for cell-ID=%llu, e0=%g e_abs_0=%g abs_0=%g a0_abs=%g total_de_dt=%g dt_entr=%g slabfac=%g\n", kf, (unsigned long long) P[i].ID,e0, e_abs_0,abs_0, a0_abs, total_de_dt,dt_entr,slabfac);}
 #endif
-            if(ef < 0) {ef=0;}
+            if(isnan(ef)||(ef<0)) {ef=0;}
             double de_abs = e0 + total_de_dt * dt_entr - ef; // energy removed by absorption alone
             double de_emission_minus_absorption = (ef - DMAX(0, (e0 + dt_e_gamma_band * dt_entr * slabfac))); // total change, relative to what we would get with just advection (positive = net energy increase in the gas)
             if((dt_entr <= 0) || (de_abs <= 0)) {de_abs = 0;}
             
+
 #if defined(RT_RAD_PRESSURE_FORCES) && defined(RT_COMPGRAD_EDDINGTON_TENSOR) && !defined(RT_EVOLVE_FLUX) && !defined(RT_RADPRESSURE_IN_HYDRO)
             // for OTVET/FLD methods, need to apply radiation pressure term here so can limit this b/c just based on a gradient which is not flux-limited [as in hydro operators] //
             {
@@ -947,13 +946,18 @@ void rt_update_driftkick(int i, double dt_entr, int mode)
 #if defined(RT_EVOLVE_INTENSITIES)
             // this is the leading-order (isotropic) emission-absorption step, i.e. the psi_a * (j_e - I) term in the intensity equation. solved by the methods above to deal generically with stiff emission-absorption problems, re-used below if needed //
             if(donation_target_bin >= 0) {int k_q; for(k_q=0;k_q<N_RT_INTENSITY_BINS;k_q++) {if(mode==0) {SphP[i].Rad_Intensity[donation_target_bin][k_q] += de_abs/RT_INTENSITY_BINS_DOMEGA;} else {SphP[i].Rad_Intensity_Pred[donation_target_bin][k_q] += de_abs/RT_INTENSITY_BINS_DOMEGA;}}}
-            if(ef < 0) {ef=0;}
+            if(ef < 0) {ef=0;} 
             if(mode==0) {SphP[i].Rad_Intensity[kf][k_angle] = ef/RT_INTENSITY_BINS_DOMEGA;} else {SphP[i].Rad_Intensity_Pred[kf][k_angle] = ef/RT_INTENSITY_BINS_DOMEGA;}
 #else
             if(donation_target_bin >= 0) {if(mode==0) {SphP[i].Rad_E_gamma[donation_target_bin] += de_abs;} else {SphP[i].Rad_E_gamma_Pred[donation_target_bin] += de_abs;}}
-            if(ef < 0) {ef=0;}
-
+#ifdef RT_INFRARED
+            if(isnan(ef)||(ef<0)) {PRINT_WARNING("\n ef[kf=%d] energy prediction is NaN or null for cell-ID=%llu, e0=%g e_abs_0=%g abs_0=%g a0_abs=%g total_de_dt=%g dt_entr=%g slabfac=%g Trad=%g Tdust=%g\n", kf, (unsigned long long) P[i].ID,e0, e_abs_0,abs_0, a0_abs, total_de_dt,dt_entr,slabfac,SphP[i].Radiation_Temperature,SphP[i].Dust_Temperature);}
+#else
+            if(isnan(ef)||(ef<0)) {PRINT_WARNING("\n ef[kf=%d] energy prediction is NaN or null for cell-ID=%llu, e0=%g e_abs_0=%g abs_0=%g a0_abs=%g total_de_dt=%g dt_entr=%g slabfac=%g\n", kf, (unsigned long long) P[i].ID,e0, e_abs_0,abs_0, a0_abs, total_de_dt,dt_entr,slabfac);}
+#endif
+            if(isnan(ef)||(ef<0)) {ef=0;}
             if(mode==0) {SphP[i].Rad_E_gamma[kf] = ef;} else {SphP[i].Rad_E_gamma_Pred[kf] = ef;}
+
 #endif
 
 #if defined(RT_EVOLVE_FLUX)
@@ -1390,6 +1394,7 @@ double get_rt_ir_lambdadust_effective(double T, double rho, double *nH0_guess, d
       lambda_eff = sign_term * L0_abs * xfac; // final effective gas cooling/heating rate
       Tdust_0 = Tdust;
       Tdust = DMAX(pow(Erad_to_T4_fac*DMAX( 0., egy_rad - lambda_eff*ratefact*dt ), 0.25), get_min_allowed_dustIRrad_temperature());
+
 //      iter += 1;
 //    } while ((fabs(Tdust - Tdust_0) > 1e-14 * Tdust) && (iter<MAXITER));
 

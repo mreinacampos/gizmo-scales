@@ -145,7 +145,6 @@ double particle_ionizing_luminosity_in_cgs(long i)
         // converts to cgs luminosity [lm_ssp is in Lsun/Msun, here]
         double f_ion = determine_ionizing_flux_fraction(star_age, i);
         lm_ssp = f_ion * evaluate_light_to_mass_ratio(star_age, i, j) * SOLAR_LUM_CGS * (P[i].MSP[j].Mass * UNIT_MASS_IN_SOLAR);
-        //printf("[MRC - particle_ionizing_luminosity_in_cgs] ThisTask %d - ID %d - MSP %d, f_ion %g, m_sol %g, lm_ssp %g\n", ThisTask, P[i].ID, j, f_ion, P[i].MSP[j].Mass * UNIT_MASS_IN_SOLAR, lm_ssp);
         return lm_ssp;
 #endif
 

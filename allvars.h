@@ -343,9 +343,11 @@ extern struct Chimes_depletion_data_structure *ChimesDepletionData;
 #endif // closes hybrid FIRE+STARFORGE model settings
 
 
+
+
 #ifdef CLUSTER_SINK
 #ifdef CLUSTER_SINK_DEBUG
-#define DEBUG_ID 10963 
+#define DEBUG_ID 30304 
 #endif
 #define GALSF                       // top-level switch for galactic star formation model
 #define COOLING                     // top-level switch to enable radiative cooling and heating
@@ -357,7 +359,7 @@ extern struct Chimes_depletion_data_structure *ChimesDepletionData;
 #ifdef CLUSTER_SINK_RADIATION
 #define RT_SOURCE_INJECTION         // inject the luminosity from sources
 #define RT_SOURCES (16+32)          // need to allow sinks to emit */
-#define RT_SPEEDOFLIGHT_REDUCTION  (0.1)   // reduced speed of light -- needed for the M1 runs
+#define RT_SPEEDOFLIGHT_REDUCTION  (0.01)   // reduced speed of light -- needed for the M1 runs
 #endif
 
 #define CLUSTER_SINK_NUMMSP 20 // number of multiple stellar populations to allow within sinks
@@ -366,14 +368,13 @@ extern struct Chimes_depletion_data_structure *ChimesDepletionData;
 
 #ifdef CLUSTER_SINK_ACCRETION
 #define BH_SWALLOWGAS           // need to swallow gas [part of sink model]
-//#define BH_WAKEUP_GAS // wake up all gas cells within interaction radius of the sink 
+#define BH_WAKEUP_GAS           // wake up all gas cells within interaction radius of the sink 
 #if (CLUSTER_SINK_ACCRETION == 0) // default: adative sink radius, normal Bondi-Hoyle accretion rate
-//#define BH_GRAVACCRETION 9      // [9] does not exists, prevents overlap with previous code
 #define BH_BONDI 0                // use 'normal' Bondi-Hoyle accretion rate
 #endif
 #if (CLUSTER_SINK_ACCRETION == 1) // adative accretion radius, gravitational capture of gas particles (same criteria as mergers)
 #define BH_GRAVCAPTURE_GAS
-//#define BH_GRAVCAPTURE_FIXEDSINKRADIUS // modify grav capture to Bate-style, fixed (in time) sink radius based on SF neighbor distance, plus angular momentum criterion
+#define BH_GRAVCAPTURE_FIXEDSINKRADIUS // modify grav capture to Bate-style, fixed (in time) sink radius based on SF neighbor distance, plus angular momentum criterion
 #endif
 #endif
 

@@ -375,9 +375,6 @@ void do_the_kick(int i, integertime tstart, integertime tend, integertime tcurre
             }
 #endif	    
             P[i].Vel[j] += dp[j] / mass_new; /* correctly accounts for mass change if its allowed */
-#ifdef CLUSTER_SINK
-            if(P[i].Vel[j]/UNIT_VEL_IN_CGS > 1e5) {P[i].Vel[j] = 1e5*UNIT_VEL_IN_CGS;} // limit the velocity to minimise impact of runaway particles in the timestep
-#endif
         }
 
  

@@ -200,9 +200,6 @@ void do_the_cooling_for_particle(int i)
 #endif
                         SphP[i].Rad_E_gamma[k] += de_rad; /* energy gained by gas is lost here (or vice versa if dust is acting as a net coolant) */
                         SphP[i].Rad_E_gamma_Pred[k] = SphP[i].Rad_E_gamma[k]; /* updated drifted */
-                        if (de_rad > 0){
-                            printf("[MRC - cooling.c] ThisTask %d, P.ID %d - k %d, de_rad %g, Rad_E_gamma %g, Rad_E_gamma_Pred %g\n", ThisTask, P[i].ID, k, de_rad, SphP[i].Rad_E_gamma[k], SphP[i].Rad_E_gamma_Pred[k]);
-                        }
 #if defined(RT_EVOLVE_INTENSITIES)
                         int k_tmp; for(k_tmp=0;k_tmp<N_RT_INTENSITY_BINS;k_tmp++) {SphP[i].Rad_Intensity[k][k_tmp] += de_rad/RT_INTENSITY_BINS_DOMEGA; SphP[i].Rad_Intensity_Pred[k][k_tmp] += de_rad/RT_INTENSITY_BINS_DOMEGA;}
 #endif
@@ -389,7 +386,7 @@ double DoCooling(double u_old, double rho, double dt, double ne_guess, double *n
     double u_in=specific_energy_codeunits_toreturn, rho_in=SphP[target].Density*All.cf_a3inv, mu=1, temp, ne=1, nHI=0, nHII=1, nHeI=1, nHeII=0, nHeIII=0;
     temp = ThermalProperties(u_in, rho_in, target, &mu, &ne, &nHI, &nHII, &nHeI, &nHeII, &nHeIII);
 #endif
-    get_rt_ir_lambdadust_effective(temp, rho, &nHI, &ne_guess, target, 0);
+    get_rt_ir_lambdadust_effective(temp, rho, &nHI, &ne_guess, target, 0); 
 #endif 
 
 
@@ -540,11 +537,6 @@ double convert_u_to_temp(double u, double rho, int target, double *ne_guess, dou
         temp = temp_old + (temp_new - temp_old) * 1./(1. - fac); // standard Newton-Raphson-type (technically Secant method) iteration
         if(temp < 0.5*temp_old) {temp = 0.5*temp_old;} // limiter to prevent un-physical overshoot before we have bracketing established
         if(temp > 3.0*temp_old) {temp = 3.0*temp_old;} // limiter to prevent un-physical overshoot before we have bracketing established
-        
-
-        if((*ne_guess > 1) && (*nHp_guess > 0.95) || (temp > 1e4)){ // MRC
-            printf("[MRC - convert_u_to_temp] ThisTask %d - temp %g, ne_guess %g, nHp_guess %g\n", ThisTask, temp, ne_guess, nHp_guess);
-        }
 
         if(T_bracket_errneg > 0 && T_bracket_errpos > 0) // if have bracketing and this wants to go outside brackets, revert to bisection
         {
@@ -775,7 +767,7 @@ double find_abundances_and_rates(double logT, double rho, int target, double shi
         n_elec += return_electron_fraction_from_heavy_ions(target, pow(10.,logT), rho, n_elec);
 #endif
 	        
-        // MRC if(J_UV == 0) break;
+        // if(J_UV == 0) break;
 	
 	    // keep track of these bounds in case we need to switch to bisection
 	    if(n_elec > neold) {ne_lower = DMAX(neold, ne_lower);}
@@ -899,7 +891,7 @@ double CoolingRate(double logT, double rho, double n_elec_guess, double *n_elec_
     
 #if defined(COOL_LOW_TEMPERATURES)
     double Tdust = 30.; /* set variables needed for dust heating/cooling. if dust cooling not calculated, default to 0 */
-#if (defined(FLAG_NOT_IN_PUBLIC_CODE) && (FLAG_NOT_IN_PUBLIC_CODE > 2)) || defined(SINGLE_STAR_SINK_DYNAMICS)
+#if (defined(FLAG_NOT_IN_PUBLIC_CODE) && (FLAG_NOT_IN_PUBLIC_CODE > 2)) || defined(SINGLE_STAR_SINK_DYNAMICS) || defined(CLUSTER_SINK)
     Tdust = get_equilibrium_dust_temperature_estimate(target, shieldfac, T);
 #endif
 #endif
@@ -1134,8 +1126,7 @@ double CoolingRate(double logT, double rho, double n_elec_guess, double *n_elec_
 #endif
     if(target>=0) {SphP[target].Lambda_RadiativeCooling_toRHDBins[RT_FREQ_BIN_INFRARED] = Lambda_rad_IR;} // save this to be used later (include all misc terms that will appear in our IR radiation umbrella)
 #endif
-    
-    
+
 #if defined(COOL_LOW_TEMPERATURES) && !defined(COOL_LOWTEMP_THIN_ONLY)
     /* if we are in the optically thick limit, we need to modify the cooling/heating rates according to the appropriate limits;
         this flag does so by using a simple approximation. we consider the element as if it were a slab, with a column density
@@ -1758,8 +1749,9 @@ void update_explicit_molecular_fraction(int i, double dtime_cgs)
     double b_H2ext = b_H2Hp + b_H2e + b_H2He + b_H2Hep + b_H2Dp; b_H2HI += b_H2D; b_H2ext*=1./2.; b_H2HI*=1./2.; b_H2H2*=1./4.; // collect dissociation terms where the secondary (e.g. e- does -not- scale with fmol as we define it here, and those where it does to different powers; 1/2 here is to account for nH2 = (1/2) * fH2 * nH because we will solve for fH2 as a mass fraction, becomes 1/4 in H2-H2 equation
     
     double Tdust = 30.; // need to assume something about dust temperature for reaction rates below for dust-phase formation
-#if (defined(FLAG_NOT_IN_PUBLIC_CODE) && (FLAG_NOT_IN_PUBLIC_CODE > 2)) || defined(SINGLE_STAR_SINK_DYNAMICS)
+#if (defined(FLAG_NOT_IN_PUBLIC_CODE) && (FLAG_NOT_IN_PUBLIC_CODE > 2)) || defined(SINGLE_STAR_SINK_DYNAMICS) || defined(CLUSTER_SINK)
     Tdust = get_equilibrium_dust_temperature_estimate(i, shieldfac, T);
+}
 #endif
     double a_Z = 3.e-18*sqrt_T / ((1. +4.e-2*sqrt(T+Tdust) +2.e-3*T +8.e-6*T*T )*(1. +1.e4/exp(DMIN(EXPmax,600./Tdust)))) * f_dustgas_solar * nH0 * clumping_factor; // dust surface formation (assuming dust-to-metals ratio is 0.5*(Z/solar)*dust-to-gas-relative-to-solar in all regions where this is significant), from Glover & Jappsen 2007
 

@@ -52,6 +52,7 @@ void INPUTFUNCTION_NAME(struct INPUT_STRUCT_NAME *in, int i, int loop_iteration)
     /* luminosity is set to zero here for gas particles because their self-illumination is handled trivially in a single loop, earlier */
     double lum[N_RT_FREQ_BINS];
     int active_check = rt_get_source_luminosity(i,0,lum);
+
     double dt = 1; // make this do nothing unless flags below are set:
 #if defined(RT_INJECT_PHOTONS_DISCRETELY)
     dt = GET_PARTICLE_TIMESTEP_IN_PHYSICAL(i);
@@ -262,9 +263,7 @@ int rt_sourceinjection_evaluate(int target, int mode, int *exportflag, int *expo
                     #pragma omp atomic
                     SphP[j].Rad_E_gamma_Pred[k] += dE;
 #endif
-                    if(dE > 0){
-                        printf("[MRC - rt_source_injection.c] ThisTask %d, P.ID %d - k %d, dE %g, Rad_E_gamma %g, Rad_E_gamma_Pred %g\n", ThisTask, P[j].ID, k, dE, SphP[j].Rad_E_gamma[k], SphP[j].Rad_E_gamma_Pred[k]);
-                    }
+                                        
 
 #ifdef RT_REPROCESS_INJECTED_PHOTONS
                     if(donation_bin > -1) {
