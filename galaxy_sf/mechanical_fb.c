@@ -70,11 +70,9 @@ void determine_where_SNe_occur(void)
 #endif
         if(P[i].SNe_ThisTimeStep>0) {ntotal+=P[i].SNe_ThisTimeStep; nhosttotal++;}
         dtmean += dt;
-    } // for(i = FirstActiveParticle; i >= 0; i = NextActiveParticle[i]) //
 
 #ifdef CLUSTER_SINK_OUTPUT_FBGASPROPS
-
-    if (P[i].SNe_ThisTimeStep >= 1.){ // don't record it for winds
+    if ((P[i].SNe_ThisTimeStep >= 1.)||((All.Time - (All.TimeLastStatistics - All.TimeBetStatistics)) >= All.TimeBetStatistics)){ // output FB gas properties every SNe or when statistics are output//
         int num_snia = 0, num_snii = 0;
         for(int j = 0; j<CLUSTER_SINK_NUMMSP; j++){ if (P[i].MSP[j].Mass > 0) { num_snia += P[i].SNIa_ThisTimeStep[j]; num_snii += P[i].SNII_ThisTimeStep[j];} }
         // 0: Time, 1: ID, 2: Mass, 3-5: Pos, 6: total number of SNII, 7: total number of SNIa, 8: total number of SNe, 9: density within the kernel, 10: 
@@ -85,6 +83,9 @@ void determine_where_SNe_occur(void)
         fflush(FdCSFBGasProps);
     }
 #endif
+    } // for(i = FirstActiveParticle; i >= 0; i = NextActiveParticle[i]) //
+
+
 
 
     MPI_Reduce(&dtmean, &mpi_dtmean, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
