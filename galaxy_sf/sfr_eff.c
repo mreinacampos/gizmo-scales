@@ -590,7 +590,7 @@ void star_formation_parent_routine(void)
                                                     + (SphP[i].Gradients.Velocity[2][0]+SphP[i].Gradients.Velocity[0][2])*(SphP[i].Gradients.Velocity[2][0]+SphP[i].Gradients.Velocity[0][2]) + (SphP[i].Gradients.Velocity[2][1]+SphP[i].Gradients.Velocity[1][2])*(SphP[i].Gradients.Velocity[2][1]+SphP[i].Gradients.Velocity[1][2])) +
                                            (2./3.)*((SphP[i].Gradients.Velocity[0][0]*SphP[i].Gradients.Velocity[0][0] + SphP[i].Gradients.Velocity[1][1]*SphP[i].Gradients.Velocity[1][1] + SphP[i].Gradients.Velocity[2][2]*SphP[i].Gradients.Velocity[2][2]) - (SphP[i].Gradients.Velocity[1][1]*SphP[i].Gradients.Velocity[2][2] + SphP[i].Gradients.Velocity[0][0]*SphP[i].Gradients.Velocity[1][1] + SphP[i].Gradients.Velocity[0][0]*SphP[i].Gradients.Velocity[2][2]))) * All.cf_a2inv*All.cf_a2inv;
                             // 0:Time, 1:ID, 2:Mass, 3-5:Position, 6-8:Velocity, 9:Internal energy, 10: temperature, 11:Density, 12: pressure, 13:effective sound speed, 14:particle size, 15:local velocity dispersion, 16: virial parameter, 17: distance to closest BH, 18 - 27: metallicities
-                            fprintf(FdCSFormationDetails,"%.16g %llu %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g \n", 
+                            fprintf(FdCSFormationDetails,"%.16g %llu %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g\n", 
                                 All.Time, (unsigned long long)P[i].ID, P[i].Mass, P[i].Pos[0], P[i].Pos[1], P[i].Pos[2],  
                                 P[i].Vel[0], P[i].Vel[1],P[i].Vel[2], 
                                 SphP[i].InternalEnergyPred, temp, SphP[i].Density * All.cf_a3inv, SphP[i].Pressure,
