@@ -426,12 +426,12 @@ int blackhole_swallow_and_kick_evaluate(int target, int mode, int *exportflag, i
                         int num_msps = 0;
                         // sum up how many MSPs the sink is bringing
                         for(k=0;k<CLUSTER_SINK_NUMMSP;k++){ if(P[j].MSP[k].Mass > 0){ num_msps+=1; } } 
-                        fprintf(FdCSMergingDetails,"%.16g %llu %g %2.16g %2.16g %2.16g %llu %g %2.16g %2.16g %2.16g %2.16g %2.16g %2.16g %2.16g %2.16g %2.16g %2.16g %2.16g %2.16g %2.16g %2.16g %2.16g %2.16g %d \n", 
+                        fprintf(FdCSMergingDetails,"%.16g %llu %g %2.16g %2.16g %2.16g %llu %g %2.16g %2.16g %2.16g %2.16g %2.16g %2.16g %2.16g %2.16g %2.16g %2.16g %2.16g %2.16g %2.16g %2.16g %2.16g %2.16g %2.16g %d\n", 
                             All.Time, (unsigned long long)local.ID,local.Mass,local.Pos[0],local.Pos[1],local.Pos[2],  
                             (unsigned long long)P[j].ID, Mass_j, (P[j].Pos[0]-local.Pos[0]),(P[j].Pos[1]-local.Pos[1]),(P[j].Pos[2]-local.Pos[2]), 
                             (Vel_j[0]-local.Vel[0]),(Vel_j[1]-local.Vel[1]),(Vel_j[2]-local.Vel[2]), 
                             P[j].Metallicity[0], P[j].Metallicity[1], P[j].Metallicity[2], P[j].Metallicity[3], P[j].Metallicity[4],
-                            P[j].Metallicity[5], P[j].Metallicity[6], P[j].Metallicity[7], P[j].Metallicity[8], P[j].Metallicity[9], num_msps); 
+                            P[j].Metallicity[5], P[j].Metallicity[6], P[j].Metallicity[7], P[j].Metallicity[8], P[j].Metallicity[9], P[j].Metallicity[10], num_msps); 
                         fflush(FdCSMergingDetails);
 #endif
                         out.ThisTask = ThisTask;
@@ -565,12 +565,12 @@ int blackhole_swallow_and_kick_evaluate(int target, int mode, int *exportflag, i
 #ifdef CLUSTER_SINK_OUTPUT_ACCRETIONHIST
                         double ne=1, nh0=0, nHe0, nHepp, nhp, nHeII, temperature, mu_meanwt=1, rho=SphP[j].Density*All.cf_a3inv, u0=SphP[j].InternalEnergyPred; // pull various known thermal properties, prepare to extract others //
                         double temp = ThermalProperties(u0, rho, j, &mu_meanwt, &ne, &nh0, &nhp, &nHe0, &nHeII, &nHepp); // get thermodynamic properties, like neutral fraction, temperature, etc, that we will use below //
-                        fprintf(FdCSAccretionDetails,"%.16g %llu %g %2.16g %2.16g %2.16g %llu %g %2.16g %2.16g %2.16g %2.16g %2.16g %2.16g %2.16g %2.16g %2.16g %2.16g %2.16g %2.16g %2.16g %2.16g %2.16g %2.16g %2.16g %2.16g %2.16g %2.16g \n", 
+                        fprintf(FdCSAccretionDetails,"%.16g %llu %g %2.16g %2.16g %2.16g %llu %g %2.16g %2.16g %2.16g %2.16g %2.16g %2.16g %2.16g %2.16g %2.16g %2.16g %2.16g %2.16g %2.16g %2.16g %2.16g %2.16g %2.16g %2.16g %2.16g %2.16g %2.16g\n", 
                             All.Time, (unsigned long long)local.ID,local.Mass,local.Pos[0],local.Pos[1],local.Pos[2],  
                             (unsigned long long)P[j].ID, Mass_j, (P[j].Pos[0]-local.Pos[0]),(P[j].Pos[1]-local.Pos[1]),(P[j].Pos[2]-local.Pos[2]), 
                             (Vel_j[0]-local.Vel[0]),(Vel_j[1]-local.Vel[1]),(Vel_j[2]-local.Vel[2]), SphP[j].InternalEnergy, temp, SphP[j].Density * All.cf_a3inv, SphP[j].Pressure,
                             P[j].Metallicity[0], P[j].Metallicity[1], P[j].Metallicity[2], P[j].Metallicity[3], P[j].Metallicity[4],
-                            P[j].Metallicity[5], P[j].Metallicity[6], P[j].Metallicity[7], P[j].Metallicity[8], P[j].Metallicity[9]); 
+                            P[j].Metallicity[5], P[j].Metallicity[6], P[j].Metallicity[7], P[j].Metallicity[8], P[j].Metallicity[9], P[j].Metallicity[10]); 
                         fflush(FdCSAccretionDetails);
 #endif
 #endif
