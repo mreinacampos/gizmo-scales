@@ -362,8 +362,8 @@ extern struct Chimes_depletion_data_structure *ChimesDepletionData;
 #define RT_SPEEDOFLIGHT_REDUCTION  (0.01)   // reduced speed of light -- needed for the M1 runs
 #endif
 
-#define CLUSTER_SINK_NUMMSP 20 // number of multiple stellar populations to allow within sinks
-#define CLUSTER_SINK_NUMMSP_ACCRETE 5 // number of multiple stellar populations to append at the end of the array when merging sinks
+#define CLUSTER_SINK_NUMMSP 40 // number of multiple stellar populations to allow within sinks
+#define CLUSTER_SINK_NUMMSP_ACCRETE 10 // number of multiple stellar populations to append at the end of the array when merging sinks
 #define CLUSTER_SINK_OUTPUT_MSPPROPS // output properties of the multiple stellar populations by default
 
 #ifdef CLUSTER_SINK_ACCRETION
