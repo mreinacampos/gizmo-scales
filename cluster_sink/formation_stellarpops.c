@@ -42,19 +42,19 @@ void continuous_star_formation_in_sinks(void)
         // if there's not enough mass, keep accreting
         if (sp_mass < All.ClusterSink_MinGasMass) {continue;}
 
-        // loop until there's an empty entry
+        // loop over all the MSPs
         for (j = 0; j<CLUSTER_SINK_NUMMSP; j++){
 
-            // if the MSP is younger than 0.5 Myr, add the mass here as a mass-weight
-            if (P[i].MSP[j].InitialMass > 0){
-                if (evaluate_stellar_age_Gyr_for_msp(i, j)*1e3 < All.ClusterSink_Delta_AgeInMyr){
-                    // only combine MSPs if the metallicity difference \Delta [Z/ZSun] is less than 0.05 dex
-                    if (fabs(log10(P[i].Metallicity[0]/All.SolarAbundances[0]) - log10(P[i].MSP[j].Metallicity[0]/All.SolarAbundances[0])) < All.ClusterSink_Delta_ZZSun){
+            if (P[i].MSP[j].InitialMass > 0){ // for every existing MSP - checkrelative its initial age and metallicity
+                if (evaluate_initial_stellar_age_Gyr_for_msp(i, j)*1e3 < All.ClusterSink_Delta_AgeInMyr){ // if the MSP is younger than set in the param file, add the mass here as a mass-weight
+                    // only combine MSPs if the metallicity difference \Delta [Z/ZSun] is less than set in the param file
+                    if (fabs(log10(P[i].Metallicity[0]/All.SolarAbundances[0]) - log10(P[i].MSP[j].InitialMetallicity_Z/All.SolarAbundances[0])) < All.ClusterSink_Delta_ZZSun){
                         double m0 = P[i].MSP[j].Mass, mf = P[i].MSP[j].Mass + sp_mass;
                         P[i].MSP[j].Age = (m0/mf)*P[i].MSP[j].Age + (sp_mass/mf)*All.Time;
                         for(int k=0;k<NUM_METAL_SPECIES;k++) {P[i].MSP[j].Metallicity[k] = (m0/mf)*P[i].MSP[j].Metallicity[k] + (sp_mass/mf)*P[i].Metallicity[k];}
                         P[i].MSP[j].Mass += sp_mass;
                         P[i].MSP[j].InitialMass += sp_mass;
+                        assert(P[i].MSP[j].Age <= All.Time); // check that no MSP ends up with spurious ages
                         break;
                     } else { continue; } 
                 } else { continue; } }
@@ -63,7 +63,9 @@ void continuous_star_formation_in_sinks(void)
             P[i].MSP[j].InitialMass = sp_mass;
             P[i].MSP[j].Mass = sp_mass;
             P[i].MSP[j].Age = All.Time; // scale factor or time - needs to be evaluated with evaluate_stellar_age_Gyr_for_msp(i, j)
+            P[i].MSP[j].InitialAge = All.Time; // scale factor or time - needs to be evaluated with evaluate_stellar_age_Gyr_for_msp(i, j)
             for(int k=0;k<NUM_METAL_SPECIES;k++) {P[i].MSP[j].Metallicity[k] = P[i].Metallicity[k];} // collecting the mass-weighted metallicity of accreted gas
+            P[i].MSP[j].InitialMetallicity_Z = P[i].Metallicity[0]; // we only need total Z to determine whether to spawn other MSPs
             break;
         }
 
@@ -94,7 +96,7 @@ double determine_mass_gas_reservoir(int i)
     return mass_gas;
 }
 
-/** \brief Return the stellar age in Gyr for a given MSP, needed throughout for stellar feedback
+/** \brief Return the mass-weighted stellar age in Gyr for a given MSP, needed throughout for stellar feedback
  *
  * \param i       index of the particle
  * \param j       index of the MSP
@@ -103,6 +105,19 @@ double determine_mass_gas_reservoir(int i)
 double evaluate_stellar_age_Gyr_for_msp(long i, int j)
 {
     double age = evaluate_time_since_t_initial_in_Gyr(P[i].MSP[j].Age);
+    age = DMAX(age, 1.e-5); // set a floor for some routines
+    return age;
+}
+
+/** \brief Return the initial stellar age in Gyr for a given MSP
+ *
+ * \param i       index of the particle
+ * \param j       index of the MSP
+ * \return        initial age of the MSP in Gyr
+ */
+double evaluate_initial_stellar_age_Gyr_for_msp(long i, int j)
+{
+    double age = evaluate_time_since_t_initial_in_Gyr(P[i].MSP[j].InitialAge);
     age = DMAX(age, 1.e-5); // set a floor for some routines
     return age;
 }

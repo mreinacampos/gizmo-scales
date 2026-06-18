@@ -9,6 +9,7 @@ void continuous_star_formation_in_sinks(void);
 double determine_mass_gas_reservoir(int i);
 double determine_sne_rates(int i, double dt);
 double evaluate_stellar_age_Gyr_for_msp(long i, int j);
+double evaluate_initial_stellar_age_Gyr_for_msp(long i, int j);
 
 // structure to contain the mass loss of a given MSP
 struct fb_massloss_for_msp

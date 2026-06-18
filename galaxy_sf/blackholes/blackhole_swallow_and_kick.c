@@ -444,8 +444,8 @@ int blackhole_swallow_and_kick_evaluate(int target, int mode, int *exportflag, i
                              ThisTask, P[j].ID, P[j].MSP[0].InitialMass, P[j].MSP[0].Mass, P[j].MSP[0].Age, P[j].MSP[0].CumNumSNII, P[j].MSP[0].CumNumSNIa);
 #endif
 
-                            double age_ngb_inmyr = evaluate_stellar_age_Gyr_for_msp(j, k)*1e3; // age of the MSP in Myr
-                            double zh_ngb = P[j].MSP[k].Metallicity[0]; // total metal mass fraction
+                            double age_ngb_inmyr = evaluate_initial_stellar_age_Gyr_for_msp(j, k)*1e3; // initial age of the MSP in Myr
+                            double zh_ngb = P[j].MSP[k].InitialMetallicity_Z; // initial total metal mass fraction
                             int idx_msp_main_sink = -1; // index of the MSP within the main sink to be combined with
                             int idx_msp_to_append = -1; // index of the last MSP within the appending array in the output structure
 

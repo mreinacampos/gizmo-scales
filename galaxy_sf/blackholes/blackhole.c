@@ -775,6 +775,7 @@ void blackhole_final_operations(void)
                     // combined MSPs -- ages and metallicities are mass-weighted
                     double m0 = P[n].MSP[k].Mass, mf = P[n].MSP[k].Mass + BlackholeTempInfo[i].combined_MSP[k].Mass;
                     P[n].MSP[k].Age = (m0/mf)*P[n].MSP[k].Age + (1./mf)*BlackholeTempInfo[i].combined_MSP[k].Age;
+                    assert(P[n].MSP[k].Age <= All.Time); // check that the resulting ages are not spurious
                     for(int j=0;j<NUM_METAL_SPECIES;j++) {P[n].MSP[k].Metallicity[j] = (m0/mf)*P[n].MSP[k].Metallicity[j] + (1./mf)*BlackholeTempInfo[i].combined_MSP[k].Metallicity[j];}
                     P[n].MSP[k].Mass += BlackholeTempInfo[i].combined_MSP[k].Mass;
                     P[n].MSP[k].InitialMass += BlackholeTempInfo[i].combined_MSP[k].InitialMass;

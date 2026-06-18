@@ -362,8 +362,8 @@ extern struct Chimes_depletion_data_structure *ChimesDepletionData;
 #define RT_SPEEDOFLIGHT_REDUCTION  (0.01)   // reduced speed of light -- needed for the M1 runs
 #endif
 
-#define CLUSTER_SINK_NUMMSP 40 // number of multiple stellar populations to allow within sinks
-#define CLUSTER_SINK_NUMMSP_ACCRETE 10 // number of multiple stellar populations to append at the end of the array when merging sinks
+#define CLUSTER_SINK_NUMMSP 60 // number of multiple stellar populations to allow within sinks
+#define CLUSTER_SINK_NUMMSP_ACCRETE 30 // number of multiple stellar populations to append at the end of the array when merging sinks
 #define CLUSTER_SINK_OUTPUT_MSPPROPS // output properties of the multiple stellar populations by default
 
 #ifdef CLUSTER_SINK_ACCRETION
@@ -1692,8 +1692,10 @@ extern struct cluster_sink_multiple_stellar_population
 {
   MyFloat Mass;
   MyFloat Age;
+  MyFloat InitialAge; // needed to determine the new MSPs
   MyFloat InitialMass;
   MyFloat Metallicity[NUM_METAL_SPECIES];
+  MyFloat InitialMetallicity_Z; // needed to determine the new MSPs
 #ifdef CLUSTER_SINK_OUTPUT_NUMSNE
   MyFloat CumNumSNe; /* flag that indicates cumulative number of SNe for the particle */
   MyFloat CumNumSNII; /* flag that indicates cumulative number of SNII for the particle */
