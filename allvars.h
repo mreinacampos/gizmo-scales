@@ -347,7 +347,7 @@ extern struct Chimes_depletion_data_structure *ChimesDepletionData;
 
 #ifdef CLUSTER_SINK
 #ifdef CLUSTER_SINK_DEBUG
-#define DEBUG_ID 30304 
+#define DEBUG_ID 21208 
 #endif
 #define GALSF                       // top-level switch for galactic star formation model
 #define COOLING                     // top-level switch to enable radiative cooling and heating
@@ -363,7 +363,7 @@ extern struct Chimes_depletion_data_structure *ChimesDepletionData;
 #endif
 
 #define CLUSTER_SINK_NUMMSP 60 // number of multiple stellar populations to allow within sinks
-#define CLUSTER_SINK_NUMMSP_ACCRETE 30 // number of multiple stellar populations to append at the end of the array when merging sinks
+#define CLUSTER_SINK_NUMMSP_ACCRETE 40 // number of multiple stellar populations to append at the end of the array when merging sinks
 #define CLUSTER_SINK_OUTPUT_MSPPROPS // output properties of the multiple stellar populations by default
 
 #ifdef CLUSTER_SINK_ACCRETION

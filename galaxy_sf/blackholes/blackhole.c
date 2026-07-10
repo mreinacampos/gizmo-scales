@@ -776,7 +776,10 @@ void blackhole_final_operations(void)
                     double m0 = P[n].MSP[k].Mass, mf = P[n].MSP[k].Mass + BlackholeTempInfo[i].combined_MSP[k].Mass;
                     P[n].MSP[k].Age = (m0/mf)*P[n].MSP[k].Age + (1./mf)*BlackholeTempInfo[i].combined_MSP[k].Age;
                     assert(P[n].MSP[k].Age <= All.Time); // check that the resulting ages are not spurious
-                    for(int j=0;j<NUM_METAL_SPECIES;j++) {P[n].MSP[k].Metallicity[j] = (m0/mf)*P[n].MSP[k].Metallicity[j] + (1./mf)*BlackholeTempInfo[i].combined_MSP[k].Metallicity[j];}
+                    for(int j=0;j<NUM_METAL_SPECIES;j++) {
+                        P[n].MSP[k].Metallicity[j] = (m0/mf)*P[n].MSP[k].Metallicity[j] + (1./mf)*BlackholeTempInfo[i].combined_MSP[k].Metallicity[j]; 
+                        assert(P[n].MSP[k].Metallicity[j] <= 1); // check that the resulting metallicities are not spurious
+                    }
                     P[n].MSP[k].Mass += BlackholeTempInfo[i].combined_MSP[k].Mass;
                     P[n].MSP[k].InitialMass += BlackholeTempInfo[i].combined_MSP[k].InitialMass;
 #ifdef CLUSTER_SINK_OUTPUT_NUMSNE
@@ -799,8 +802,11 @@ void blackhole_final_operations(void)
                         P[n].MSP[idx_last_msp].Mass = BlackholeTempInfo[i].append_MSP[l].Mass;
                         P[n].MSP[idx_last_msp].InitialMass = BlackholeTempInfo[i].append_MSP[l].InitialMass;
                         P[n].MSP[idx_last_msp].Age = BlackholeTempInfo[i].append_MSP[l].Age;
-                        for(int j=0;j<NUM_METAL_SPECIES;j++) {P[n].MSP[idx_last_msp].Metallicity[j] = BlackholeTempInfo[i].append_MSP[l].Metallicity[j];}
-
+                        assert(P[n].MSP[idx_last_msp].Age <= All.Time); // check that the resulting ages are not spurious
+                        for(int j=0;j<NUM_METAL_SPECIES;j++) {
+                            P[n].MSP[idx_last_msp].Metallicity[j] = BlackholeTempInfo[i].append_MSP[l].Metallicity[j];
+                            assert(P[n].MSP[k].Metallicity[j] <= 1); // check that the resulting metallicities are not spurious
+                        }
 #ifdef CLUSTER_SINK_OUTPUT_NUMSNE
                         P[n].MSP[idx_last_msp].CumNumSNe = BlackholeTempInfo[i].append_MSP[l].CumNumSNe;
                         P[n].MSP[idx_last_msp].CumNumSNII = BlackholeTempInfo[i].append_MSP[l].CumNumSNII;

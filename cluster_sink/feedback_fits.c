@@ -41,6 +41,11 @@ void set_fb_input_quantities_from_msps(struct addFB_evaluate_data_in_ *in, int i
     //loop over every stellar population within the sink
     for (j = 0; j<CLUSTER_SINK_NUMMSP; j++){
 
+#ifdef CLUSTER_SINK_DEBUG // MRC
+        assert(P[i].MSP[j].Age <= All.Time);
+        for(k=0;k<NUM_METAL_SPECIES;k++) { assert(P[i].MSP[j].Metallicity[k] < 1);}
+#endif
+
         // zero out quantities
         velocity_winds = 0;
 

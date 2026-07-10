@@ -300,7 +300,7 @@
 #CLUSTER_SINK_OUTPUT_ACCRETION_LENGTH   # output the accretion length of each sink in the snapshots
 #CLUSTER_SINK_OUTPUT_MSPPROPS           # output the initial and current mass, age and metallicity of the multiple stellar populations in the snapshots
 #CLUSTER_SINK_OUTPUT_SFINGPROPS         # output the virial parameter and velocity dispersion calculated for SFing (n > density threshold) gas
-
+# CLUSTER_SINK_DEBUG_INITPROPS
 
 
 
