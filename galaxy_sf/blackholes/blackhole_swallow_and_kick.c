@@ -226,7 +226,13 @@ static inline void OUTPUTFUNCTION_NAME(struct OUTPUT_STRUCT_NAME *out, int i, in
             ASSIGN_ADD_PRESET(BlackholeTempInfo[target].append_MSP[out->ThisTask * k].Mass, out->append_MSP[k].Mass, mode);
             ASSIGN_ADD_PRESET(BlackholeTempInfo[target].append_MSP[out->ThisTask * k].InitialMass, out->append_MSP[k].InitialMass, mode);
             ASSIGN_ADD_PRESET(BlackholeTempInfo[target].append_MSP[out->ThisTask * k].Age, out->append_MSP[k].Age, mode);
-            for(int l=0;l<NUM_METAL_SPECIES;l++) {ASSIGN_ADD_PRESET(BlackholeTempInfo[target].append_MSP[out->ThisTask * k].Metallicity[l], out->append_MSP[k].Metallicity[l], mode);}
+            assert(out->append_MSP[k].Age <= All.Time); // check no spurious edge cases here
+            assert(BlackholeTempInfo[target].append_MSP[out->ThisTask * k].Age <= All.Time); // check no spurious edge cases here
+            for(int l=0;l<NUM_METAL_SPECIES;l++) {
+                ASSIGN_ADD_PRESET(BlackholeTempInfo[target].append_MSP[out->ThisTask * k].Metallicity[l], out->append_MSP[k].Metallicity[l], mode);
+                assert(out->append_MSP[k].Metallicity[l] <= 1); // check no spurious edge cases here
+                assert(BlackholeTempInfo[target].append_MSP[out->ThisTask * k].Metallicity[l] <= 1); // check no spurious edge cases here
+            }
 #ifdef CLUSTER_SINK_OUTPUT_NUMSNE
             ASSIGN_ADD_PRESET(BlackholeTempInfo[target].append_MSP[out->ThisTask * k].CumNumSNe, out->append_MSP[k].CumNumSNe, mode);
             ASSIGN_ADD_PRESET(BlackholeTempInfo[target].append_MSP[out->ThisTask * k].CumNumSNII, out->append_MSP[k].CumNumSNII, mode);
@@ -443,11 +449,6 @@ int blackhole_swallow_and_kick_evaluate(int target, int mode, int *exportflag, i
                         for(k=0;k<CLUSTER_SINK_NUMMSP;k++){ // loop over MSPs in the ngb
                             if(P[j].MSP[k].InitialMass == 0){continue;} // no more MSPs to explore
 
-#ifdef CLUSTER_SINK_DEBUG
-                            printf("[DEBUG - swallow - evaluate] *WE HAVE A MERGER with %d MSPs!* - ThisTask %d - eating ID %d - MSP %d - Initial/Current Mass %g %g, Age %g, SNII %g SNIa %g\n",
-                             num_msps, ThisTask, P[j].ID, k, P[j].MSP[k].InitialMass, P[j].MSP[k].Mass, P[j].MSP[k].Age, P[j].MSP[k].CumNumSNII, P[j].MSP[k].CumNumSNIa);
-#endif
-
 #ifdef CLUSTER_SINK_DEBUG_INITPROPS
                             double age_ngb_inmyr = evaluate_initial_stellar_age_Gyr_for_msp(j, k)*1e3; // initial age of the MSP in Myr
                             double zh_ngb = P[j].MSP[k].InitialMetallicity_Z; // initial total metal mass fraction
@@ -458,16 +459,27 @@ int blackhole_swallow_and_kick_evaluate(int target, int mode, int *exportflag, i
                             int idx_msp_main_sink = -1; // index of the MSP within the main sink to be combined with
                             int idx_msp_to_append = -1; // index of the last MSP within the appending array in the output structure
 
+
+#ifdef CLUSTER_SINK_DEBUG
+                            if(ThisTask==37){
+                                printf("[DEBUG - swallow - evaluate] *WE HAVE A MERGER with %d MSPs!* - ThisTask %d - eating ID %d - MSP %d - Initial/Current Mass %g %g, Age %g, age_ngb_inmyr %g zh_ngb %g\n",
+                             num_msps, ThisTask, P[j].ID, k, P[j].MSP[k].InitialMass, P[j].MSP[k].Mass, P[j].MSP[k].Age, age_ngb_inmyr, zh_ngb);
+                            }
+#endif
+
                             // should this MSP be combined with any of the existing ones in the main sink?
                             for(int i=0;i<CLUSTER_SINK_NUMMSP;i++){ // loop over the MSPs in the main sink
+                                if((local.MSP_AgeInMyr[i] == All.Time)&&(local.MSP_Metallicity[i] == 0)){continue;}; //this population has not been initialized yet
 #ifdef CLUSTER_SINK_DEBUG
-                                printf("[DEBUG - swallow - evaluate] ThisTask %d - main sink: MSP i %d age %g zh %g %g -- ngb: ID %d, age ngb %g, age difference %g, zh %g %g zh difference %g - idx_msp_main_sink %d, idx_msp_to_append %d\n",
+                                if(ThisTask==37){
+                                    printf("[DEBUG - swallow - evaluate] ThisTask %d - main sink: MSP i %d age %g zh %g %g -- ngb: ID %d, age ngb %g, age difference %g, zh %g %g zh difference %g\n",
                                     ThisTask, i, 
                                     local.MSP_AgeInMyr[i], local.MSP_Metallicity[i], local.MSP_Metallicity[i]/All.SolarAbundances[0],
                                     P[j].ID, age_ngb_inmyr, fabs(age_ngb_inmyr - local.MSP_AgeInMyr[i]), 
-                                    zh_ngb, zh_ngb/All.SolarAbundances[0], fabs(zh_ngb/All.SolarAbundances[0] - local.MSP_Metallicity[i]/All.SolarAbundances[0]), 
-                                    idx_msp_main_sink, idx_msp_to_append);
+                                    zh_ngb, zh_ngb/All.SolarAbundances[0], fabs(log10(zh_ngb/All.SolarAbundances[0]) - log10(local.MSP_Metallicity[i]/All.SolarAbundances[0])));
+                                }
 #endif
+
                                 // combine MSPs if within the age and metallicity ranges
                                 if ((fabs(age_ngb_inmyr - local.MSP_AgeInMyr[i]) < All.ClusterSink_Delta_AgeInMyr) 
                                     && (fabs(log10(zh_ngb/All.SolarAbundances[0]) - log10(local.MSP_Metallicity[i]/All.SolarAbundances[0])) < All.ClusterSink_Delta_ZZSun)){ 
@@ -479,14 +491,18 @@ int blackhole_swallow_and_kick_evaluate(int target, int mode, int *exportflag, i
 
                             // if not, find the last free entry in the appending array
                             if (idx_msp_main_sink < 0){ 
-                                for(int i=0;i<CLUSTER_SINK_NUMMSP;i++){ // loop over the MSPs in the output structure
+                                for(int i=0;i<CLUSTER_SINK_NUMMSP_ACCRETE;i++){ // loop over the MSPs in the output structure
                                     if(out.append_MSP[i].InitialMass == 0){idx_msp_to_append = i; break;}
                                 }   
                             }
 
 #ifdef CLUSTER_SINK_DEBUG
-                            printf("[DEBUG - swallow - evaluate] ThisTask %d - ngb ID %d, age %g, z %g - idx_msp_main_sink %d, idx_msp_to_append %d\n", ThisTask, P[j].ID, age_ngb_inmyr, zh_ngb, idx_msp_main_sink, idx_msp_to_append);
+                            if(ThisTask==37){
+                                printf("[DEBUG - swallow - evaluate] ThisTask %d - ngb ID %d, age %g, z %g - idx_msp_main_sink %d, idx_msp_to_append %d\n", ThisTask, P[j].ID, age_ngb_inmyr, zh_ngb, idx_msp_main_sink, idx_msp_to_append);
+                            }
 #endif
+                            assert(idx_msp_main_sink*idx_msp_to_append <= 0); // MRC - if they're both still negative, something is wrong
+
                             // now, get the data of this MSP in the right array (combine vs append)
                             if(idx_msp_main_sink >= 0){ // combine as a mass-weighting
                                 out.combined_MSP[idx_msp_main_sink].Mass += FLT(P[j].MSP[k].Mass);
@@ -499,12 +515,18 @@ int blackhole_swallow_and_kick_evaluate(int target, int mode, int *exportflag, i
                                 out.combined_MSP[idx_msp_main_sink].CumNumSNIa += FLT(P[j].MSP[k].CumNumSNIa);
 #endif
                             } else if((idx_msp_main_sink < 0) && (idx_msp_to_append >= 0)){ // will be appended to the end of the array
-                                if(idx_msp_to_append > CLUSTER_SINK_NUMMSP_ACCRETE){terminate("Trying to accrete more MSPs than we have space for");}
+                                if(idx_msp_to_append >= CLUSTER_SINK_NUMMSP_ACCRETE){terminate("Trying to accrete more MSPs than we have space for");}
 
                                 out.append_MSP[idx_msp_to_append].Mass = FLT(P[j].MSP[k].Mass);
                                 out.append_MSP[idx_msp_to_append].InitialMass = FLT(P[j].MSP[k].InitialMass);
                                 out.append_MSP[idx_msp_to_append].Age = FLT(P[j].MSP[k].Age);
-                                for(int l=0;l<NUM_METAL_SPECIES;l++){ out.append_MSP[idx_msp_to_append].Metallicity[l] = FLT(P[j].MSP[k].Metallicity[l]);}
+                                assert(out.append_MSP[idx_msp_to_append].Age <= All.Time);
+                                assert(out.append_MSP[idx_msp_to_append].Age > 0); // tform = 0 make no sense
+                                for(int l=0;l<NUM_METAL_SPECIES;l++){
+                                    out.append_MSP[idx_msp_to_append].Metallicity[l] = FLT(P[j].MSP[k].Metallicity[l]);
+                                    assert(out.append_MSP[idx_msp_to_append].Metallicity[l] <= 1);
+                                    assert(out.append_MSP[idx_msp_to_append].Metallicity[l] > 0);
+                                }
 #ifdef CLUSTER_SINK_OUTPUT_NUMSNE
                                 out.append_MSP[idx_msp_to_append].CumNumSNe = FLT(P[j].MSP[k].CumNumSNe);
                                 out.append_MSP[idx_msp_to_append].CumNumSNII = FLT(P[j].MSP[k].CumNumSNII);
