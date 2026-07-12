@@ -205,7 +205,9 @@ static inline void OUTPUTFUNCTION_NAME(struct OUTPUT_STRUCT_NAME *out, int i, in
             ASSIGN_ADD_PRESET(BlackholeTempInfo[target].combined_MSP[k].Mass, out->combined_MSP[k].Mass, mode);
             ASSIGN_ADD_PRESET(BlackholeTempInfo[target].combined_MSP[k].InitialMass, out->combined_MSP[k].InitialMass, mode);
             ASSIGN_ADD_PRESET(BlackholeTempInfo[target].combined_MSP[k].Age, out->combined_MSP[k].Age, mode);
+            ASSIGN_ADD_PRESET(BlackholeTempInfo[target].combined_MSP[k].InitialAge, out->combined_MSP[k].InitialAge, mode);
             for(int l=0;l<NUM_METAL_SPECIES;l++) {ASSIGN_ADD_PRESET(BlackholeTempInfo[target].combined_MSP[k].Metallicity[l], out->combined_MSP[k].Metallicity[l], mode);}
+            ASSIGN_ADD_PRESET(BlackholeTempInfo[target].combined_MSP[k].InitialMetallicity_Z, out->combined_MSP[k].InitialMetallicity_Z, mode);
 #ifdef CLUSTER_SINK_OUTPUT_NUMSNE
             ASSIGN_ADD_PRESET(BlackholeTempInfo[target].combined_MSP[k].CumNumSNe, out->combined_MSP[k].CumNumSNe, mode);
             ASSIGN_ADD_PRESET(BlackholeTempInfo[target].combined_MSP[k].CumNumSNII, out->combined_MSP[k].CumNumSNII, mode);
@@ -213,9 +215,9 @@ static inline void OUTPUTFUNCTION_NAME(struct OUTPUT_STRUCT_NAME *out, int i, in
 #endif
 #ifdef CLUSTER_SINK_DEBUG
             if ((P[i].ID == DEBUG_ID) && ((out->combined_MSP[k].Mass > 0) || (out->combined_MSP[k].Age > 0))){
-                printf("[DEBUG - swallow - out2() - combine] ThisTask %d, out %d - target %d, mode %d - k %d - combined_MSP_Mass[k] %g, out %g - combined_MSP_Age[k] %g, out %g - combined SNII %g SNIa %g \n", ThisTask, out->ThisTask,
+                printf("[DEBUG - swallow - out2() - combine] ThisTask %d, out %d - target %d, mode %d - k %d - combined_MSP_Mass[k] %g, out %g - combined_MSP_Age[k] %g, out %g init %g - combined SNII %g SNIa %g \n", ThisTask, out->ThisTask,
                 target, mode, k, BlackholeTempInfo[target].combined_MSP[k].Mass, out->combined_MSP[k].Mass, 
-                BlackholeTempInfo[target].combined_MSP[k].Age, out->combined_MSP[k].Age, 
+                BlackholeTempInfo[target].combined_MSP[k].Age, out->combined_MSP[k].Age, out->combined_MSP[k].InitialAge, 
                 BlackholeTempInfo[target].combined_MSP[k].CumNumSNII, BlackholeTempInfo[target].combined_MSP[k].CumNumSNIa);
             }
 #endif
@@ -226,6 +228,7 @@ static inline void OUTPUTFUNCTION_NAME(struct OUTPUT_STRUCT_NAME *out, int i, in
             ASSIGN_ADD_PRESET(BlackholeTempInfo[target].append_MSP[out->ThisTask * k].Mass, out->append_MSP[k].Mass, mode);
             ASSIGN_ADD_PRESET(BlackholeTempInfo[target].append_MSP[out->ThisTask * k].InitialMass, out->append_MSP[k].InitialMass, mode);
             ASSIGN_ADD_PRESET(BlackholeTempInfo[target].append_MSP[out->ThisTask * k].Age, out->append_MSP[k].Age, mode);
+            ASSIGN_ADD_PRESET(BlackholeTempInfo[target].append_MSP[out->ThisTask * k].InitialAge, out->append_MSP[k].InitialAge, mode);
             assert(out->append_MSP[k].Age <= All.Time); // check no spurious edge cases here
             assert(BlackholeTempInfo[target].append_MSP[out->ThisTask * k].Age <= All.Time); // check no spurious edge cases here
             for(int l=0;l<NUM_METAL_SPECIES;l++) {
@@ -233,6 +236,7 @@ static inline void OUTPUTFUNCTION_NAME(struct OUTPUT_STRUCT_NAME *out, int i, in
                 assert(out->append_MSP[k].Metallicity[l] <= 1); // check no spurious edge cases here
                 assert(BlackholeTempInfo[target].append_MSP[out->ThisTask * k].Metallicity[l] <= 1); // check no spurious edge cases here
             }
+            ASSIGN_ADD_PRESET(BlackholeTempInfo[target].append_MSP[out->ThisTask * k].InitialMetallicity_Z, out->append_MSP[k].InitialMetallicity_Z, mode);
 #ifdef CLUSTER_SINK_OUTPUT_NUMSNE
             ASSIGN_ADD_PRESET(BlackholeTempInfo[target].append_MSP[out->ThisTask * k].CumNumSNe, out->append_MSP[k].CumNumSNe, mode);
             ASSIGN_ADD_PRESET(BlackholeTempInfo[target].append_MSP[out->ThisTask * k].CumNumSNII, out->append_MSP[k].CumNumSNII, mode);
@@ -240,9 +244,9 @@ static inline void OUTPUTFUNCTION_NAME(struct OUTPUT_STRUCT_NAME *out, int i, in
 #endif
 #ifdef CLUSTER_SINK_DEBUG
             if ((P[i].ID == DEBUG_ID) && (out->append_MSP[k].Mass > 0)){
-                printf("[DEBUG - swallow - out2() - append] ThisTask %d, out %d - target %d, mode %d - k %d - append_MSP_Mass[k] %g, out %g - append_MSP_Age[k] %g, out %g - append SNII %g SNIa %g \n", ThisTask, out->ThisTask,
+                printf("[DEBUG - swallow - out2() - append] ThisTask %d, out %d - target %d, mode %d - k %d - append_MSP_Mass[k] %g, out %g - append_MSP_Age[k] %g, out %g, init %g- append SNII %g SNIa %g \n", ThisTask, out->ThisTask,
                 target, mode, k, BlackholeTempInfo[target].append_MSP[out->ThisTask * k].Mass, out->append_MSP[k].Mass, 
-                BlackholeTempInfo[target].append_MSP[out->ThisTask * k].Age, out->append_MSP[k].Age, 
+                BlackholeTempInfo[target].append_MSP[out->ThisTask * k].Age, out->append_MSP[k].Age, out->append_MSP[k].InitialAge, 
                 BlackholeTempInfo[target].append_MSP[out->ThisTask * k].CumNumSNII, BlackholeTempInfo[target].append_MSP[out->ThisTask * k].CumNumSNIa);
             }
 #endif
@@ -508,7 +512,9 @@ int blackhole_swallow_and_kick_evaluate(int target, int mode, int *exportflag, i
                                 out.combined_MSP[idx_msp_main_sink].Mass += FLT(P[j].MSP[k].Mass);
                                 out.combined_MSP[idx_msp_main_sink].InitialMass += FLT(P[j].MSP[k].InitialMass);
                                 out.combined_MSP[idx_msp_main_sink].Age += FLT(P[j].MSP[k].Mass*P[j].MSP[k].Age);
+                                out.combined_MSP[idx_msp_main_sink].InitialAge = FLT(P[j].MSP[k].InitialAge); // we do not mass-weight it
                                 for(int l=0;l<NUM_METAL_SPECIES;l++){ out.combined_MSP[idx_msp_main_sink].Metallicity[l] += FLT(P[j].MSP[k].Mass*P[j].MSP[k].Metallicity[l]);}
+                                out.combined_MSP[idx_msp_main_sink].InitialMetallicity_Z = FLT(P[j].MSP[k].InitialMetallicity_Z); // we do not mass-weight it
 #ifdef CLUSTER_SINK_OUTPUT_NUMSNE
                                 out.combined_MSP[idx_msp_main_sink].CumNumSNe += FLT(P[j].MSP[k].CumNumSNe);
                                 out.combined_MSP[idx_msp_main_sink].CumNumSNII += FLT(P[j].MSP[k].CumNumSNII);
@@ -520,6 +526,7 @@ int blackhole_swallow_and_kick_evaluate(int target, int mode, int *exportflag, i
                                 out.append_MSP[idx_msp_to_append].Mass = FLT(P[j].MSP[k].Mass);
                                 out.append_MSP[idx_msp_to_append].InitialMass = FLT(P[j].MSP[k].InitialMass);
                                 out.append_MSP[idx_msp_to_append].Age = FLT(P[j].MSP[k].Age);
+                                out.append_MSP[idx_msp_to_append].InitialAge = FLT(P[j].MSP[k].InitialAge);
                                 assert(out.append_MSP[idx_msp_to_append].Age <= All.Time);
                                 assert(out.append_MSP[idx_msp_to_append].Age > 0); // tform = 0 make no sense
                                 for(int l=0;l<NUM_METAL_SPECIES;l++){
@@ -527,6 +534,7 @@ int blackhole_swallow_and_kick_evaluate(int target, int mode, int *exportflag, i
                                     assert(out.append_MSP[idx_msp_to_append].Metallicity[l] <= 1);
                                     assert(out.append_MSP[idx_msp_to_append].Metallicity[l] > 0);
                                 }
+                                out.append_MSP[idx_msp_to_append].InitialMetallicity_Z = FLT(P[j].MSP[k].InitialMetallicity_Z);
 #ifdef CLUSTER_SINK_OUTPUT_NUMSNE
                                 out.append_MSP[idx_msp_to_append].CumNumSNe = FLT(P[j].MSP[k].CumNumSNe);
                                 out.append_MSP[idx_msp_to_append].CumNumSNII = FLT(P[j].MSP[k].CumNumSNII);
