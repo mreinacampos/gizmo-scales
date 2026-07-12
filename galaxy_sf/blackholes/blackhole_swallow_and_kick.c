@@ -225,29 +225,30 @@ static inline void OUTPUTFUNCTION_NAME(struct OUTPUT_STRUCT_NAME *out, int i, in
         }
         for(k=0;k<CLUSTER_SINK_NUMMSP_ACCRETE;k++){ // loop over MSPs in the ngb
            // MSPs to be appended
-            ASSIGN_ADD_PRESET(BlackholeTempInfo[target].append_MSP[out->ThisTask * k].Mass, out->append_MSP[k].Mass, mode);
-            ASSIGN_ADD_PRESET(BlackholeTempInfo[target].append_MSP[out->ThisTask * k].InitialMass, out->append_MSP[k].InitialMass, mode);
-            ASSIGN_ADD_PRESET(BlackholeTempInfo[target].append_MSP[out->ThisTask * k].Age, out->append_MSP[k].Age, mode);
-            ASSIGN_ADD_PRESET(BlackholeTempInfo[target].append_MSP[out->ThisTask * k].InitialAge, out->append_MSP[k].InitialAge, mode);
+            int idx = out->ThisTask * CLUSTER_SINK_NUMMSP_ACCRETE + k;
+            ASSIGN_ADD_PRESET(BlackholeTempInfo[target].append_MSP[idx].Mass, out->append_MSP[k].Mass, mode);
+            ASSIGN_ADD_PRESET(BlackholeTempInfo[target].append_MSP[idx].InitialMass, out->append_MSP[k].InitialMass, mode);
+            ASSIGN_ADD_PRESET(BlackholeTempInfo[target].append_MSP[idx].Age, out->append_MSP[k].Age, mode);
+            ASSIGN_ADD_PRESET(BlackholeTempInfo[target].append_MSP[idx].InitialAge, out->append_MSP[k].InitialAge, mode);
             assert(out->append_MSP[k].Age <= All.Time); // check no spurious edge cases here
-            assert(BlackholeTempInfo[target].append_MSP[out->ThisTask * k].Age <= All.Time); // check no spurious edge cases here
+            assert(BlackholeTempInfo[target].append_MSP[idx].Age <= All.Time); // check no spurious edge cases here
             for(int l=0;l<NUM_METAL_SPECIES;l++) {
-                ASSIGN_ADD_PRESET(BlackholeTempInfo[target].append_MSP[out->ThisTask * k].Metallicity[l], out->append_MSP[k].Metallicity[l], mode);
+                ASSIGN_ADD_PRESET(BlackholeTempInfo[target].append_MSP[idx].Metallicity[l], out->append_MSP[k].Metallicity[l], mode);
                 assert(out->append_MSP[k].Metallicity[l] <= 1); // check no spurious edge cases here
-                assert(BlackholeTempInfo[target].append_MSP[out->ThisTask * k].Metallicity[l] <= 1); // check no spurious edge cases here
+                assert(BlackholeTempInfo[target].append_MSP[idx].Metallicity[l] <= 1); // check no spurious edge cases here
             }
-            ASSIGN_ADD_PRESET(BlackholeTempInfo[target].append_MSP[out->ThisTask * k].InitialMetallicity_Z, out->append_MSP[k].InitialMetallicity_Z, mode);
+            ASSIGN_ADD_PRESET(BlackholeTempInfo[target].append_MSP[idx].InitialMetallicity_Z, out->append_MSP[k].InitialMetallicity_Z, mode);
 #ifdef CLUSTER_SINK_OUTPUT_NUMSNE
-            ASSIGN_ADD_PRESET(BlackholeTempInfo[target].append_MSP[out->ThisTask * k].CumNumSNe, out->append_MSP[k].CumNumSNe, mode);
-            ASSIGN_ADD_PRESET(BlackholeTempInfo[target].append_MSP[out->ThisTask * k].CumNumSNII, out->append_MSP[k].CumNumSNII, mode);
-            ASSIGN_ADD_PRESET(BlackholeTempInfo[target].append_MSP[out->ThisTask * k].CumNumSNIa, out->append_MSP[k].CumNumSNIa, mode);
+            ASSIGN_ADD_PRESET(BlackholeTempInfo[target].append_MSP[idx].CumNumSNe, out->append_MSP[k].CumNumSNe, mode);
+            ASSIGN_ADD_PRESET(BlackholeTempInfo[target].append_MSP[idx].CumNumSNII, out->append_MSP[k].CumNumSNII, mode);
+            ASSIGN_ADD_PRESET(BlackholeTempInfo[target].append_MSP[idx].CumNumSNIa, out->append_MSP[k].CumNumSNIa, mode);
 #endif
 #ifdef CLUSTER_SINK_DEBUG
             if ((P[i].ID == DEBUG_ID) && (out->append_MSP[k].Mass > 0)){
                 printf("[DEBUG - swallow - out2() - append] ThisTask %d, out %d - target %d, mode %d - k %d - append_MSP_Mass[k] %g, out %g - append_MSP_Age[k] %g, out %g, init %g- append SNII %g SNIa %g \n", ThisTask, out->ThisTask,
-                target, mode, k, BlackholeTempInfo[target].append_MSP[out->ThisTask * k].Mass, out->append_MSP[k].Mass, 
-                BlackholeTempInfo[target].append_MSP[out->ThisTask * k].Age, out->append_MSP[k].Age, out->append_MSP[k].InitialAge, 
-                BlackholeTempInfo[target].append_MSP[out->ThisTask * k].CumNumSNII, BlackholeTempInfo[target].append_MSP[out->ThisTask * k].CumNumSNIa);
+                target, mode, k, BlackholeTempInfo[target].append_MSP[idx].Mass, out->append_MSP[k].Mass, 
+                BlackholeTempInfo[target].append_MSP[idx].Age, out->append_MSP[k].Age, out->append_MSP[k].InitialAge, 
+                BlackholeTempInfo[target].append_MSP[idx].CumNumSNII, BlackholeTempInfo[target].append_MSP[idx].CumNumSNIa);
             }
 #endif
         }
