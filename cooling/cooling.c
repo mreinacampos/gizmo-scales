@@ -1751,7 +1751,6 @@ void update_explicit_molecular_fraction(int i, double dtime_cgs)
     double Tdust = 30.; // need to assume something about dust temperature for reaction rates below for dust-phase formation
 #if (defined(FLAG_NOT_IN_PUBLIC_CODE) && (FLAG_NOT_IN_PUBLIC_CODE > 2)) || defined(SINGLE_STAR_SINK_DYNAMICS) || defined(CLUSTER_SINK)
     Tdust = get_equilibrium_dust_temperature_estimate(i, shieldfac, T);
-}
 #endif
     double a_Z = 3.e-18*sqrt_T / ((1. +4.e-2*sqrt(T+Tdust) +2.e-3*T +8.e-6*T*T )*(1. +1.e4/exp(DMIN(EXPmax,600./Tdust)))) * f_dustgas_solar * nH0 * clumping_factor; // dust surface formation (assuming dust-to-metals ratio is 0.5*(Z/solar)*dust-to-gas-relative-to-solar in all regions where this is significant), from Glover & Jappsen 2007
 
