@@ -39,7 +39,7 @@ double determine_snia_yields(int k);
 #ifdef CLUSTER_SINK_WINDS
 double determine_winds_mass_loss_rate(double age, double zh);
 double determine_winds_velocity_injection(double age, double zh);
-double determine_winds_yields(int i, double age, int k);
+double determine_winds_yields(int i, int j, double age, int k);
 double determine_winds_HHe_production(double age, double z_CNO);
 double determine_winds_CNO_production(double age, double z_CNO);
 double determine_winds_HC_production(double age, double z_CNO);

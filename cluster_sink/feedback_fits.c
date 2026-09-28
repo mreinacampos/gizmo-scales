@@ -41,15 +41,15 @@ void set_fb_input_quantities_from_msps(struct addFB_evaluate_data_in_ *in, int i
     //loop over every stellar population within the sink
     for (j = 0; j<CLUSTER_SINK_NUMMSP; j++){
 
-#ifdef CLUSTER_SINK_DEBUG // MRC
-        assert(P[i].MSP[j].Age <= All.Time);
-        for(k=0;k<NUM_METAL_SPECIES;k++) { assert(P[i].MSP[j].Metallicity[k] < 1);}
-#endif
-
         // zero out quantities
         velocity_winds = 0;
 
         if (P[i].MSP[j].Mass == 0) continue; // this MSP has no FB to produce
+
+#ifdef CLUSTER_SINK_DEBUG // check there are no spurious cases
+        assert(P[i].MSP[j].Age <= All.Time);
+        for(k=0;k<NUM_METAL_SPECIES;k++) { assert(P[i].MSP[j].Metallicity[k] <= 1);}
+#endif
 
         // determine the age in Myr
         double age = evaluate_stellar_age_Gyr_for_msp(i, j)*1e3, zh;
@@ -74,7 +74,10 @@ void set_fb_input_quantities_from_msps(struct addFB_evaluate_data_in_ *in, int i
 #ifdef METALS
         // yields ejected: as ejecta masses
         double total_z = 0.;
-        for(k=1;k<NUM_METAL_SPECIES;k++) { yields_snii[k] += fb_dm.mass_snii*determine_snii_yields(k, age); total_z += determine_snii_yields(k, age); assert(yields_snii[k] >= 0);}
+        for(k=1;k<NUM_METAL_SPECIES;k++) { 
+            yields_snii[k] += fb_dm.mass_snii*determine_snii_yields(k, age); 
+            if (k > 1) total_z += determine_snii_yields(k, age); // He is not included in the total metallicity
+            assert(yields_snii[k] >= 0);}
         yields_snii[0] = fb_dm.mass_snii*1.02*total_z; // from App. A in Hopkins+18
         //yields_snii[0] = DMAX(1.02*total_z, P[i].Metallicity[0]*P[i].MSP_Mass[j]/mass_snii); // from App. A in Hopkins+18
 #endif
@@ -101,11 +104,18 @@ void set_fb_input_quantities_from_msps(struct addFB_evaluate_data_in_ *in, int i
         total_energy_winds += 0.5 * fb_dm.mass_winds * velocity_winds * velocity_winds;
 #ifdef METALS
         // yields ejected: as ejecta masses
-        for(k=0;k<NUM_METAL_SPECIES;k++) { yields_winds[k] += fb_dm.mass_winds*determine_winds_yields(i, age, k); assert(yields_winds[k] >= 0);}
+        double total_z_winds = 0.;
+        for(k=1;k<NUM_METAL_SPECIES;k++) { 
+            yields_winds[k] += fb_dm.mass_winds*determine_winds_yields(i, j, age, k); 
+            if (k > 1) total_z_winds += determine_winds_yields(i, j, age, k); // He is not included in the total metallicity
+            assert(yields_winds[k] >= 0);
+        }
+        // adding a 1.02 factor to account for missing elements
+        yields_winds[0] = fb_dm.mass_winds*1.02*total_z_winds; // the total metal mass fraction needs to be recalculated for the winds, since the yields are metallicity dependent
 #endif
 #endif
 #ifdef CLUSTER_SINK_DEBUG
-        if (P[i].ID == DEBUG_ID){
+        if ((P[i].ID == DEBUG_ID) && (j == 0)){
             printf("[DEBUG - set_fb_input_quantities_from_msps] - ThisTask %d, P[i].ID %d, P.Mass %g, P.Age %g - MSP j %d - Age %g, MSP_Mass %g tform %g - mass_snii %g, mass_snia %g, mass_winds %g -- Current NumSNe [%g, %g, %g]\n", ThisTask,
          P[i].ID, P[i].Mass, evaluate_stellar_age_Gyr(i)*1e3, j, age, P[i].MSP[j].Mass, P[i].MSP[j].Age, fb_dm.mass_snii, fb_dm.mass_snia, fb_dm.mass_winds, P[i].SNe_ThisTimeStep, P[i].SNII_ThisTimeStep[j], P[i].SNIa_ThisTimeStep[j]); 
         }
@@ -131,12 +141,30 @@ void set_fb_input_quantities_from_msps(struct addFB_evaluate_data_in_ *in, int i
 #ifdef METALS
     for(k=0;k<NUM_METAL_SPECIES;k++) {
         in->yields[k] = (yields_snii[k] * total_mass_snii + yields_snia[k] * total_mass_snia + yields_winds[k] * total_mass_winds)/in->Msne;
-        //printf("[feedback_fits.c] - k %d, total_mass_snii %g, total_mass_snia %g, total_mass_winds %g - yields [%g, %g, %g] = [%g]\n", k, 
-        //    total_mass_snii, total_mass_snia, total_mass_winds, yields_snii[k], yields_snia[k], yields_winds[k], in->yields[k]);
+#ifdef CLUSTER_SINK_DEBUG
+    if (P[i].ID == DEBUG_ID){
+        printf("[DEBUG - set_fb_input_quantities_from_msps - yields] - ThisTask %d, P[i].ID %d - yield k %d, total_mass_snii %g, total_mass_snia %g, total_mass_winds %g - yields [%g, %g, %g] = [%g]\n",
+            ThisTask, P[i].ID, k, total_mass_snii, total_mass_snia, total_mass_winds, yields_snii[k], yields_snia[k], yields_winds[k], in->yields[k]);    }
+#endif
         assert((in->yields[k] >= 0.)&&(in->yields[k] < 1.));
     }
 #endif
 
+
+#ifdef CLUSTER_SINK_OUTPUT_FBGASPROPS // output the gas and feedback properties for every active sink doing feedback // MRC - not 100% happy of this here
+    int num_snia = 0, num_snii = 0;
+    for(int j = 0; j<CLUSTER_SINK_NUMMSP; j++){ if (P[i].MSP[j].Mass > 0) { num_snia += P[i].SNIa_ThisTimeStep[j]; num_snii += P[i].SNII_ThisTimeStep[j];} }
+    // 0: Time, 1: ID, 2: Mass, 3: age in Myr, 4-6: Pos, 7: number of SNII per per step, 8: number of SNIa per step, 9: total number of SNe per step, 10: density within the kernel, 
+    // 11-13: total mass ejected by SNII, SNIa and winds, 14-16: total energy ejected by SNII, SNIa and winds, 17-27: yields ejected by SNII, 28-38: yields ejected by SNIa, 39-49: yields ejected by winds
+    fprintf(FdCSFBGasProps,"%.16g %llu %g %2.16g %2.16g %2.16g %2.16g %d %d %2.16g %2.16g %2.16g %2.16g %2.16g %2.16g %2.16g %2.16g %2.16g %2.16g %2.16g %2.16g %2.16g %2.16g %2.16g %2.16g %2.16g %2.16g %2.16g %2.16g %2.16g %2.16g %2.16g %2.16g %2.16g %2.16g %2.16g %2.16g %2.16g %2.16g %2.16g %2.16g %2.16g %2.16g %2.16g\n", 
+        All.Time, (unsigned long long)P[i].ID, P[i].Mass, evaluate_stellar_age_Gyr(i)*1e3, P[i].Pos[0], P[i].Pos[1], P[i].Pos[2],  
+        num_snii, num_snia, P[i].SNe_ThisTimeStep, P[i].DensAroundStar * All.cf_a3inv, 
+        total_mass_snii, total_mass_snia, total_mass_winds, total_energy_snii, total_energy_snia, total_energy_winds,
+        yields_snii[0], yields_snii[1], yields_snii[2], yields_snii[3], yields_snii[4], yields_snii[5], yields_snii[6], yields_snii[7], yields_snii[8], yields_snii[9], yields_snii[10],
+        yields_snia[0], yields_snia[1], yields_snia[2], yields_snia[3], yields_snia[4], yields_snia[5], yields_snia[6], yields_snia[7], yields_snia[8], yields_snia[9], yields_snia[10],
+        yields_winds[0], yields_winds[1], yields_winds[2], yields_winds[3], yields_winds[4], yields_winds[5], yields_winds[6], yields_winds[7], yields_winds[8], yields_winds[9], yields_winds[10]);
+        fflush(FdCSFBGasProps);
+#endif
 }
 
 /** \brief Calculates the mass lost due to each feedbach mechanism from each multiple stellar populations
@@ -153,7 +181,7 @@ void calculate_fb_mass_ejected_for_msps(struct fb_massloss_for_msp *fb_dm, int i
     double age = evaluate_stellar_age_Gyr_for_msp(i, j)*1e3, zh;
     // metallicity of the stellar population - zh = 10^[Fe/H] = (N_Fe/N_H)_star / (N_Fe/N_H)_solar
     if (NUM_METAL_SPECIES > 1){
-        zh = (P[i].MSP[j].Metallicity[NUM_METAL_SPECIES-1]/(1 - P[i].MSP[j].Metallicity[1] - P[i].Metallicity[0]))/(All.SolarAbundances[NUM_METAL_SPECIES-1]/(1 - All.SolarAbundances[0] - All.SolarAbundances[1]));
+        zh = (P[i].MSP[j].Metallicity[NUM_METAL_SPECIES-1]/(1 - P[i].MSP[j].Metallicity[1] - P[i].MSP[j].Metallicity[0]))/(All.SolarAbundances[NUM_METAL_SPECIES-1]/(1 - All.SolarAbundances[0] - All.SolarAbundances[1]));
     } else {
         zh = (P[i].MSP[j].Metallicity[0]/All.SolarAbundances[0]);
     }
@@ -175,11 +203,11 @@ void calculate_fb_mass_ejected_for_msps(struct fb_massloss_for_msp *fb_dm, int i
 #ifdef CLUSTER_SINK_WINDS
     // particle timestep in Myr
     double dt = GET_PARTICLE_TIMESTEP_IN_PHYSICAL(i) * UNIT_TIME_IN_MYR;
-#ifdef BH_INTERACT_ON_GAS_TIMESTEP
+#ifdef SINK_INTERACT_ON_GAS_TIMESTEP
     dt = P[i].dt_since_last_gas_search * UNIT_TIME_IN_MYR;
 #endif
     // total mass ejected by winds in code units 
-    fb_dm->mass_winds = determine_winds_mass_loss_rate(age, zh) * P[i].MSP[j].Mass * dt; 
+    fb_dm->mass_winds = determine_winds_mass_loss_rate(age, zh)/UNIT_MASS_IN_SOLAR * P[i].MSP[j].Mass * dt; 
     assert(fb_dm->mass_winds >= 0); 
     assert(determine_winds_mass_loss_rate(age, zh) >= 0);
     assert(dt >=0 );
@@ -204,7 +232,7 @@ void reduce_mass_from_msps(void)
     for(i = FirstActiveParticle; i >= 0; i = NextActiveParticle[i])
     {
         if((P[i].Type!=4)&&(P[i].Type!=5)) {continue;} // has this sink output feedback in this timestep?
-#ifdef BH_INTERACT_ON_GAS_TIMESTEP
+#ifdef SINK_INTERACT_ON_GAS_TIMESTEP
         if(P[i].Type == 5 && !P[i].do_gas_search_this_timestep) {continue;}
 #endif
         if(P[i].SNe_ThisTimeStep == 0) {continue;} // has this sink output feedback in this timestep?
@@ -230,7 +258,7 @@ void reduce_mass_from_msps(void)
             
 #ifdef CLUSTER_SINK_DEBUG
             if (P[i].ID == DEBUG_ID){
-                printf("[DEBUG - reduce_mass_from_msps] - ThisTask %d, P[i].ID %d - P.Mass %g, P.BH_Mass %g - MSP j %d - MSP_Mass %g tform %g - mass_snii %g, mass_snia %g, mass_winds %g -- Cum NumSNe [%g, %g, %g]\n", ThisTask, P[i].ID, P[i].Mass, P[i].BH_Mass, j, 
+                printf("[DEBUG - reduce_mass_from_msps] - ThisTask %d, P[i].ID %d - P.Mass %g, P.Sink_Mass %g - MSP j %d - MSP_Mass %g tform %g - mass_snii %g, mass_snia %g, mass_winds %g -- Cum NumSNe [%g, %g, %g]\n", ThisTask, P[i].ID, P[i].Mass, P[i].Sink_Mass, j, 
                     P[i].MSP[j].Mass, P[i].MSP[j].Age, fb_dm.mass_snii, fb_dm.mass_snia, fb_dm.mass_winds, P[i].MSP[j].CumNumSNe, P[i].MSP[j].CumNumSNII, P[i].MSP[j].CumNumSNIa);
             }
 #endif
@@ -257,7 +285,7 @@ void reduce_mass_from_msps(void)
 /** \brief Return the rate of SNe for a given star particle 
  *
  * \param i       index of the particle
- * \param dt       timestep of the particle in physical units
+ * \param dt       timestep of the particle in physical code units
  * \return        total rate of SNe (SNII and Ia) in SNe / Myr / MSun
  */
 double determine_sne_rates(int i, double dt) 
@@ -419,13 +447,13 @@ double determine_snia_yields(int k)
 
 
 #ifdef CLUSTER_SINK_WINDS
-/** \brief Return the mass loss from AGB&OB winds for a given star particle 
+/** \brief OLD implementation from v1 of Hopkins23
+ * Return the mass loss from AGB&OB winds for a given star particle 
  * using the tables in feedback_fits.h
  *
  * \param age       age of the stellar population in Myr
  * \param zh        metallicity of the stellar population - zh = 10^{[Fe/H]}
  * \return          mass loss in Myr^-1
- */
 double determine_winds_mass_loss_rate(double age, double zh) 
 {
 
@@ -451,6 +479,41 @@ double determine_winds_mass_loss_rate(double age, double zh)
     // return mass_loss in Myr^-1
     return mass_loss*1e-3;
 }
+*/
+
+/** \brief Return the mass loss from AGB&OB winds for a given star particle 
+ * using the tables in feedback_fits.h
+ *
+ * \param age       age of the stellar population in Myr
+ * \param zh        metallicity of the stellar population - zh = 10^{[Fe/H]}
+ * \return          mass loss in Myr^-1
+ */
+double determine_winds_mass_loss_rate(double age, double zh) 
+{
+
+    // metallicity-dependent coefficients aw,1, aw,2 and aw,3 - in Gyr^-1
+    double WINDS_coeff_awj[3] = {3*pow(zh, 0.87), 20*pow(zh, 0.45), 0.6*zh}; 
+
+    double mass_loss = 0., slope = 0.;
+    // power-law analytical fit - eq. 4 in Hopkins+22
+    if(age <= WINDS_twj[0]){ mass_loss = WINDS_coeff_awj[0]; }
+    else if((age > WINDS_twj[0]) && (age <= WINDS_twj[1])){
+        slope = log(WINDS_coeff_awj[1]/WINDS_coeff_awj[0])/log(WINDS_twj[1]/WINDS_twj[0]);
+        mass_loss = WINDS_coeff_awj[0] * pow(age / WINDS_twj[0], slope);
+    } else if((age > WINDS_twj[1]) && (age <= WINDS_twj[2])){
+        slope = log(WINDS_coeff_awj[2]/WINDS_coeff_awj[1])/log(WINDS_twj[2]/WINDS_twj[1]);
+        mass_loss = WINDS_coeff_awj[1] * pow(age / WINDS_twj[1], slope);
+    } else if(age > WINDS_twj[2]){
+        slope = -3.1;
+        mass_loss = WINDS_coeff_awj[2] * pow(age / WINDS_twj[2], slope);
+    }
+
+    double x_age = WINDS_twj[3]/DMAX(age, 1e-4); // set a floor to avoid NaNs
+    mass_loss += WINDS_coeff_aaj[0] * pow(x_age, 1.6) * (exp(-DMIN(50, pow(x_age, 6))) + 1/(1/WINDS_coeff_aaj[1] + pow(x_age, 2)));
+
+    // return mass_loss in Myr^-1
+    return mass_loss*1e-3;
+}
 
 /** \brief Return the injection velocity from AGB&OB winds for a given star particle 
  * using the tables in feedback_fits.h
@@ -472,11 +535,11 @@ double determine_winds_velocity_injection(double age, double zh)
 
 /** \brief Return the production of He from H by ABG/OB winds
  *
- * \param age     age of the star in Gyr
+ * \param age_in_gyr     age of the star in Gyr
  * \param z_CNO   CNO-based metallicity
  * \return        production of He from H by ABG/OB winds in mass fraction
  */
-double determine_winds_HHe_production(double age, double z_CNO) 
+double determine_winds_HHe_production(double age_in_gyr, double z_CNO) 
 {
     // Table 2 in Hopkins+22
     // slope of the first piece of the piece-wise analytical fit
@@ -487,33 +550,36 @@ double determine_winds_HHe_production(double age, double z_CNO)
     double HHe_coeff[5] = {0.4*DMIN( pow(z_CNO+0.001, 0.6), 2), 0.08, 0.07, 0.042, 0.042}; 
 
     double yield = 0, slope = 0;
-    if (age <= HHe_timescales[0]){
+    if (age_in_gyr <= HHe_timescales[0]){
         slope = HHe_slope0;
-        yield = HHe_coeff[0] * pow(age/HHe_timescales[0], slope);
-    } else if ( (age > HHe_timescales[0]) && (age <= HHe_timescales[1]) ){
+        yield = HHe_coeff[0] * pow(age_in_gyr/HHe_timescales[0], slope);
+    } else if ( (age_in_gyr > HHe_timescales[0]) && (age_in_gyr <= HHe_timescales[1]) ){
         slope = log(HHe_coeff[1]/HHe_coeff[0])/log(HHe_timescales[1]/HHe_timescales[0]);
-        yield = HHe_coeff[0] * pow(age/HHe_timescales[0], slope);
-    } else if ( (age > HHe_timescales[1]) && (age <= HHe_timescales[2]) ){
+        yield = HHe_coeff[0] * pow(age_in_gyr/HHe_timescales[0], slope);
+    } else if ( (age_in_gyr > HHe_timescales[1]) && (age_in_gyr <= HHe_timescales[2]) ){
         slope = log(HHe_coeff[2]/HHe_coeff[1])/log(HHe_timescales[2]/HHe_timescales[1]);
-        yield = HHe_coeff[1] * pow(age/HHe_timescales[1], slope);
-    } else if ( (age > HHe_timescales[2]) && (age <= HHe_timescales[3]) ){
+        yield = HHe_coeff[1] * pow(age_in_gyr/HHe_timescales[1], slope);
+    } else if ( (age_in_gyr > HHe_timescales[2]) && (age_in_gyr <= HHe_timescales[3]) ){
         slope = log(HHe_coeff[3]/HHe_coeff[2])/log(HHe_timescales[3]/HHe_timescales[2]);
-        yield = HHe_coeff[2] * pow(age/HHe_timescales[2], slope);
-    } else if ( (age > HHe_timescales[3]) && (age <= HHe_timescales[4]) ){
-        slope = log(HHe_coeff[4]/HHe_coeff[3])/log(HHe_timescales[4]/HHe_timescales[3]);
-        yield = HHe_coeff[3] * pow(age/HHe_timescales[3], slope);
+        yield = HHe_coeff[2] * pow(age_in_gyr/HHe_timescales[2], slope);
+    } else if (age_in_gyr > HHe_timescales[3]){    // change relative to the paper - let's assume that after HHe_timescales[3], there's no more He production
+        yield = HHe_coeff[3];
     }
+    //else if ( (age_in_gyr > HHe_timescales[3]) && (age_in_gyr <= HHe_timescales[4]) ){
+    //    slope = log(HHe_coeff[4]/HHe_coeff[3])/log(HHe_timescales[4]/HHe_timescales[3]);
+    //    yield = HHe_coeff[3] * pow(age_in_gyr/HHe_timescales[3], slope);
+    // }
 
     return yield;
 }
 
 /** \brief Return the production from CNO cycle by ABG/OB winds
  *
- * \param age     age of the star in Gyr
+ * \param age_in_gyr     age of the star in Gyr
  * \param z_CNO   CNO-based metallicity
  * \return        production from CNO cycle by ABG/OB winds in mass fraction
  */
-double determine_winds_CNO_production(double age, double z_CNO) 
+double determine_winds_CNO_production(double age_in_gyr, double z_CNO) 
 {
     // Table 2 in Hopkins+22
     // slope of the first piece of the piece-wise analytical fit
@@ -524,36 +590,39 @@ double determine_winds_CNO_production(double age, double z_CNO)
     double CNO_coeff[6] = {0.2*DMIN( pow(z_CNO, 2)+1e-4, 0.9 ), 0.68*DMIN( pow(z_CNO+0.001, 0.1), 0.9 ), 0.4, 0.23, 0.065, 0.065}; 
 
     double yield = 0, slope = 0;
-    if (age <= CNO_timescales[0]){
+    if (age_in_gyr <= CNO_timescales[0]){
         slope = CNO_slope0;
-        yield = CNO_coeff[0] * pow(age/CNO_timescales[0], slope);
-    } else if ( (age > CNO_timescales[0]) && (age <= CNO_timescales[1]) ){
+        yield = CNO_coeff[0] * pow(age_in_gyr/CNO_timescales[0], slope);
+    } else if ( (age_in_gyr > CNO_timescales[0]) && (age_in_gyr <= CNO_timescales[1]) ){
         slope = log(CNO_coeff[1]/CNO_coeff[0])/log(CNO_timescales[1]/CNO_timescales[0]);
-        yield = CNO_coeff[0] * pow(age/CNO_timescales[0], slope);
-    } else if ( (age > CNO_timescales[1]) && (age <= CNO_timescales[2]) ){
+        yield = CNO_coeff[0] * pow(age_in_gyr/CNO_timescales[0], slope);
+    } else if ( (age_in_gyr > CNO_timescales[1]) && (age_in_gyr <= CNO_timescales[2]) ){
         slope = log(CNO_coeff[2]/CNO_coeff[1])/log(CNO_timescales[2]/CNO_timescales[1]);
-        yield = CNO_coeff[1] * pow(age/CNO_timescales[1], slope);
-    } else if ( (age > CNO_timescales[2]) && (age <= CNO_timescales[3]) ){
+        yield = CNO_coeff[1] * pow(age_in_gyr/CNO_timescales[1], slope);
+    } else if ( (age_in_gyr > CNO_timescales[2]) && (age_in_gyr <= CNO_timescales[3]) ){
         slope = log(CNO_coeff[3]/CNO_coeff[2])/log(CNO_timescales[3]/CNO_timescales[2]);
-        yield = CNO_coeff[2] * pow(age/CNO_timescales[2], slope);
-    } else if ( (age > CNO_timescales[3]) && (age <= CNO_timescales[4]) ){
+        yield = CNO_coeff[2] * pow(age_in_gyr/CNO_timescales[2], slope);
+    } else if ( (age_in_gyr > CNO_timescales[3]) && (age_in_gyr <= CNO_timescales[4]) ){
         slope = log(CNO_coeff[4]/CNO_coeff[3])/log(CNO_timescales[4]/CNO_timescales[3]);
-        yield = CNO_coeff[3] * pow(age/CNO_timescales[3], slope);
-    } else if ( (age > CNO_timescales[4]) && (age <= CNO_timescales[5]) ){
-        slope = log(CNO_coeff[5]/CNO_coeff[4])/log(CNO_timescales[5]/CNO_timescales[4]);
-        yield = CNO_coeff[4] * pow(age/CNO_timescales[4], slope);
+        yield = CNO_coeff[3] * pow(age_in_gyr/CNO_timescales[3], slope);
+    } else if  (age_in_gyr > CNO_timescales[4]){ // change relative to the paper - let's assume that after CNO_timescales[4], there's no more CNO production
+        yield = CNO_coeff[4];
     }
+    //} else if ( (age_in_gyr > CNO_timescales[4]) && (age_in_gyr <= CNO_timescales[5]) ){
+    //    slope = log(CNO_coeff[5]/CNO_coeff[4])/log(CNO_timescales[5]/CNO_timescales[4]);
+    //    yield = CNO_coeff[4] * pow(age_in_gyr/CNO_timescales[4], slope);
+    //}
 
     return yield;
 }
 
 /** \brief Return the production of C from H by ABG/OB winds
  *
- * \param age     age of the star in Gyr
+ * \param age_in_gyr     age of the star in Gyr
  * \param z_CNO   CNO-based metallicity
  * \return        production of C from H by ABG/OB winds in mass fraction
  */
-double determine_winds_HC_production(double age, double z_CNO) 
+double determine_winds_HC_production(double age_in_gyr, double z_CNO) 
 {
     // Table 2 in Hopkins+22
     // slope of the first piece of the piece-wise analytical fit
@@ -564,19 +633,22 @@ double determine_winds_HC_production(double age, double z_CNO)
     double HC_coeff[4] = {1e-6, 0.001, 0.005, 0.005}; 
 
     double yield = 0, slope = 0;
-    if (age <= HC_timescales[0]){
+    if (age_in_gyr <= HC_timescales[0]){
         slope = HC_slope0;
-        yield = HC_coeff[0] * pow(age/HC_timescales[0], slope);
-    } else if ( (age > HC_timescales[0]) && (age <= HC_timescales[1]) ){
+        yield = HC_coeff[0] * pow(age_in_gyr/HC_timescales[0], slope);
+    } else if ( (age_in_gyr > HC_timescales[0]) && (age_in_gyr <= HC_timescales[1]) ){
         slope = log(HC_coeff[1]/HC_coeff[0])/log(HC_timescales[1]/HC_timescales[0]);
-        yield = HC_coeff[0] * pow(age/HC_timescales[0], slope);
-    } else if ( (age > HC_timescales[1]) && (age <= HC_timescales[2]) ){
+        yield = HC_coeff[0] * pow(age_in_gyr/HC_timescales[0], slope);
+    } else if ( (age_in_gyr > HC_timescales[1]) && (age_in_gyr <= HC_timescales[2]) ){
         slope = log(HC_coeff[2]/HC_coeff[1])/log(HC_timescales[2]/HC_timescales[1]);
-        yield = HC_coeff[1] * pow(age/HC_timescales[1], slope);
-    } else if ( (age > HC_timescales[2]) && (age <= HC_timescales[3]) ){
-        slope = log(HC_coeff[3]/HC_coeff[2])/log(HC_timescales[3]/HC_timescales[2]);
-        yield = HC_coeff[2] * pow(age/HC_timescales[2], slope);
+        yield = HC_coeff[1] * pow(age_in_gyr/HC_timescales[1], slope);
+    } else if (age_in_gyr > HC_timescales[2]) { // change relative to the paper - let's assume that after HC_timescales[2], there's no more HC production
+        yield = HC_coeff[2];
     } 
+    //} else if ( (age_in_gyr > HC_timescales[2]) && (age_in_gyr <= HC_timescales[3]) ){
+    //    slope = log(HC_coeff[3]/HC_coeff[2])/log(HC_timescales[3]/HC_timescales[2]);
+    //    yield = HC_coeff[2] * pow(age_in_gyr/HC_timescales[2], slope);
+    //} 
 
     return yield;
 }
@@ -584,42 +656,46 @@ double determine_winds_HC_production(double age, double z_CNO)
 /** \brief Return the yield k ejected by ABG/OB winds
  *
  * \param i       index of the particle
+ * \param j       index of the MSP
+ * \param age     age of the star in Myr
  * \param k       index of the yield to return
  * \return        fraction of ejecta mass in species k
  */
-double determine_winds_yields(int i, double age, int k) 
+double determine_winds_yields(int i, int j, double age, int k) 
 {
 
     // determine the CNO metallicity
-    double z_CNO = (P[i].Metallicity[2] + P[i].Metallicity[3] + P[i].Metallicity[4])/(All.SolarAbundances[2]+All.SolarAbundances[3]+All.SolarAbundances[4]);
+    double z_CNO = (P[i].MSP[j].Metallicity[2] + P[i].MSP[j].Metallicity[3] + P[i].MSP[j].Metallicity[4])/(All.SolarAbundances[2]+All.SolarAbundances[3]+All.SolarAbundances[4]);
     double yield = 0.;
 
     double y_HHe, y_HeC, y_HC, y_CN, y_ON, y_CNO, f_h0;
-    y_HHe = determine_winds_HHe_production(age, z_CNO);
-    y_CNO = determine_winds_CNO_production(age, z_CNO);
-    y_HC = determine_winds_HC_production(age, z_CNO);
+    double age_in_gyr = age/1e3;
+    y_HHe = determine_winds_HHe_production(age_in_gyr, z_CNO);
+    y_CNO = determine_winds_CNO_production(age_in_gyr, z_CNO);
+    y_HC = determine_winds_HC_production(age_in_gyr, z_CNO);
 
     // ratio of the initial O to C abundances
-    double x_OC = (P[i].Metallicity[5] / P[i].Metallicity[3]);
+    double x_OC = (P[i].MSP[j].Metallicity[4] / DMAX(P[i].MSP[j].Metallicity[2], 1e-10));
     // secondary production of N from C and O
     y_CN = DMIN(1, 0.5 * y_CNO * (1 + x_OC));
     y_ON = y_CNO + (y_CNO - y_CN)/x_OC;
     // production of C from He and H
     y_HeC = y_HC;
     // initial hydrogen abundance: 1 - f_He,0 - f_Z,0
-    f_h0 = 1 - P[i].Metallicity[1] - P[i].Metallicity[0];
+    f_h0 = 1 - P[i].MSP[j].Metallicity[1] - P[i].MSP[j].Metallicity[0];
 
-    // assume initial surface abundances for total metallicity and heavy elements
-    if ((k == 0) || (k > 4)) { yield = P[i].Metallicity[k]; }
-    else if (k == 1) { // He
-        yield = P[i].Metallicity[1] * (1 - y_HeC) + y_HHe * f_h0;
+    // assume initial surface abundances for heavy elements
+    if (k == 1) { // He
+        yield = P[i].MSP[j].Metallicity[1] * (1 - y_HeC) + y_HHe * f_h0;
     } else if (k == 2) { // C
-        yield = P[i].Metallicity[2] * (1 - y_CN) + y_HeC * P[i].Metallicity[1] + y_HC * f_h0 * (1 - y_HHe);
+        yield = P[i].MSP[j].Metallicity[2] * (1 - y_CN) + y_HeC * P[i].MSP[j].Metallicity[1] + y_HC * f_h0 * (1 - y_HHe);
     } else if (k == 3) { // N
-        yield = P[i].Metallicity[3] + y_CN * P[i].Metallicity[2] + y_ON * P[i].Metallicity[4];
+        yield = P[i].MSP[j].Metallicity[3] + y_CN * P[i].MSP[j].Metallicity[2] + y_ON * P[i].MSP[j].Metallicity[4];
     } else if (k == 4) { // O
-        yield = P[i].Metallicity[4] * (1 - y_ON);
-    }
+        yield = P[i].MSP[j].Metallicity[4] * (1 - y_ON);
+    } else if (k > 4) { yield = P[i].MSP[j].Metallicity[k]; }
+    assert(yield >= 0);
+    assert(yield <= 1);
     return yield;
 }
 #endif // CLUSTER_SINK_WINDS
@@ -630,6 +706,7 @@ double determine_winds_yields(int i, double age, int k)
  *
  * \param age_in_gyr        age of the SSP
  * \param i                 index of the particle
+ * \param j                 index of the MSP
  * \return                  light-to-mass ratio in Lsun/Msun
  */
 double calculate_relative_light_to_mass_ratio(double age_in_gyr, int i, int j){
@@ -637,9 +714,9 @@ double calculate_relative_light_to_mass_ratio(double age_in_gyr, int i, int j){
     double zh, age_in_myr = age_in_gyr*1e3, light_to_mass = 0, slope = 0;
     // metallicity of the stellar population - zh = 10^[Fe/H] = (N_Fe/N_H)_star / (N_Fe/N_H)_solar
     if (NUM_METAL_SPECIES > 1){
-        zh = (P[i].Metallicity[NUM_METAL_SPECIES-1]/(1 - P[i].Metallicity[1] - P[i].Metallicity[0]))/(All.SolarAbundances[NUM_METAL_SPECIES-1]/(1 - All.SolarAbundances[0] - All.SolarAbundances[1]));
+        zh = (P[i].MSP[j].Metallicity[NUM_METAL_SPECIES-1]/(1 - P[i].MSP[j].Metallicity[1] - P[i].MSP[j].Metallicity[0]))/(All.SolarAbundances[NUM_METAL_SPECIES-1]/(1 - All.SolarAbundances[0] - All.SolarAbundances[1]));
     } else { // asume primordial composition
-        zh = (P[i].Metallicity[0]/All.SolarAbundances[0]);
+        zh = (P[i].MSP[j].Metallicity[0]/All.SolarAbundances[0]);
     }
 
     // metallicity-dependent coefficients aL,1, aL,2 and aL,3 - in LSun/MSun
@@ -661,7 +738,7 @@ double calculate_relative_light_to_mass_ratio(double age_in_gyr, int i, int j){
 
 /** \brief Determine the fraction of bolometric flux that corresponds to ionizing radiation
  *
- * \param age_in_gyr        age of the SSP
+ * \param age_in_gyr        age of the SSP in Gyr
  * \param i                 index of the particle
  * \return                  fraction of ionizing flux
  */

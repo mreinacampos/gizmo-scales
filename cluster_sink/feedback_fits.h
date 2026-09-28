@@ -45,9 +45,11 @@ static double SNIa_yields[NUM_METAL_SPECIES] = {1, 0, 1.76e-2, 2.1e-6, 7.36e-2, 
 #ifdef CLUSTER_SINK_WINDS
 // non-z dependent coefficients for the mass-loss from winds
 // Coefficients aa,1 and aa,2 - in Gyr^-1, except aa,2
-static double WINDS_coeff_aaj[2] =  {0.01, 0.01}; 
+// old - from v1 in Hopkins23 static double WINDS_coeff_aaj[2] =  {0.01, 0.01}; 
+static double WINDS_coeff_aaj[2] =  {0.11, 0.01}; 
 // Timescales tw,1 , tw,2, tw,3 and ta - in Myr
-static double WINDS_twj[4] =  {1.7, 4.0, 20, 1000}; 
+// old - from v1 in Hopkins23 static double WINDS_twj[4] =  {1.7, 4.0, 20, 1000}; 
+static double WINDS_twj[4] =  {1.7, 4.0, 20, 800}; 
 // timescales for the velocity of injection
 // Timescales tv,1 , and tv,2 - in Myr
 static double WINDS_tvj[2] =  {3.0, 50.0}; 
