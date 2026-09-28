@@ -207,7 +207,7 @@ void calculate_fb_mass_ejected_for_msps(struct fb_massloss_for_msp *fb_dm, int i
     dt = P[i].dt_since_last_gas_search * UNIT_TIME_IN_MYR;
 #endif
     // total mass ejected by winds in code units 
-    fb_dm->mass_winds = determine_winds_mass_loss_rate(age, zh)/UNIT_MASS_IN_SOLAR * P[i].MSP[j].Mass * dt; 
+    fb_dm->mass_winds = determine_winds_mass_loss_rate(age, zh) * P[i].MSP[j].Mass * dt; 
     assert(fb_dm->mass_winds >= 0); 
     assert(determine_winds_mass_loss_rate(age, zh) >= 0);
     assert(dt >=0 );
